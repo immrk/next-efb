@@ -1,0 +1,569 @@
+:root {
+  font-family: "Segoe UI", "PingFang SC", sans-serif;
+  color: #f4f7fb;
+  background:
+    radial-gradient(circle at top left, rgba(52, 152, 219, 0.35), transparent 35%),
+    radial-gradient(circle at bottom right, rgba(46, 204, 113, 0.18), transparent 30%),
+    linear-gradient(135deg, #08131f 0%, #112338 45%, #0f1c2c 100%);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.app-shell {
+  min-height: 100vh;
+  padding: 32px;
+}
+
+.product-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 260px 1fr;
+}
+
+.app-sidebar {
+  padding: 28px 18px;
+  border-right: 1px solid rgba(139, 196, 255, 0.14);
+  background: rgba(5, 12, 21, 0.8);
+  backdrop-filter: blur(14px);
+}
+
+.sidebar-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sidebar-link {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid rgba(139, 196, 255, 0.14);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #f4f7fb;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sidebar-link.active {
+  background: linear-gradient(135deg, rgba(57, 123, 219, 0.44), rgba(35, 181, 116, 0.24));
+  border-color: rgba(139, 196, 255, 0.28);
+}
+
+.primary-button,
+.secondary-button,
+.chart-card-button {
+  font: inherit;
+}
+
+.primary-button,
+.secondary-button {
+  padding: 12px 16px;
+  border-radius: 14px;
+  cursor: pointer;
+}
+
+.primary-button {
+  border: 1px solid rgba(139, 196, 255, 0.22);
+  color: #f4f7fb;
+  background: linear-gradient(135deg, rgba(57, 123, 219, 0.5), rgba(35, 181, 116, 0.24));
+}
+
+.secondary-button {
+  border: 1px solid rgba(139, 196, 255, 0.16);
+  color: #f4f7fb;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  margin-bottom: 14px;
+  color: rgba(244, 247, 251, 0.68);
+}
+
+.map-toolbar {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.compact-field {
+  min-width: 240px;
+}
+
+.hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.page-hero {
+  margin-bottom: 20px;
+}
+
+.eyebrow {
+  margin: 0 0 10px;
+  color: #8bc4ff;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 12px;
+}
+
+.hero h1 {
+  margin: 0;
+  font-size: 40px;
+  line-height: 1.1;
+}
+
+.hero-copy {
+  max-width: 720px;
+  margin-top: 12px;
+  color: rgba(244, 247, 251, 0.78);
+}
+
+.content-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+}
+
+.panel {
+  background: rgba(7, 16, 28, 0.72);
+  border: 1px solid rgba(139, 196, 255, 0.14);
+  border-radius: 24px;
+  backdrop-filter: blur(14px);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.22);
+}
+
+.map-panel {
+  min-height: 520px;
+  padding: 20px;
+}
+
+.status-panel,
+.settings-panel {
+  padding: 20px;
+}
+
+.panel-header h2 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.panel-header p {
+  margin: 8px 0 0;
+  color: rgba(244, 247, 251, 0.7);
+}
+
+.map-stage {
+  position: relative;
+  margin-top: 20px;
+  min-height: 420px;
+  overflow: hidden;
+  border-radius: 18px;
+  border: 1px solid rgba(139, 196, 255, 0.14);
+}
+
+.leaflet-map {
+  min-height: 420px;
+  height: 100%;
+  width: 100%;
+  background: #0f2538;
+}
+
+.leaflet-container {
+  font-family: "Segoe UI", "PingFang SC", sans-serif;
+}
+
+.leaflet-control-attribution,
+.leaflet-control-zoom a {
+  background: rgba(7, 16, 28, 0.86) !important;
+  color: #f4f7fb !important;
+  border-color: rgba(139, 196, 255, 0.18) !important;
+}
+
+.leaflet-control-attribution a {
+  color: #8bc4ff !important;
+}
+
+.chart-overlay-container {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.chart-overlay-image {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+  opacity: 0.58;
+  pointer-events: none;
+  filter: drop-shadow(0 10px 22px rgba(0, 0, 0, 0.18));
+}
+
+.aircraft-div-icon {
+  background: transparent;
+  border: 0;
+}
+
+.aircraft-map-marker {
+  width: 0;
+  height: 0;
+  margin-left: 2px;
+  border-left: 12px solid transparent;
+  border-right: 12px solid transparent;
+  border-bottom: 26px solid #ffe28c;
+  filter: drop-shadow(0 0 12px rgba(255, 226, 140, 0.8));
+}
+
+.map-coordinates {
+  position: absolute;
+  left: 18px;
+  bottom: 18px;
+  display: flex;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.35);
+  font-size: 13px;
+}
+
+.connection-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 140px;
+  padding: 12px 16px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.connection-badge.connected {
+  background: rgba(39, 174, 96, 0.18);
+  color: #baf3cb;
+}
+
+.connection-badge.disconnected {
+  background: rgba(231, 76, 60, 0.16);
+  color: #ffc2b8;
+}
+
+.connection-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.stat-card span {
+  color: rgba(244, 247, 251, 0.65);
+  font-size: 13px;
+}
+
+.stat-card strong {
+  font-size: 22px;
+}
+
+.settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.settings-field select {
+  appearance: none;
+  padding: 12px 14px;
+  border: 1px solid rgba(139, 196, 255, 0.2);
+  border-radius: 14px;
+  color: #f4f7fb;
+  background: rgba(10, 21, 35, 0.92);
+}
+
+.settings-note {
+  margin-top: 18px;
+  color: rgba(244, 247, 251, 0.72);
+  line-height: 1.6;
+}
+
+.charts-layout {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.charts-panel {
+  padding: 20px;
+  min-height: 240px;
+}
+
+.full-span {
+  grid-column: 1 / -1;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+  padding: 20px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(244, 247, 251, 0.78);
+}
+
+.checklist-card {
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+  padding: 18px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.storage-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.settings-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 560px);
+}
+
+.chart-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.chart-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.chart-card-button {
+  width: 100%;
+  border: 1px solid rgba(139, 196, 255, 0.1);
+  color: #f4f7fb;
+  text-align: left;
+  cursor: pointer;
+}
+
+.text-input,
+.settings-field input,
+.settings-field select {
+  font: inherit;
+}
+
+.text-input {
+  padding: 12px 14px;
+  border: 1px solid rgba(139, 196, 255, 0.2);
+  border-radius: 14px;
+  color: #f4f7fb;
+  background: rgba(10, 21, 35, 0.92);
+}
+
+.detail-layout {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.reference-checklist,
+.map-picker-card {
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+  padding: 18px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.detail-map-stage {
+  overflow: hidden;
+  border-radius: 16px;
+}
+
+.detail-leaflet-map {
+  height: 260px;
+  width: 100%;
+}
+
+.map-reference-icon {
+  background: transparent;
+  border: 0;
+}
+
+.map-reference-dot {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: #8bc4ff;
+  color: #08131f;
+  font-size: 12px;
+  font-weight: 700;
+  box-shadow: 0 0 0 2px rgba(8, 19, 31, 0.4);
+}
+
+.chart-viewer-shell {
+  margin-top: 20px;
+}
+
+.chart-surface {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  overflow: auto;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.chart-image,
+.chart-canvas {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+.pdf-viewer-fallback {
+  display: grid;
+  gap: 16px;
+}
+
+.pdf-frame {
+  width: 100%;
+  min-height: 720px;
+  border: 0;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.chart-reference-dot,
+.chart-aircraft-dot {
+  position: absolute;
+  transform: translate(-50%, -50%);
+}
+
+.chart-reference-dot {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: #8bc4ff;
+  color: #08131f;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.chart-aircraft-dot {
+  width: 16px;
+  height: 16px;
+  border: 3px solid #ff6d5b;
+  border-radius: 999px;
+  background: rgba(255, 109, 91, 0.2);
+}
+
+.button-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 1100px) {
+  .product-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .app-sidebar {
+    border-right: 0;
+    border-bottom: 1px solid rgba(139, 196, 255, 0.14);
+  }
+
+  .content-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .charts-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .full-span {
+    grid-column: auto;
+  }
+
+  .detail-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .app-shell {
+    padding: 18px;
+  }
+
+  .hero {
+    flex-direction: column;
+  }
+
+  .hero h1 {
+    font-size: 30px;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .storage-grid {
+    grid-template-columns: 1fr;
+  }
+}

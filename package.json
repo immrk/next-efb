@@ -1,0 +1,39 @@
+{
+  "name": "msfs-desktop-tracker",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Electron + React + TypeScript MVP for tracking MSFS aircraft on a map.",
+  "main": "dist-electron/main/index.js",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview",
+    "rebuild-native": "electron-rebuild -f -w better-sqlite3",
+    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.8.0",
+    "i18next": "^25.0.0",
+    "leaflet": "^1.9.4",
+    "node-simconnect": "^4.0.0",
+    "pdfjs-dist": "^4.10.38",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-i18next": "^15.0.0",
+    "react-leaflet": "^5.0.0",
+    "zustand": "^5.0.0"
+  },
+  "devDependencies": {
+    "@electron/rebuild": "^4.0.3",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/leaflet": "^1.9.21",
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.6.0",
+    "electron": "^37.0.0",
+    "electron-vite": "^3.0.0",
+    "typescript": "^5.8.0",
+    "vite": "^6.0.0"
+  }
+}
