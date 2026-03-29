@@ -1,23 +1,16 @@
-import { DomUtil, divIcon } from 'leaflet'
-import { useEffect, useRef } from 'react'
+import { DomUtil } from 'leaflet'
+import { useEffect, useRef, useState } from 'react'
 import { MapContainer, Marker, TileLayer, useMap } from 'react-leaflet'
 import { useTranslation } from 'react-i18next'
 import type { GeoReferencePoint } from '@shared/chart-types'
+import { createAircraftLeafletIcon } from './AircraftArrow'
+import { ConnectionBadge } from './ConnectionBadge'
 import { useAppStore } from '../store/useAppStore'
 import { useMapOverlayChart } from '../hooks/useMapOverlayChart'
 
 function formatCoord(value: number | undefined): string {
   if (typeof value !== 'number') return '--'
   return value.toFixed(4)
-}
-
-function createAircraftIcon(headingDeg: number) {
-  return divIcon({
-    className: 'aircraft-div-icon',
-    html: `<div class="aircraft-map-marker" style="transform: rotate(${headingDeg}deg)"></div>`,
-    iconSize: [28, 28],
-    iconAnchor: [14, 14]
-  })
 }
 
 function FollowAircraft({
@@ -42,16 +35,42 @@ function FollowAircraft({
   return null
 }
 
+function RecenterMap({
+  lat,
+  lon,
+  trigger
+}: {
+  lat: number
+  lon: number
+  trigger: number
+}) {
+  const map = useMap()
+
+  useEffect(() => {
+    if (trigger === 0) return
+    map.flyTo([lat, lon], map.getZoom(), {
+      animate: true,
+      duration: 0.6
+    })
+  }, [lat, lon, map, trigger])
+
+  return null
+}
+
 function ChartOverlay({
   rasterUrl,
   width,
   height,
-  points
+  points,
+  opacity,
+  zIndex
 }: {
   rasterUrl: string | null
   width: number | null
   height: number | null
   points: GeoReferencePoint[]
+  opacity: number
+  zIndex: number
 }) {
   const map = useMap()
   const containerRef = useRef<HTMLDivElement | null>(null)
@@ -69,6 +88,8 @@ function ChartOverlay({
     image.src = rasterUrl
     image.style.width = `${width}px`
     image.style.height = `${height}px`
+    image.style.opacity = String(opacity)
+    container.style.zIndex = String(zIndex)
 
     const [p1, p2] = points
 
@@ -105,27 +126,51 @@ function ChartOverlay({
       containerRef.current = null
       imageRef.current = null
     }
-  }, [height, map, points, rasterUrl, width])
+  }, [height, map, opacity, points, rasterUrl, width, zIndex])
 
   return null
 }
 
-export function MapPanel({ selectedChartId }: { selectedChartId: string | null }) {
+function MountedChartOverlay({
+  chartId,
+  isActive,
+  stackIndex
+}: {
+  chartId: string
+  isActive: boolean
+  stackIndex: number
+}) {
+  const overlay = useMapOverlayChart(chartId)
+
+  return (
+    <ChartOverlay
+      rasterUrl={overlay.rasterUrl}
+      width={overlay.width}
+      height={overlay.height}
+      points={overlay.points}
+      opacity={isActive ? 0.78 : 0.34}
+      zIndex={100 + stackIndex}
+    />
+  )
+}
+
+export function MapPanel({
+  mountedChartIds,
+  activeChartId
+}: {
+  mountedChartIds: string[]
+  activeChartId: string | null
+}) {
   const { t } = useTranslation()
   const aircraft = useAppStore((state) => state.aircraft)
   const settings = useAppStore((state) => state.settings)
   const lat = aircraft?.lat ?? 31.2304
   const lon = aircraft?.lon ?? 121.4737
   const heading = aircraft?.headingDeg ?? 0
-  const overlay = useMapOverlayChart(selectedChartId)
+  const [recenterTrigger, setRecenterTrigger] = useState(0)
 
   return (
-    <section className="panel map-panel">
-      <div className="panel-header">
-        <h2>{t('map.title')}</h2>
-        <p>{t('map.subtitle')}</p>
-      </div>
-
+    <section className="panel map-panel map-workspace-panel">
       <div className="map-stage">
         <MapContainer
           center={[lat, lon]}
@@ -140,24 +185,40 @@ export function MapPanel({ selectedChartId }: { selectedChartId: string | null }
           />
           <Marker
             position={[lat, lon]}
-            icon={createAircraftIcon(heading)}
+            icon={createAircraftLeafletIcon(heading)}
             title={t('map.aircraftMarker')}
           />
-          <ChartOverlay
-            rasterUrl={overlay.rasterUrl}
-            width={overlay.width}
-            height={overlay.height}
-            points={overlay.points}
-          />
+          {mountedChartIds.map((chartId, index) => (
+            <MountedChartOverlay
+              key={chartId}
+              chartId={chartId}
+              isActive={chartId === activeChartId}
+              stackIndex={index}
+            />
+          ))}
           <FollowAircraft
             lat={lat}
             lon={lon}
             enabled={settings?.followAircraft ?? true}
           />
+          <RecenterMap lat={lat} lon={lon} trigger={recenterTrigger} />
         </MapContainer>
         <div className="map-coordinates">
-          <span>LAT {formatCoord(aircraft?.lat)}</span>
-          <span>LON {formatCoord(aircraft?.lon)}</span>
+          <span>{`${t('map.lat')} ${formatCoord(aircraft?.lat)}`}</span>
+          <span>{`${t('map.lon')} ${formatCoord(aircraft?.lon)}`}</span>
+        </div>
+        <button
+          type="button"
+          className="map-recenter-button"
+          aria-label={t('map.recenter')}
+          onClick={() => setRecenterTrigger((current) => current + 1)}
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 3L18 16H13V21H11V16H6L12 3Z" />
+          </svg>
+        </button>
+        <div className="map-floating-badge">
+          <ConnectionBadge />
         </div>
       </div>
     </section>

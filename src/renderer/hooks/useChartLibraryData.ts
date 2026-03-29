@@ -6,6 +6,7 @@ import type {
   PickedChartFile,
   StorageSummary
 } from '@shared/chart-types'
+import { notifyChartChanged, subscribeChartChanged } from '../utils/chartSync'
 
 function base64ToUint8Array(base64: string): Uint8Array {
   const binary = atob(base64)
@@ -77,6 +78,12 @@ export function useChartLibraryData() {
 
   useEffect(() => {
     refresh()
+    const unsubscribe = subscribeChartChanged(() => {
+      refresh()
+    })
+    return () => {
+      unsubscribe()
+    }
   }, [])
 
   const importChart = async (): Promise<ChartImportResult | null> => {
@@ -100,12 +107,14 @@ export function useChartLibraryData() {
     })
 
     refresh()
+    notifyChartChanged()
     return result
   }
 
   const deleteChart = async (chartId: string): Promise<void> => {
     await window.msfsApi.deleteChart(chartId)
     refresh()
+    notifyChartChanged()
   }
 
   return {

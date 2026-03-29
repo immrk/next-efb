@@ -1,57 +1,127 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ChartRecord } from '@shared/chart-types'
-import { ConnectionBadge } from '../components/ConnectionBadge'
+import { ChartMountDrawer } from '../components/ChartMountDrawer'
 import { MapPanel } from '../components/MapPanel'
-import { StatusPanel } from '../components/StatusPanel'
 import { useChartLibraryData } from '../hooks/useChartLibraryData'
 
-export function MapPage() {
+interface MapPageProps {
+  onOpenChartLibrary: (chartId: string) => void
+  onEditChart: (chartId: string) => void
+}
+
+export function MapPage({ onOpenChartLibrary, onEditChart }: MapPageProps) {
   const { t } = useTranslation()
   const { charts } = useChartLibraryData()
   const georeferencedCharts = useMemo(
     () => charts.filter((chart) => chart.isGeoreferenced),
     [charts]
   )
-  const [selectedChartId, setSelectedChartId] = useState<string | null>(null)
+  const [mountedChartIds, setMountedChartIds] = useState<string[]>([])
+  const [activeChartId, setActiveChartId] = useState<string | null>(null)
+  const [isChartDrawerOpen, setIsChartDrawerOpen] = useState(false)
+
+  const mountedCharts = useMemo(
+    () =>
+      mountedChartIds
+        .map((chartId) => georeferencedCharts.find((chart) => chart.id === chartId))
+        .filter((chart): chart is ChartRecord => Boolean(chart)),
+    [georeferencedCharts, mountedChartIds]
+  )
 
   useEffect(() => {
-    if (!selectedChartId && georeferencedCharts.length > 0) {
-      setSelectedChartId(georeferencedCharts[0].id)
+    setMountedChartIds((current) =>
+      current.filter((chartId) => georeferencedCharts.some((chart) => chart.id === chartId))
+    )
+  }, [georeferencedCharts])
+
+  useEffect(() => {
+    if (mountedChartIds.length === 0) {
+      if (activeChartId !== null) {
+        setActiveChartId(null)
+      }
+      return
     }
-  }, [georeferencedCharts, selectedChartId])
+
+    if (!activeChartId || !mountedChartIds.includes(activeChartId)) {
+      setActiveChartId(mountedChartIds[mountedChartIds.length - 1] ?? null)
+    }
+  }, [activeChartId, mountedChartIds])
+
+  const mountChart = (chartId: string) => {
+    const chart = charts.find((item) => item.id === chartId)
+    if (!chart?.isGeoreferenced) return
+
+    setMountedChartIds((current) => (current.includes(chartId) ? current : [...current, chartId]))
+    setActiveChartId(chartId)
+  }
+
+  const unmountChart = (chartId: string) => {
+    setMountedChartIds((current) => current.filter((id) => id !== chartId))
+  }
 
   return (
-    <>
-      <header className="hero page-hero">
-        <div>
-          <p className="eyebrow">{t('nav.map')}</p>
-          <h1>{t('pages.map.title')}</h1>
-          <p className="hero-copy">{t('pages.map.subtitle')}</p>
-        </div>
-        <div className="map-toolbar">
-          <div className="settings-field compact-field">
-            <label>{t('map.overlaySelector')}</label>
-            <select
-              value={selectedChartId ?? ''}
-              onChange={(event) => setSelectedChartId(event.target.value || null)}
-            >
-              <option value="">{t('map.overlayNone')}</option>
-              {georeferencedCharts.map((chart: ChartRecord) => (
-                <option key={chart.id} value={chart.id}>
-                  {chart.title}
-                </option>
-              ))}
-            </select>
-          </div>
-          <ConnectionBadge />
-        </div>
-      </header>
+    <section className="map-workspace">
+      <MapPanel mountedChartIds={mountedChartIds} activeChartId={activeChartId} />
 
-      <section className="content-grid">
-        <MapPanel selectedChartId={selectedChartId} />
-        <StatusPanel />
+      <section className="chart-dock">
+        <div className="chart-dock-main">
+          <button
+            type="button"
+            className="chart-dock-add-button"
+            onClick={() => setIsChartDrawerOpen(true)}
+            aria-label={t('charts.add')}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 5V19M5 12H19" />
+            </svg>
+          </button>
+
+          {mountedCharts.length > 0 ? (
+            <div className="chart-dock-bar">
+              {mountedCharts.map((chart) => {
+                const isActive = chart.id === activeChartId
+                return (
+                  <article
+                    key={chart.id}
+                    className={`mounted-chart-card ${isActive ? 'active' : ''}`}
+                  >
+                    <button
+                      type="button"
+                      className="mounted-chart-main"
+                      onClick={() => setActiveChartId(chart.id)}
+                    >
+                      <strong>{`${chart.airportCode ?? '----'} · ${chart.title}`}</strong>
+                    </button>
+                    <button
+                      type="button"
+                      className="mounted-chart-remove"
+                      onClick={() => unmountChart(chart.id)}
+                      aria-label={t('charts.unmountAria', { title: chart.title })}
+                    >
+                      x
+                    </button>
+                  </article>
+                )
+              })}
+            </div>
+          ) : (
+            <div className="chart-dock-empty-inline">{t('charts.emptyTitle')}</div>
+          )}
+        </div>
       </section>
-    </>
+
+      <ChartMountDrawer
+        mode="overlay"
+        isOpen={isChartDrawerOpen}
+        charts={charts}
+        selectedChartId={activeChartId}
+        mountedChartIds={mountedChartIds}
+        onClose={() => setIsChartDrawerOpen(false)}
+        onSelect={onOpenChartLibrary}
+        onEdit={onEditChart}
+        onPin={mountChart}
+      />
+    </section>
   )
 }

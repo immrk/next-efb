@@ -20,12 +20,7 @@ export function SettingsPanel() {
   }
 
   return (
-    <section className="panel settings-panel">
-      <div className="panel-header">
-        <h2>{t('settings.title')}</h2>
-        <p>{t('settings.subtitle')}</p>
-      </div>
-
+    <section className="panel settings-panel settings-panel-compact" aria-label={t('settings.title')}>
       <div className="settings-field">
         <label htmlFor="language-select">{t('settings.language')}</label>
         <select
@@ -35,7 +30,7 @@ export function SettingsPanel() {
             void updateLanguage(event.target.value as AppLanguage)
           }}
         >
-          <option value="zh-CN">简体中文</option>
+          <option value="zh-CN">{t('settings.languageZhCN')}</option>
           <option value="en-US">English</option>
         </select>
       </div>
@@ -53,8 +48,6 @@ export function SettingsPanel() {
           <option value="mock">{t('settings.providerMock')}</option>
         </select>
       </div>
-
-      <div className="settings-note">{t('settings.providerNotice')}</div>
     </section>
   )
 }

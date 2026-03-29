@@ -13,56 +13,77 @@ export function App() {
   useDesktopData()
   const [route, setRoute] = useState<AppRoute>('map')
   const [selectedChartId, setSelectedChartId] = useState<string | null>(null)
-
-  const renderPage = () => {
-    switch (route) {
-      case 'chartDetail':
-        return selectedChartId ? (
-          <ChartDetailPage
-            chartId={selectedChartId}
-            onBack={() => setRoute('charts')}
-            onSaved={() => void 0}
-          />
-        ) : (
-          <ChartsPage
-            onOpenChart={(chartId) => {
-              setSelectedChartId(chartId)
-              setRoute('chartDetail')
-            }}
-          />
-        )
-      case 'charts':
-        return (
-          <ChartsPage
-            onOpenChart={(chartId) => {
-              setSelectedChartId(chartId)
-              setRoute('chartDetail')
-            }}
-          />
-        )
-      case 'settings':
-        return <SettingsPage />
-      case 'map':
-      default:
-        return <MapPage />
-    }
-  }
+  const [detailChartId, setDetailChartId] = useState<string | null>(null)
+  const [chartDetailBackRoute, setChartDetailBackRoute] = useState<'map' | 'charts'>('charts')
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const isFullBleedRoute =
+    route === 'map' || route === 'charts' || route === 'chartDetail' || route === 'settings'
 
   return (
-    <main className="product-shell">
+    <main className={`product-shell ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
       <AppSidebar
         route={route === 'chartDetail' ? 'charts' : route}
+        collapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed((current) => !current)}
         onNavigate={(nextRoute) => {
           if (nextRoute !== 'chartDetail') {
             setRoute(nextRoute)
           }
         }}
       />
-      <section className="app-shell">
-        <header className="topbar">
-          <span>{t('app.subtitle')}</span>
-        </header>
-        {renderPage()}
+      <section className={`app-shell ${isFullBleedRoute ? 'app-shell-fullbleed' : ''}`}>
+        {isFullBleedRoute ? null : (
+          <header className="topbar">
+            <span>{t('app.subtitle')}</span>
+          </header>
+        )}
+
+        <section className={`route-view ${route === 'map' ? 'active' : ''}`}>
+          <MapPage
+            onOpenChartLibrary={(chartId) => {
+              setSelectedChartId(chartId)
+              setRoute('charts')
+            }}
+            onEditChart={(chartId) => {
+              setSelectedChartId(chartId)
+              setDetailChartId(chartId)
+              setChartDetailBackRoute('map')
+              setRoute('chartDetail')
+            }}
+          />
+        </section>
+
+        <section className={`route-view ${route === 'charts' ? 'active' : ''}`}>
+          <ChartsPage
+            selectedChartId={selectedChartId}
+            onSelectChart={setSelectedChartId}
+            onEditChart={(chartId) => {
+              setSelectedChartId(chartId)
+              setDetailChartId(chartId)
+              setChartDetailBackRoute('charts')
+              setRoute('chartDetail')
+            }}
+          />
+        </section>
+
+        <section className={`route-view ${route === 'settings' ? 'active' : ''}`}>
+          <SettingsPage />
+        </section>
+
+        {detailChartId ? (
+          <section className={`route-view ${route === 'chartDetail' ? 'active' : ''}`}>
+            <ChartDetailPage
+              chartId={detailChartId}
+              onBack={() => setRoute(chartDetailBackRoute)}
+              onSaved={() => void 0}
+              onDeleted={() => {
+                setSelectedChartId(null)
+                setDetailChartId(null)
+                setRoute(chartDetailBackRoute)
+              }}
+            />
+          </section>
+        ) : null}
       </section>
     </main>
   )
