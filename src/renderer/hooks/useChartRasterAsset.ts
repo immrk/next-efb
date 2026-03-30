@@ -92,11 +92,17 @@ export function useChartRasterAsset(asset: ChartAssetPayload | null) {
       }
 
       try {
-        const blob = base64ToBlob(asset.base64, asset.mimeType)
-        const result =
-          asset.fileFormat === 'pdf'
-            ? await renderPdfFirstPage(blob)
-            : await blobToImageUrl(blob)
+        const result = asset.url
+          ? await blobToImageUrl(await fetch(asset.url).then((response) => response.blob()))
+          : asset.base64
+            ? asset.fileFormat === 'pdf'
+              ? await renderPdfFirstPage(base64ToBlob(asset.base64, asset.mimeType))
+              : await blobToImageUrl(base64ToBlob(asset.base64, asset.mimeType))
+            : null
+
+        if (!result) {
+          throw new Error('Asset payload is empty')
+        }
 
         if (!active) {
           URL.revokeObjectURL(result.url)

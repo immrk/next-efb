@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ChartRecord } from '@shared/chart-types'
+import { getAppClient } from '../client'
 import { ChartMountDrawer } from '../components/ChartMountDrawer'
 import { MapPanel } from '../components/MapPanel'
 import { useChartLibraryData } from '../hooks/useChartLibraryData'
@@ -11,6 +12,7 @@ interface MapPageProps {
 }
 
 export function MapPage({ onOpenChartLibrary, onEditChart }: MapPageProps) {
+  const runtime = getAppClient().getRuntime()
   const { t } = useTranslation()
   const { charts } = useChartLibraryData()
   const georeferencedCharts = useMemo(
@@ -119,7 +121,7 @@ export function MapPage({ onOpenChartLibrary, onEditChart }: MapPageProps) {
         mountedChartIds={mountedChartIds}
         onClose={() => setIsChartDrawerOpen(false)}
         onSelect={onOpenChartLibrary}
-        onEdit={onEditChart}
+        onEdit={runtime.canWrite ? onEditChart : undefined}
         onPin={mountChart}
       />
     </section>

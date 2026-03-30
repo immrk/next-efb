@@ -3,10 +3,13 @@ import { useEffect, useRef, useState } from 'react'
 import { MapContainer, Marker, TileLayer, useMap } from 'react-leaflet'
 import { useTranslation } from 'react-i18next'
 import type { GeoReferencePoint } from '@shared/chart-types'
+import type { MapTileProvider } from '@shared/types'
 import { createAircraftLeafletIcon } from './AircraftArrow'
 import { ConnectionBadge } from './ConnectionBadge'
+import { getAppClient } from '../client'
 import { useAppStore } from '../store/useAppStore'
 import { useMapOverlayChart } from '../hooks/useMapOverlayChart'
+import { getMapTileConfig } from '../utils/mapTileProviders'
 
 function formatCoord(value: number | undefined): string {
   if (typeof value !== 'number') return '--'
@@ -162,12 +165,20 @@ export function MapPanel({
   activeChartId: string | null
 }) {
   const { t } = useTranslation()
+  const appClient = getAppClient()
   const aircraft = useAppStore((state) => state.aircraft)
   const settings = useAppStore((state) => state.settings)
+  const setSettings = useAppStore((state) => state.setSettings)
   const lat = aircraft?.lat ?? 31.2304
   const lon = aircraft?.lon ?? 121.4737
   const heading = aircraft?.headingDeg ?? 0
   const [recenterTrigger, setRecenterTrigger] = useState(0)
+  const tileConfig = getMapTileConfig(settings?.mapTileProvider)
+
+  const updateMapTileProvider = async (mapTileProvider: MapTileProvider): Promise<void> => {
+    const nextSettings = await appClient.updateSettings({ mapTileProvider })
+    setSettings(nextSettings)
+  }
 
   return (
     <section className="panel map-panel map-workspace-panel">
@@ -180,8 +191,9 @@ export function MapPanel({
           attributionControl
         >
           <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution={tileConfig.attribution}
+            url={tileConfig.url}
+            subdomains={tileConfig.subdomains}
           />
           <Marker
             position={[lat, lon]}
@@ -196,11 +208,7 @@ export function MapPanel({
               stackIndex={index}
             />
           ))}
-          <FollowAircraft
-            lat={lat}
-            lon={lon}
-            enabled={settings?.followAircraft ?? true}
-          />
+          <FollowAircraft lat={lat} lon={lon} enabled={settings?.followAircraft ?? true} />
           <RecenterMap lat={lat} lon={lon} trigger={recenterTrigger} />
         </MapContainer>
         <div className="map-coordinates">
@@ -217,7 +225,19 @@ export function MapPanel({
             <path d="M12 3L18 16H13V21H11V16H6L12 3Z" />
           </svg>
         </button>
-        <div className="map-floating-badge">
+        <div className="map-floating-toolbar">
+          <label className="map-provider-chip" aria-label={t('settings.mapTileProvider')}>
+            <select
+              value={settings?.mapTileProvider ?? 'osm'}
+              onChange={(event) => {
+                void updateMapTileProvider(event.target.value as MapTileProvider)
+              }}
+            >
+              <option value="osm">{t('settings.mapTileProviderOsm')}</option>
+              <option value="cartoLight">{t('settings.mapTileProviderCartoLight')}</option>
+              <option value="osmfr">{t('settings.mapTileProviderOsmFr')}</option>
+            </select>
+          </label>
           <ConnectionBadge />
         </div>
       </div>

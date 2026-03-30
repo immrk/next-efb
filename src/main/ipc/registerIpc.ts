@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { BrowserWindow, dialog, ipcMain } from 'electron'
+import { BrowserWindow, dialog, ipcMain, shell } from 'electron'
 import { IPC_CHANNELS } from '@shared/channels'
 import type { AppSettings } from '@shared/types'
 import type {
@@ -16,6 +16,7 @@ import { SettingsStore } from '../services/config/SettingsStore'
 import { SimConnectService } from '../services/simconnect/SimConnectService'
 import { ChartRepository } from '../services/storage/ChartRepository'
 import { StorageService } from '../services/storage/StorageService'
+import { LanServer } from '../services/lan/LanServer'
 
 interface RegisterIpcOptions {
   mainWindow: BrowserWindow
@@ -24,6 +25,7 @@ interface RegisterIpcOptions {
   simConnectService: SimConnectService
   chartRepository: ChartRepository
   storageService: StorageService
+  lanServer: LanServer
 }
 
 export function registerIpc(options: RegisterIpcOptions): void {
@@ -33,16 +35,19 @@ export function registerIpc(options: RegisterIpcOptions): void {
     settingsStore,
     simConnectService,
     chartRepository,
-    storageService
+    storageService,
+    lanServer
   } = options
 
   simConnectService.onAircraftState((state) => {
     flightStateStore.setAircraftState(state)
+    lanServer.broadcastAircraftState(state)
     mainWindow.webContents.send(IPC_CHANNELS.aircraftUpdate, state)
   })
 
   simConnectService.onConnectionState((state) => {
     flightStateStore.setConnectionState(state)
+    lanServer.broadcastConnectionState(state)
     mainWindow.webContents.send(IPC_CHANNELS.connectionUpdate, state)
   })
 
@@ -54,6 +59,11 @@ export function registerIpc(options: RegisterIpcOptions): void {
   })
 
   ipcMain.handle(IPC_CHANNELS.settingsGet, () => settingsStore.get())
+  ipcMain.handle(IPC_CHANNELS.remoteAccessStatus, () => lanServer.getStatus())
+  ipcMain.handle(IPC_CHANNELS.openExternal, async (_event, url: string) => {
+    await shell.openExternal(url)
+    return true
+  })
   ipcMain.handle(IPC_CHANNELS.chartsList, () => chartRepository.listCharts())
   ipcMain.handle(IPC_CHANNELS.storageSummary, () => storageService.getSummary())
   ipcMain.handle(IPC_CHANNELS.chartGet, (_event, chartId: string) => chartRepository.getChart(chartId))
@@ -62,12 +72,17 @@ export function registerIpc(options: RegisterIpcOptions): void {
   )
   ipcMain.handle(
     IPC_CHANNELS.chartReferenceSave,
-    (_event, chartId: string, points: GeoReferencePoint[]) =>
-      chartRepository.saveReferencePoints(chartId, points)
+    (_event, chartId: string, points: GeoReferencePoint[]) => {
+      const saved = chartRepository.saveReferencePoints(chartId, points)
+      lanServer.broadcastChartChanged()
+      return saved
+    }
   )
-  ipcMain.handle(IPC_CHANNELS.chartUpdate, (_event, input: ChartUpdateInput) =>
-    chartRepository.updateChart(input)
-  )
+  ipcMain.handle(IPC_CHANNELS.chartUpdate, (_event, input: ChartUpdateInput) => {
+    const updated = chartRepository.updateChart(input)
+    lanServer.broadcastChartChanged()
+    return updated
+  })
   ipcMain.handle(IPC_CHANNELS.chartAsset, (_event, chartId: string): ChartAssetPayload | null => {
     const chart = chartRepository.getChart(chartId)
     if (!chart) return null
@@ -108,7 +123,16 @@ export function registerIpc(options: RegisterIpcOptions): void {
     IPC_CHANNELS.chartFinalizeImport,
     (_event, input: FinalizeChartImportInput): ChartImportResult => {
       const chartId = randomUUID()
-      const imported = storageService.importChartFile(input.sourcePath, chartId)
+      const imported = input.sourcePath
+        ? storageService.importChartFile(input.sourcePath, chartId)
+        : input.sourceFileBase64 && input.sourceFileFormat
+          ? storageService.writeChartSourceFile(chartId, input.sourceFileFormat, input.sourceFileBase64)
+          : null
+
+      if (!imported) {
+        throw new Error('CHART_SOURCE_REQUIRED')
+      }
+
       const sourceFormat = getFileFormat(imported.destinationPath)
       const displayPath =
         input.displayImageBase64 && input.displayImageMimeType
@@ -139,19 +163,26 @@ export function registerIpc(options: RegisterIpcOptions): void {
       void sourceFormat
 
       return {
-        chart: chartRepository.createChart(chart)
+        chart: (() => {
+          const created = chartRepository.createChart(chart)
+          lanServer.broadcastChartChanged()
+          return created
+        })()
       }
     }
   )
   ipcMain.handle(IPC_CHANNELS.chartDelete, (_event, chartId: string) => {
     chartRepository.deleteChart(chartId)
     storageService.deleteChartFiles(chartId)
+    lanServer.broadcastChartChanged()
     return true
   })
 
-  ipcMain.handle(IPC_CHANNELS.settingsUpdate, (_event, partial: Partial<AppSettings>) => {
+  ipcMain.handle(IPC_CHANNELS.settingsUpdate, async (_event, partial: Partial<AppSettings>) => {
     const nextSettings = settingsStore.update(partial)
     simConnectService.reconfigure(nextSettings)
+    await lanServer.reconfigure(nextSettings)
+    lanServer.broadcastSettingsChanged()
     return nextSettings
   })
 }

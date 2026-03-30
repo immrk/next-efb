@@ -48,7 +48,7 @@ export interface ChartImportResult {
 }
 
 export interface PickedChartFile {
-  sourcePath: string
+  sourcePath?: string | null
   fileName: string
   fileFormat: ChartFileFormat
   mimeType: string
@@ -56,8 +56,12 @@ export interface PickedChartFile {
 }
 
 export interface FinalizeChartImportInput {
-  sourcePath: string
   title: string
+  sourcePath?: string | null
+  sourceFileName?: string | null
+  sourceFileBase64?: string | null
+  sourceFileMimeType?: string | null
+  sourceFileFormat?: ChartFileFormat | null
   displayImageBase64?: string | null
   displayImageMimeType?: string | null
 }
@@ -73,6 +77,7 @@ export interface ChartAssetPayload {
   chartId: string
   fileFormat: ChartFileFormat
   mimeType: string
-  base64: string
-  filePath: string
+  base64?: string | null
+  url?: string | null
+  filePath?: string | null
 }

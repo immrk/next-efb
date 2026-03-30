@@ -1,7 +1,7 @@
 import { copyFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { basename, extname, join } from 'node:path'
 import { app } from 'electron'
-import type { StorageSummary } from '@shared/chart-types'
+import type { ChartFileFormat, StorageSummary } from '@shared/chart-types'
 
 export class StorageService {
   private readonly storageSummary: StorageSummary
@@ -35,6 +35,25 @@ export class StorageService {
     return {
       destinationPath,
       fileName: basename(destinationPath)
+    }
+  }
+
+  writeChartSourceFile(
+    chartId: string,
+    fileFormat: ChartFileFormat,
+    base64: string
+  ): { destinationPath: string; fileName: string } {
+    const chartDir = join(this.storageSummary.chartsRoot, chartId)
+    const normalizedExtension = fileFormat === 'jpeg' ? 'jpg' : fileFormat
+    const fileName = `source.${normalizedExtension}`
+    const destinationPath = join(chartDir, fileName)
+
+    mkdirSync(chartDir, { recursive: true })
+    writeFileSync(destinationPath, Buffer.from(base64, 'base64'))
+
+    return {
+      destinationPath,
+      fileName
     }
   }
 

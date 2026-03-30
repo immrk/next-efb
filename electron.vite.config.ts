@@ -10,7 +10,7 @@ export default defineConfig({
       })
     ],
     build: {
-      outDir: 'dist-electron/main'
+      outDir: 'dist/electron/main'
     },
     resolve: {
       alias: {
@@ -20,7 +20,7 @@ export default defineConfig({
   },
   preload: {
     build: {
-      outDir: 'dist-electron/preload'
+      outDir: 'dist/electron/preload'
     },
     resolve: {
       alias: {
@@ -41,7 +41,8 @@ export default defineConfig({
       }
     },
     build: {
-      outDir: '../../dist-renderer'
+      outDir: resolve(__dirname, 'dist/renderer'),
+      emptyOutDir: true
     }
   }
 })

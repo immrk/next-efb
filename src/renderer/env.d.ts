@@ -1,4 +1,4 @@
-import type { AircraftState, AppSettings, ConnectionState } from '@shared/types'
+import type { AircraftState, AppSettings, ConnectionState, RemoteAccessStatus } from '@shared/types'
 import type {
   ChartAssetPayload,
   ChartImportResult,
@@ -26,6 +26,8 @@ declare global {
       saveChartReferencePoints: (chartId: string, points: GeoReferencePoint[]) => Promise<GeoReferencePoint[]>
       updateChart: (input: ChartUpdateInput) => Promise<ChartRecord | null>
       updateSettings: (partial: Partial<AppSettings>) => Promise<AppSettings>
+      getRemoteAccessStatus: () => Promise<RemoteAccessStatus>
+      openExternal: (url: string) => Promise<boolean>
       onAircraftUpdate: (listener: (state: AircraftState) => void) => () => void
       onConnectionUpdate: (listener: (state: ConnectionState) => void) => () => void
     }

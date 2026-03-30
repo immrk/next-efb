@@ -3,9 +3,11 @@ import { divIcon } from 'leaflet'
 import { MapContainer, Marker, TileLayer, useMapEvents } from 'react-leaflet'
 import { useTranslation } from 'react-i18next'
 import type { ChartType, GeoReferencePoint } from '@shared/chart-types'
+import { getAppClient } from '../client'
 import { useAppStore } from '../store/useAppStore'
 import { ChartImagePreview } from '../components/ChartImagePreview'
 import { useChartDetailData } from '../hooks/useChartDetailData'
+import { getMapTileConfig } from '../utils/mapTileProviders'
 import { notifyChartChanged } from '../utils/chartSync'
 
 interface ChartDetailPageProps {
@@ -42,9 +44,13 @@ function ClickCaptureLayer({
 }
 
 export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDetailPageProps) {
+  const appClient = getAppClient()
+  const runtime = appClient.getRuntime()
   const { t } = useTranslation()
   const aircraft = useAppStore((state) => state.aircraft)
+  const settings = useAppStore((state) => state.settings)
   const { chart, asset, points, setChart, setPoints } = useChartDetailData(chartId)
+  const tileConfig = getMapTileConfig(settings?.mapTileProvider)
 
   const [title, setTitle] = useState('')
   const [airportCode, setAirportCode] = useState('')
@@ -72,7 +78,7 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
 
   const saveMetadata = async () => {
     if (!chart) return
-    const updated = await window.msfsApi.updateChart({
+    const updated = await appClient.updateChart({
       id: chart.id,
       title,
       airportCode: airportCode || null,
@@ -99,7 +105,7 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
       chartY: draftChartPoints[index].y
     }))
 
-    const saved = await window.msfsApi.saveChartReferencePoints(chart.id, nextPoints)
+    const saved = await appClient.saveChartReferencePoints(chart.id, nextPoints)
     setPoints(saved)
     notifyChartChanged()
     onSaved()
@@ -109,7 +115,7 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
     if (!chart) return
     if (deleteConfirmText.trim() !== chart.title) return
 
-    await window.msfsApi.deleteChart(chart.id)
+    await appClient.deleteChart(chart.id)
     notifyChartChanged()
     onDeleted()
   }
@@ -129,6 +135,7 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
           <button
             type="button"
             className="icon-button"
+            disabled={!runtime.canWrite}
             onClick={() => setIsMetaModalOpen(true)}
             aria-label={t('chartDetail.editMeta')}
           >
@@ -148,6 +155,7 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
           <button
             type="button"
             className="secondary-button danger-button"
+            disabled={!runtime.canWrite}
             onClick={() => setIsDeleteModalOpen(true)}
           >
             {t('chartDetail.delete')}
@@ -156,7 +164,7 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
             type="button"
             className="primary-button"
             onClick={saveReferencePoints}
-            disabled={draftMapPoints.length !== 2 || draftChartPoints.length !== 2}
+            disabled={!runtime.canWrite || draftMapPoints.length !== 2 || draftChartPoints.length !== 2}
           >
             {t('chartDetail.saveReference')}
           </button>
@@ -202,8 +210,9 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
               className="detail-leaflet-map"
             >
               <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                attribution={tileConfig.attribution}
+                url={tileConfig.url}
+                subdomains={tileConfig.subdomains}
               />
               <ClickCaptureLayer
                 onAddPoint={(point) => {

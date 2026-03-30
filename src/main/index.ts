@@ -6,6 +6,7 @@ import { SettingsStore } from './services/config/SettingsStore'
 import { SimConnectService } from './services/simconnect/SimConnectService'
 import { ChartRepository } from './services/storage/ChartRepository'
 import { StorageService } from './services/storage/StorageService'
+import { LanServer } from './services/lan/LanServer'
 
 let mainWindow: BrowserWindow | null = null
 const DEV_LOAD_RETRY_MS = 1200
@@ -34,7 +35,7 @@ async function loadRenderer(window: BrowserWindow): Promise<void> {
     throw lastError
   }
 
-  await window.loadFile(join(__dirname, '../../dist-renderer/index.html'))
+  await window.loadFile(join(__dirname, '../../renderer/index.html'))
 }
 
 async function createWindow(): Promise<void> {
@@ -43,6 +44,15 @@ async function createWindow(): Promise<void> {
   const simConnectService = new SimConnectService(settingsStore.get())
   const storageService = new StorageService()
   const chartRepository = new ChartRepository(storageService.getSummary())
+  const lanServer = new LanServer({
+    settings: settingsStore.get(),
+    rendererRoot: join(__dirname, '../../renderer'),
+    flightStateStore,
+    settingsStore,
+    simConnectService,
+    chartRepository,
+    storageService
+  })
 
   mainWindow = new BrowserWindow({
     width: 1440,
@@ -63,10 +73,12 @@ async function createWindow(): Promise<void> {
     settingsStore,
     simConnectService,
     chartRepository,
-    storageService
+    storageService,
+    lanServer
   })
 
   simConnectService.start()
+  await lanServer.start()
   await loadRenderer(mainWindow)
 }
 

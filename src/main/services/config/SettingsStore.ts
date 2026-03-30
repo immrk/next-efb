@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { app } from 'electron'
@@ -7,7 +8,15 @@ const DEFAULT_SETTINGS: AppSettings = {
   language: 'zh-CN',
   followAircraft: true,
   refreshIntervalMs: 500,
-  providerMode: 'simconnect'
+  providerMode: 'simconnect',
+  mapTileProvider: 'osm',
+  lanAccess: {
+    enabled: false,
+    port: 31831,
+    authEnabled: false,
+    authToken: createAuthToken(),
+    allowWrite: true
+  }
 }
 
 export class SettingsStore {
@@ -28,7 +37,11 @@ export class SettingsStore {
   update(partial: Partial<AppSettings>): AppSettings {
     this.settings = {
       ...this.settings,
-      ...partial
+      ...partial,
+      lanAccess: {
+        ...this.settings.lanAccess,
+        ...partial.lanAccess
+      }
     }
     writeFileSync(this.filePath, JSON.stringify(this.settings, null, 2), 'utf-8')
     return this.settings
@@ -42,12 +55,22 @@ export class SettingsStore {
 
     try {
       const raw = readFileSync(this.filePath, 'utf-8')
+      const parsed = JSON.parse(raw) as Partial<AppSettings>
       return {
         ...DEFAULT_SETTINGS,
-        ...JSON.parse(raw)
+        ...parsed,
+        lanAccess: {
+          ...DEFAULT_SETTINGS.lanAccess,
+          ...parsed.lanAccess,
+          allowWrite: true
+        }
       } as AppSettings
     } catch {
       return DEFAULT_SETTINGS
     }
   }
+}
+
+function createAuthToken(): string {
+  return randomBytes(24).toString('hex')
 }

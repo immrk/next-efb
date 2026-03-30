@@ -3,3 +3,7 @@ dist-electron/
 dist-renderer/
 release/
 *.log
+*.tsbuildinfo
+*.env
+*.env.local
+artifacts/

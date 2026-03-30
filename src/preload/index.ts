@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { IPC_CHANNELS } from '@shared/channels'
-import type { AircraftState, AppSettings, ConnectionState } from '@shared/types'
+import type { AircraftState, AppSettings, ConnectionState, RemoteAccessStatus } from '@shared/types'
 import type {
   ChartAssetPayload,
   ChartImportResult,
@@ -39,6 +39,9 @@ const api = {
     ipcRenderer.invoke(IPC_CHANNELS.chartUpdate, input),
   updateSettings: async (partial: Partial<AppSettings>): Promise<AppSettings> =>
     ipcRenderer.invoke(IPC_CHANNELS.settingsUpdate, partial),
+  getRemoteAccessStatus: async (): Promise<RemoteAccessStatus> =>
+    ipcRenderer.invoke(IPC_CHANNELS.remoteAccessStatus),
+  openExternal: async (url: string): Promise<boolean> => ipcRenderer.invoke(IPC_CHANNELS.openExternal, url),
   onAircraftUpdate: (listener: (state: AircraftState) => void): (() => void) => {
     const wrapped = (_event: Electron.IpcRendererEvent, payload: AircraftState) => listener(payload)
     ipcRenderer.on(IPC_CHANNELS.aircraftUpdate, wrapped)

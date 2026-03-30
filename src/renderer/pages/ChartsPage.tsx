@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import { getAppClient } from '../client'
 import { ChartImagePreview } from '../components/ChartImagePreview'
 import { ChartMountDrawer } from '../components/ChartMountDrawer'
 import { useAppStore } from '../store/useAppStore'
@@ -17,6 +18,7 @@ export function ChartsPage({
   onSelectChart,
   onEditChart
 }: ChartsPageProps) {
+  const runtime = getAppClient().getRuntime()
   const { t } = useTranslation()
   const aircraft = useAppStore((state) => state.aircraft)
   const { charts, importChart } = useChartLibraryData()
@@ -51,8 +53,8 @@ export function ChartsPage({
         closable={false}
         showPinButton={false}
         onSelect={onSelectChart}
-        onEdit={onEditChart}
-        onImport={handleImportChart}
+        onEdit={runtime.canWrite ? onEditChart : undefined}
+        onImport={runtime.canManageLocalFiles ? handleImportChart : undefined}
       />
 
       <section className="chart-preview-pane">

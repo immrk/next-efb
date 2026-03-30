@@ -13,5 +13,7 @@ export const IPC_CHANNELS = {
   storageSummary: 'storage:summary',
   connectionUpdate: 'connection:update',
   settingsGet: 'settings:get',
-  settingsUpdate: 'settings:update'
+  settingsUpdate: 'settings:update',
+  remoteAccessStatus: 'remote-access:status',
+  openExternal: 'system:open-external'
 } as const

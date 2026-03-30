@@ -6,6 +6,7 @@ import type {
   PickedChartFile,
   StorageSummary
 } from '@shared/chart-types'
+import { getAppClient } from '../client'
 import { notifyChartChanged, subscribeChartChanged } from '../utils/chartSync'
 
 function base64ToUint8Array(base64: string): Uint8Array {
@@ -68,12 +69,13 @@ async function rasterizeSinglePagePdf(file: PickedChartFile): Promise<{ base64: 
 }
 
 export function useChartLibraryData() {
+  const appClient = getAppClient()
   const [charts, setCharts] = useState<ChartRecord[]>([])
   const [storageSummary, setStorageSummary] = useState<StorageSummary | null>(null)
 
   const refresh = () => {
-    void window.msfsApi.listCharts().then(setCharts)
-    void window.msfsApi.getStorageSummary().then(setStorageSummary)
+    void appClient.listCharts().then(setCharts)
+    void appClient.getStorageSummary().then(setStorageSummary)
   }
 
   useEffect(() => {
@@ -84,10 +86,10 @@ export function useChartLibraryData() {
     return () => {
       unsubscribe()
     }
-  }, [])
+  }, [appClient])
 
   const importChart = async (): Promise<ChartImportResult | null> => {
-    const picked = await window.msfsApi.pickChartFile()
+    const picked = await appClient.pickChartFile()
     if (!picked) return null
 
     let displayImageBase64: string | null = null
@@ -99,9 +101,13 @@ export function useChartLibraryData() {
       displayImageMimeType = rasterized.mimeType
     }
 
-    const result = await window.msfsApi.finalizeChartImport({
+    const result = await appClient.finalizeChartImport({
       sourcePath: picked.sourcePath,
       title: picked.fileName.replace(/\.[^.]+$/, ''),
+      sourceFileName: picked.fileName,
+      sourceFileBase64: picked.base64,
+      sourceFileMimeType: picked.mimeType,
+      sourceFileFormat: picked.fileFormat,
       displayImageBase64,
       displayImageMimeType
     })
@@ -112,7 +118,7 @@ export function useChartLibraryData() {
   }
 
   const deleteChart = async (chartId: string): Promise<void> => {
-    await window.msfsApi.deleteChart(chartId)
+    await appClient.deleteChart(chartId)
     refresh()
     notifyChartChanged()
   }
