@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { divIcon } from 'leaflet'
-import { MapContainer, Marker, TileLayer, useMapEvents } from 'react-leaflet'
+import { MapContainer, Marker, TileLayer, useMap, useMapEvents } from 'react-leaflet'
 import { useTranslation } from 'react-i18next'
 import type { ChartType, GeoReferencePoint } from '@shared/chart-types'
 import { getAppClient } from '../client'
@@ -20,10 +20,22 @@ interface ChartDetailPageProps {
 function createMapDot(label: string) {
   return divIcon({
     className: 'map-reference-icon',
-    html: `<div class="map-reference-dot">${label}</div>`,
-    iconSize: [24, 24],
-    iconAnchor: [12, 12]
+    html: `<div class="map-reference-pin"><span>${label}</span></div>`,
+    iconSize: [28, 38],
+    iconAnchor: [14, 38]
   })
+}
+
+function isAircraftPositionUsable(aircraft: {
+  connected: boolean
+  lat: number
+  lon: number
+  altitudeFt: number
+}): boolean {
+  if (!aircraft.connected) return false
+  if (!Number.isFinite(aircraft.lat) || !Number.isFinite(aircraft.lon)) return false
+  if (Math.abs(aircraft.lat) > 90 || Math.abs(aircraft.lon) > 180) return false
+  return !(aircraft.lat === 0 && aircraft.lon === 0 && aircraft.altitudeFt === 0)
 }
 
 function ClickCaptureLayer({
@@ -43,6 +55,43 @@ function ClickCaptureLayer({
   return null
 }
 
+function AutoFitMapPoints({
+  points,
+  fitKey
+}: {
+  points: Array<{ lat: number; lon: number }>
+  fitKey: number
+}) {
+  const map = useMap()
+
+  useEffect(() => {
+    if (fitKey <= 0) return
+    if (points.length !== 2) return
+    const [a, b] = points
+    const samePoint = a.lat === b.lat && a.lon === b.lon
+
+    if (samePoint) {
+      map.flyTo([a.lat, a.lon], 14, { animate: true, duration: 0.5 })
+      return
+    }
+
+    map.flyToBounds(
+      [
+        [a.lat, a.lon],
+        [b.lat, b.lon]
+      ],
+      {
+        animate: true,
+        duration: 0.55,
+        padding: [52, 52],
+        maxZoom: 15
+      }
+    )
+  }, [fitKey, map, points])
+
+  return null
+}
+
 export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDetailPageProps) {
   const appClient = getAppClient()
   const runtime = appClient.getRuntime()
@@ -51,12 +100,18 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
   const settings = useAppStore((state) => state.settings)
   const { chart, asset, points, setChart, setPoints } = useChartDetailData(chartId)
   const tileConfig = getMapTileConfig(settings?.mapTileProvider)
+  const aircraftPositionUsable = aircraft ? isAircraftPositionUsable(aircraft) : false
+  const mapCenterLat = aircraftPositionUsable ? (aircraft?.lat ?? 31.2304) : 31.2304
+  const mapCenterLon = aircraftPositionUsable ? (aircraft?.lon ?? 121.4737) : 121.4737
 
   const [title, setTitle] = useState('')
   const [airportCode, setAirportCode] = useState('')
   const [chartType, setChartType] = useState<ChartType>('general')
   const [draftMapPoints, setDraftMapPoints] = useState<Array<{ lat: number; lon: number }>>([])
   const [draftChartPoints, setDraftChartPoints] = useState<Array<{ x: number; y: number }>>([])
+  const [draftInitializedForChartId, setDraftInitializedForChartId] = useState<string | null>(null)
+  const [mapAutoFitKey, setMapAutoFitKey] = useState(0)
+  const [chartAutoFitKey, setChartAutoFitKey] = useState(0)
   const [isMetaModalOpen, setIsMetaModalOpen] = useState(false)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
@@ -75,6 +130,36 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
     setAirportCode(chart.airportCode ?? '')
     setChartType(chart.chartType)
   }, [chart])
+
+  useEffect(() => {
+    setDraftMapPoints([])
+    setDraftChartPoints([])
+    setDraftInitializedForChartId(null)
+    setMapAutoFitKey(0)
+    setChartAutoFitKey(0)
+  }, [chartId])
+
+  useEffect(() => {
+    if (draftInitializedForChartId === chartId) return
+    if (points.length !== 2) return
+
+    const sortedPoints = [...points].sort((a, b) => a.index - b.index)
+    setDraftMapPoints(
+      sortedPoints.map((point) => ({
+        lat: point.mapLat,
+        lon: point.mapLon
+      }))
+    )
+    setDraftChartPoints(
+      sortedPoints.map((point) => ({
+        x: point.chartX,
+        y: point.chartY
+      }))
+    )
+    setDraftInitializedForChartId(chartId)
+    setMapAutoFitKey((value) => value + 1)
+    setChartAutoFitKey((value) => value + 1)
+  }, [chartId, draftInitializedForChartId, points])
 
   const saveMetadata = async () => {
     if (!chart) return
@@ -184,8 +269,8 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
                     [
                       ...current.slice(-1),
                       {
-                        lat: aircraft?.lat ?? 31.2304,
-                        lon: aircraft?.lon ?? 121.4737
+                        lat: mapCenterLat,
+                        lon: mapCenterLon
                       }
                     ].slice(0, 2)
                   )
@@ -205,7 +290,7 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
 
           <div className="chart-editor-map-stage">
             <MapContainer
-              center={[aircraft?.lat ?? 31.2304, aircraft?.lon ?? 121.4737]}
+              center={[mapCenterLat, mapCenterLon]}
               zoom={10}
               className="detail-leaflet-map"
             >
@@ -224,14 +309,36 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
                   key={`${point.lat}-${point.lon}`}
                   position={[point.lat, point.lon]}
                   icon={createMapDot(String(index + 1))}
+                  draggable={draftMapPoints.length === 2}
+                  eventHandlers={{
+                    dragend: (event) => {
+                      if (draftMapPoints.length !== 2) return
+                      const marker = event.target as {
+                        getLatLng: () => { lat: number; lng: number }
+                      }
+                      const latLng = marker.getLatLng()
+                      setDraftMapPoints((current) =>
+                        current.map((currentPoint, currentIndex) =>
+                          currentIndex === index
+                            ? {
+                                lat: latLng.lat,
+                                lon: latLng.lng
+                              }
+                            : currentPoint
+                        )
+                      )
+                    }
+                  }}
                 />
               ))}
-              {aircraft ? (
+              {aircraftPositionUsable ? (
                 <Marker
-                  position={[aircraft.lat, aircraft.lon]}
+                  position={[mapCenterLat, mapCenterLon]}
                   icon={createMapDot('A')}
+                  interactive={false}
                 />
               ) : null}
+              <AutoFitMapPoints points={draftMapPoints} fitKey={mapAutoFitKey} />
             </MapContainer>
           </div>
         </section>
@@ -253,8 +360,16 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
             points={points}
             aircraft={aircraft}
             draftChartPoints={draftChartPoints}
+            autoFocusKey={chartAutoFitKey}
             onChartClick={(point) =>
               setDraftChartPoints((current) => [...current.slice(-1), point].slice(0, 2))
+            }
+            onDraftChartPointMove={(index, point) =>
+              setDraftChartPoints((current) =>
+                current.map((currentPoint, currentIndex) =>
+                  currentIndex === index ? point : currentPoint
+                )
+              )
             }
           />
         </section>

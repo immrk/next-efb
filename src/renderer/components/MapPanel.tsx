@@ -11,6 +11,85 @@ import { useAppStore } from '../store/useAppStore'
 import { useMapOverlayChart } from '../hooks/useMapOverlayChart'
 import { getMapTileConfig } from '../utils/mapTileProviders'
 
+const MAP_VIEW_STORAGE_KEY = 'nextefb.map-view.v1'
+const DEFAULT_MAP_CENTER = { lat: 31.2304, lon: 121.4737 }
+const DEFAULT_MAP_ZOOM = 7
+
+interface StoredMapView {
+  lat: number
+  lon: number
+  zoom: number
+}
+
+function isAircraftPositionUsable(aircraft: {
+  connected: boolean
+  lat: number
+  lon: number
+  altitudeFt: number
+}): boolean {
+  if (!aircraft.connected) return false
+  if (!Number.isFinite(aircraft.lat) || !Number.isFinite(aircraft.lon)) return false
+  if (Math.abs(aircraft.lat) > 90 || Math.abs(aircraft.lon) > 180) return false
+  return !(aircraft.lat === 0 && aircraft.lon === 0 && aircraft.altitudeFt === 0)
+}
+
+function readStoredMapView(): StoredMapView {
+  if (typeof window === 'undefined') {
+    return { ...DEFAULT_MAP_CENTER, zoom: DEFAULT_MAP_ZOOM }
+  }
+
+  try {
+    const raw = window.localStorage.getItem(MAP_VIEW_STORAGE_KEY)
+    if (!raw) return { ...DEFAULT_MAP_CENTER, zoom: DEFAULT_MAP_ZOOM }
+    const parsed = JSON.parse(raw) as Partial<StoredMapView>
+    if (
+      typeof parsed.lat !== 'number' ||
+      typeof parsed.lon !== 'number' ||
+      typeof parsed.zoom !== 'number'
+    ) {
+      return { ...DEFAULT_MAP_CENTER, zoom: DEFAULT_MAP_ZOOM }
+    }
+    if (!Number.isFinite(parsed.lat) || !Number.isFinite(parsed.lon) || !Number.isFinite(parsed.zoom)) {
+      return { ...DEFAULT_MAP_CENTER, zoom: DEFAULT_MAP_ZOOM }
+    }
+    return {
+      lat: Math.max(-90, Math.min(90, parsed.lat)),
+      lon: Math.max(-180, Math.min(180, parsed.lon)),
+      zoom: Math.max(1, Math.min(19, parsed.zoom))
+    }
+  } catch {
+    return { ...DEFAULT_MAP_CENTER, zoom: DEFAULT_MAP_ZOOM }
+  }
+}
+
+function MapViewPersistence() {
+  const map = useMap()
+
+  useEffect(() => {
+    const persist = () => {
+      const center = map.getCenter()
+      const zoom = map.getZoom()
+      const payload: StoredMapView = {
+        lat: center.lat,
+        lon: center.lng,
+        zoom
+      }
+      window.localStorage.setItem(MAP_VIEW_STORAGE_KEY, JSON.stringify(payload))
+    }
+
+    map.on('moveend', persist)
+    map.on('zoomend', persist)
+    persist()
+
+    return () => {
+      map.off('moveend', persist)
+      map.off('zoomend', persist)
+    }
+  }, [map])
+
+  return null
+}
+
 function formatCoord(value: number | undefined): string {
   if (typeof value !== 'number') return '--'
   return value.toFixed(4)
@@ -169,9 +248,11 @@ export function MapPanel({
   const aircraft = useAppStore((state) => state.aircraft)
   const settings = useAppStore((state) => state.settings)
   const setSettings = useAppStore((state) => state.setSettings)
-  const lat = aircraft?.lat ?? 31.2304
-  const lon = aircraft?.lon ?? 121.4737
-  const heading = aircraft?.headingDeg ?? 0
+  const [initialMapView] = useState<StoredMapView>(() => readStoredMapView())
+  const aircraftPositionUsable = aircraft ? isAircraftPositionUsable(aircraft) : false
+  const lat = aircraftPositionUsable ? (aircraft?.lat ?? initialMapView.lat) : initialMapView.lat
+  const lon = aircraftPositionUsable ? (aircraft?.lon ?? initialMapView.lon) : initialMapView.lon
+  const heading = aircraftPositionUsable ? (aircraft?.headingDeg ?? 0) : 0
   const [recenterTrigger, setRecenterTrigger] = useState(0)
   const tileConfig = getMapTileConfig(settings?.mapTileProvider)
 
@@ -184,8 +265,8 @@ export function MapPanel({
     <section className="panel map-panel map-workspace-panel">
       <div className="map-stage">
         <MapContainer
-          center={[lat, lon]}
-          zoom={7}
+          center={[initialMapView.lat, initialMapView.lon]}
+          zoom={initialMapView.zoom}
           className="leaflet-map"
           zoomControl
           attributionControl
@@ -195,11 +276,13 @@ export function MapPanel({
             url={tileConfig.url}
             subdomains={tileConfig.subdomains}
           />
-          <Marker
-            position={[lat, lon]}
-            icon={createAircraftLeafletIcon(heading)}
-            title={t('map.aircraftMarker')}
-          />
+          {aircraftPositionUsable ? (
+            <Marker
+              position={[lat, lon]}
+              icon={createAircraftLeafletIcon(heading)}
+              title={t('map.aircraftMarker')}
+            />
+          ) : null}
           {mountedChartIds.map((chartId, index) => (
             <MountedChartOverlay
               key={chartId}
@@ -208,17 +291,23 @@ export function MapPanel({
               stackIndex={index}
             />
           ))}
-          <FollowAircraft lat={lat} lon={lon} enabled={settings?.followAircraft ?? true} />
-          <RecenterMap lat={lat} lon={lon} trigger={recenterTrigger} />
+          <FollowAircraft
+            lat={lat}
+            lon={lon}
+            enabled={aircraftPositionUsable && (settings?.followAircraft ?? true)}
+          />
+          <RecenterMap lat={lat} lon={lon} trigger={aircraftPositionUsable ? recenterTrigger : 0} />
+          <MapViewPersistence />
         </MapContainer>
         <div className="map-coordinates">
-          <span>{`${t('map.lat')} ${formatCoord(aircraft?.lat)}`}</span>
-          <span>{`${t('map.lon')} ${formatCoord(aircraft?.lon)}`}</span>
+          <span>{`${t('map.lat')} ${formatCoord(aircraftPositionUsable ? aircraft?.lat : undefined)}`}</span>
+          <span>{`${t('map.lon')} ${formatCoord(aircraftPositionUsable ? aircraft?.lon : undefined)}`}</span>
         </div>
         <button
           type="button"
           className="map-recenter-button"
           aria-label={t('map.recenter')}
+          disabled={!aircraftPositionUsable}
           onClick={() => setRecenterTrigger((current) => current + 1)}
         >
           <svg viewBox="0 0 24 24" aria-hidden="true">

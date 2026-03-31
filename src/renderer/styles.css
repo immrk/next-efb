@@ -1431,17 +1431,74 @@ body {
   border: 0;
 }
 
-.map-reference-dot {
-  display: grid;
-  place-items: center;
+.map-reference-pin {
+  position: relative;
+  display: block;
+  width: 28px;
+  height: 38px;
+  pointer-events: none;
+}
+
+.chart-reference-pin {
+  position: absolute;
+  width: 28px;
+  height: 38px;
+  transform: translate(-50%, -100%);
+  pointer-events: none;
+  z-index: 8;
+}
+
+.chart-reference-pin.draggable {
+  pointer-events: auto;
+  cursor: grab;
+}
+
+.chart-reference-pin.draggable.dragging {
+  cursor: grabbing;
+}
+
+.map-reference-pin::before,
+.chart-reference-pin::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 1px;
   width: 24px;
   height: 24px;
-  border-radius: 999px;
-  background: #8bc4ff;
-  color: #08131f;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: linear-gradient(160deg, #dbf1ff, #7cc0f4 62%, #5fa7de);
+  box-shadow:
+    0 0 0 2px rgba(8, 19, 31, 0.5),
+    0 5px 10px rgba(0, 0, 0, 0.35);
+}
+
+.map-reference-pin::after,
+.chart-reference-pin::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 22px;
+  width: 0;
+  height: 0;
+  transform: translateX(-50%);
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-top: 16px solid #74b8ea;
+  filter: drop-shadow(0 1px 0 rgba(8, 19, 31, 0.6));
+}
+
+.map-reference-pin span,
+.chart-reference-pin span {
+  position: absolute;
+  left: 50%;
+  top: 6px;
+  transform: translate(-50%, 0);
+  z-index: 1;
   font-size: 12px;
   font-weight: 700;
-  box-shadow: 0 0 0 2px rgba(8, 19, 31, 0.4);
+  color: #0b1a29;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
 }
 
 .chart-viewer-shell {
@@ -1507,8 +1564,12 @@ body {
   inset: 0;
   overflow: hidden;
   padding: 0;
-  cursor: grab;
+  cursor: default;
   touch-action: none;
+}
+
+.chart-preview-viewport.selectable {
+  cursor: crosshair;
 }
 
 .chart-preview-viewport.dragging {
@@ -1547,30 +1608,16 @@ body {
   background: rgba(255, 255, 255, 0.04);
 }
 
-.chart-reference-dot,
-.chart-aircraft-dot {
-  position: absolute;
-  transform: translate(-50%, -50%);
+.map-recenter-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
-.chart-reference-dot {
-  display: grid;
-  place-items: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 999px;
-  background: #8bc4ff;
-  color: #08131f;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.chart-aircraft-dot {
-  width: 16px;
-  height: 16px;
-  border: 3px solid #ff6d5b;
-  border-radius: 999px;
-  background: rgba(255, 109, 91, 0.2);
+.chart-editor-map-stage .leaflet-container,
+.chart-editor-map-stage .leaflet-grab,
+.chart-editor-map-stage .leaflet-dragging .leaflet-grab,
+.chart-editor-map-stage .leaflet-marker-pane {
+  cursor: crosshair !important;
 }
 
 .button-row {

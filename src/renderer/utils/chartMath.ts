@@ -19,6 +19,10 @@ export function projectAircraftToChart(
   points: GeoReferencePoint[]
 ): { x: number; y: number } | null {
   if (!aircraft || points.length !== 2) return null
+  if (!aircraft.connected) return null
+  if (!Number.isFinite(aircraft.lat) || !Number.isFinite(aircraft.lon)) return null
+  if (Math.abs(aircraft.lat) > 90 || Math.abs(aircraft.lon) > 180) return null
+  if (aircraft.lat === 0 && aircraft.lon === 0 && aircraft.altitudeFt === 0) return null
 
   const [p1, p2] = points
   const mapA = mapToLocal(p1.mapLat, p1.mapLon, p1.mapLat)

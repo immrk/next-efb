@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -19,7 +20,13 @@ interface ChartImagePreviewProps {
   points: GeoReferencePoint[]
   aircraft: AircraftState | null
   draftChartPoints?: Array<{ x: number; y: number }>
+  autoFocusKey?: number
   onChartClick?: (point: { x: number; y: number }) => void
+  onDraftChartPointMove?: (index: number, point: { x: number; y: number }) => void
+}
+
+function clampZoomValue(value: number): number {
+  return Math.min(5, Math.max(0.4, value))
 }
 
 export function ChartImagePreview({
@@ -28,7 +35,9 @@ export function ChartImagePreview({
   points,
   aircraft,
   draftChartPoints = [],
-  onChartClick
+  autoFocusKey = 0,
+  onChartClick,
+  onDraftChartPointMove
 }: ChartImagePreviewProps) {
   const { t } = useTranslation()
   const [zoom, setZoom] = useState(1)
@@ -51,6 +60,15 @@ export function ChartImagePreview({
     originPanX: 0,
     originPanY: 0
   })
+  const pinDragRef = useRef<{
+    active: boolean
+    index: number
+  }>({
+    active: false,
+    index: -1
+  })
+  const suppressClickRef = useRef(false)
+  const [draggingPinIndex, setDraggingPinIndex] = useState<number | null>(null)
   const { rasterUrl, width: rasterWidth, height: rasterHeight, error: rasterError } =
     useChartRasterAsset(asset)
   const projected = useMemo(() => projectAircraftToChart(aircraft, points), [aircraft, points])
@@ -65,10 +83,34 @@ export function ChartImagePreview({
     }
   }, [naturalHeight, naturalWidth, projected])
 
-  const clampZoom = (value: number) => Math.min(5, Math.max(0.4, value))
+  const chartPins = useMemo(
+    () =>
+      draftChartPoints.map((point, index) => ({
+        index,
+        key: `${point.x}-${point.y}`,
+        label: String(index + 1),
+        left: pan.x + point.x * zoom,
+        top: pan.y + point.y * zoom
+      })),
+    [draftChartPoints, pan.x, pan.y, zoom]
+  )
+  const canDragPins = draftChartPoints.length === 2 && Boolean(onDraftChartPointMove)
+
+  const clientToChartPoint = (clientX: number, clientY: number): { x: number; y: number } | null => {
+    if (!viewportRef.current || !naturalWidth || !naturalHeight) return null
+    const viewportRect = viewportRef.current.getBoundingClientRect()
+    const pointerX = clientX - viewportRect.left
+    const pointerY = clientY - viewportRect.top
+    const x = (pointerX - pan.x) / zoom
+    const y = (pointerY - pan.y) / zoom
+    return {
+      x: Math.max(0, Math.min(naturalWidth, x)),
+      y: Math.max(0, Math.min(naturalHeight, y))
+    }
+  }
 
   const updateZoom = (nextZoom: number, clientX?: number, clientY?: number) => {
-    const clamped = clampZoom(nextZoom)
+    const clamped = clampZoomValue(nextZoom)
     if (!viewportRef.current || clientX === undefined || clientY === undefined) {
       setZoom(clamped)
       return
@@ -95,6 +137,7 @@ export function ChartImagePreview({
   }
 
   const handlePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (pinDragRef.current.active) return
     if (event.button !== 0 && event.pointerType !== 'touch') return
     dragRef.current = {
       active: true,
@@ -126,24 +169,77 @@ export function ChartImagePreview({
     setIsDragging(false)
   }
 
-  const handleChartClick = (event: MouseEvent<HTMLElement>) => {
+  const handleChartClick = (event: MouseEvent<HTMLDivElement>) => {
+    if (suppressClickRef.current) {
+      suppressClickRef.current = false
+      return
+    }
     if (!onChartClick) return
-    if (!naturalWidth || !naturalHeight) return
     if (dragRef.current.moved) return
 
-    const viewportRect = viewportRef.current?.getBoundingClientRect()
-    if (!viewportRect) return
-
-    const pointerX = event.clientX - viewportRect.left
-    const pointerY = event.clientY - viewportRect.top
-    const x = (pointerX - pan.x) / zoom
-    const y = (pointerY - pan.y) / zoom
-
-    onChartClick({
-      x: Math.max(0, Math.min(naturalWidth, x)),
-      y: Math.max(0, Math.min(naturalHeight, y))
-    })
+    const point = clientToChartPoint(event.clientX, event.clientY)
+    if (!point) return
+    onChartClick(point)
   }
+
+  useEffect(() => {
+    if (autoFocusKey <= 0) return
+    if (draftChartPoints.length !== 2) return
+    if (!viewportRef.current || !naturalWidth || !naturalHeight) return
+
+    const [p1, p2] = draftChartPoints
+    if (!p1 || !p2) return
+
+    const viewportRect = viewportRef.current.getBoundingClientRect()
+    if (viewportRect.width <= 0 || viewportRect.height <= 0) return
+
+    const minX = Math.max(0, Math.min(p1.x, p2.x))
+    const minY = Math.max(0, Math.min(p1.y, p2.y))
+    const maxX = Math.min(naturalWidth, Math.max(p1.x, p2.x))
+    const maxY = Math.min(naturalHeight, Math.max(p1.y, p2.y))
+    const boxWidth = Math.max(maxX - minX, 24)
+    const boxHeight = Math.max(maxY - minY, 24)
+    const padding = 72
+    const availableWidth = Math.max(1, viewportRect.width - padding * 2)
+    const availableHeight = Math.max(1, viewportRect.height - padding * 2)
+    const targetZoom = clampZoomValue(Math.min(availableWidth / boxWidth, availableHeight / boxHeight))
+    const centerX = (minX + maxX) / 2
+    const centerY = (minY + maxY) / 2
+
+    setZoom(targetZoom)
+    setPan({
+      x: viewportRect.width / 2 - centerX * targetZoom,
+      y: viewportRect.height / 2 - centerY * targetZoom
+    })
+  }, [autoFocusKey, draftChartPoints, naturalHeight, naturalWidth])
+
+  useEffect(() => {
+    if (!canDragPins || !onDraftChartPointMove) return
+
+    const handlePointerMove = (event: PointerEvent) => {
+      if (!pinDragRef.current.active) return
+      const point = clientToChartPoint(event.clientX, event.clientY)
+      if (!point) return
+      onDraftChartPointMove(pinDragRef.current.index, point)
+    }
+
+    const handlePointerUp = () => {
+      if (!pinDragRef.current.active) return
+      pinDragRef.current.active = false
+      pinDragRef.current.index = -1
+      setDraggingPinIndex(null)
+    }
+
+    window.addEventListener('pointermove', handlePointerMove)
+    window.addEventListener('pointerup', handlePointerUp)
+    window.addEventListener('pointercancel', handlePointerUp)
+
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove)
+      window.removeEventListener('pointerup', handlePointerUp)
+      window.removeEventListener('pointercancel', handlePointerUp)
+    }
+  }, [canDragPins, onDraftChartPointMove, pan.x, pan.y, zoom, naturalWidth, naturalHeight])
 
   if (!asset) {
     return (
@@ -195,12 +291,13 @@ export function ChartImagePreview({
 
       <div
         ref={viewportRef}
-        className={`chart-preview-viewport ${isDragging ? 'dragging' : ''}`}
+        className={`chart-preview-viewport ${onChartClick ? 'selectable' : ''} ${isDragging ? 'dragging' : ''}`}
         onWheel={handleWheel}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={finishDrag}
         onPointerCancel={finishDrag}
+        onClick={handleChartClick}
       >
         <div
           className="chart-surface chart-pan-stage"
@@ -209,7 +306,6 @@ export function ChartImagePreview({
             height: naturalHeight,
             transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`
           }}
-          onClick={handleChartClick}
           onDragStart={(event) => event.preventDefault()}
         >
           <img
@@ -226,19 +322,30 @@ export function ChartImagePreview({
               headingDeg={aircraft?.headingDeg ?? 0}
             />
           ) : null}
-          {draftChartPoints.map((point, index) => (
-            <div
-              key={`${point.x}-${point.y}`}
-              className="chart-reference-dot"
-              style={{
-                left: naturalWidth ? `${(point.x / naturalWidth) * 100}%` : point.x,
-                top: naturalHeight ? `${(point.y / naturalHeight) * 100}%` : point.y
-              }}
-            >
-              {index + 1}
-            </div>
-          ))}
         </div>
+        {chartPins.map((pin) => (
+          <div
+            key={pin.key}
+            className={`chart-reference-pin ${canDragPins ? 'draggable' : ''} ${draggingPinIndex === pin.index ? 'dragging' : ''}`}
+            style={{
+              left: pin.left,
+              top: pin.top
+            }}
+            onPointerDown={(event) => {
+              if (!canDragPins) return
+              event.preventDefault()
+              event.stopPropagation()
+              suppressClickRef.current = true
+              pinDragRef.current = {
+                active: true,
+                index: pin.index
+              }
+              setDraggingPinIndex(pin.index)
+            }}
+          >
+            <span>{pin.label}</span>
+          </div>
+        ))}
       </div>
     </div>
   )

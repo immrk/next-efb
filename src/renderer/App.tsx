@@ -15,7 +15,7 @@ export function App() {
   const [selectedChartId, setSelectedChartId] = useState<string | null>(null)
   const [detailChartId, setDetailChartId] = useState<string | null>(null)
   const [chartDetailBackRoute, setChartDetailBackRoute] = useState<'map' | 'charts'>('charts')
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true)
   const isFullBleedRoute =
     route === 'map' || route === 'charts' || route === 'chartDetail' || route === 'settings'
 
@@ -70,7 +70,7 @@ export function App() {
           <SettingsPage />
         </section>
 
-        {detailChartId ? (
+        {route === 'chartDetail' && detailChartId ? (
           <section className={`route-view ${route === 'chartDetail' ? 'active' : ''}`}>
             <ChartDetailPage
               chartId={detailChartId}
