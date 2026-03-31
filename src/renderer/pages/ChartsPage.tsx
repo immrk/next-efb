@@ -6,6 +6,7 @@ import { ChartMountDrawer } from '../components/ChartMountDrawer'
 import { useAppStore } from '../store/useAppStore'
 import { useChartDetailData } from '../hooks/useChartDetailData'
 import { useChartLibraryData } from '../hooks/useChartLibraryData'
+import { toast } from '../components/ui/use-toast'
 
 interface ChartsPageProps {
   selectedChartId: string | null
@@ -34,13 +35,14 @@ export function ChartsPage({
       const result = await importChart()
       if (result?.chart) {
         onSelectChart(result.chart.id)
+        toast.success(t('feedback.imported'))
       }
     } catch (error) {
       let message = t('charts.importFailed')
       if (error instanceof Error) {
         message = `${t('charts.importFailed')}\n${error.message}`
       }
-      window.alert(message)
+      toast.error(message)
     }
   }
 

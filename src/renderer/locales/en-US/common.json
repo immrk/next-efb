@@ -124,5 +124,10 @@
   "settings.simbriefTitle": "SimBrief",
   "settings.simbriefUsername": "SimBrief username",
   "settings.simbriefUserId": "SimBrief user id",
-  "settings.simbriefSave": "Save SimBrief Settings"
+  "settings.simbriefSave": "Save SimBrief Settings",
+  "feedback.saved": "Saved",
+  "feedback.deleted": "Deleted",
+  "feedback.updated": "Updated",
+  "feedback.imported": "Imported",
+  "feedback.failed": "Operation failed"
 }

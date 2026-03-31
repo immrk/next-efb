@@ -3,6 +3,11 @@ import { useTranslation } from 'react-i18next'
 import type { BuildFlightPlanResult, NavAirportProcedures, NavDataStatus } from '@shared/flight-plan-types'
 import { getAppClient } from '../client'
 import { useAppStore } from '../store/useAppStore'
+import { toast } from './ui/use-toast'
+import { Button } from './ui/button'
+import { Input } from './ui/input'
+import { Select } from './ui/select'
+import { Textarea } from './ui/textarea'
 
 interface FlightPlanDrawerProps {
   isOpen: boolean
@@ -141,8 +146,11 @@ export function FlightPlanDrawer({
       setDepartureAirport(result.departureAirport)
       setDestinationAirport(result.destinationAirport)
       setEnrouteText(result.routeText)
+      toast.success(t('feedback.imported'))
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'SIMBRIEF_IMPORT_FAILED')
+      const message = error instanceof Error ? error.message : 'SIMBRIEF_IMPORT_FAILED'
+      setErrorMessage(message)
+      toast.error(message)
     } finally {
       setIsLoading(false)
     }
@@ -167,8 +175,11 @@ export function FlightPlanDrawer({
       setSummary(result.summary)
       setWarnings(result.unresolvedTokens)
       onPlanBuilt(result)
+      toast.success(t('feedback.updated'))
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'ROUTE_BUILD_FAILED')
+      const message = error instanceof Error ? error.message : 'ROUTE_BUILD_FAILED'
+      setErrorMessage(message)
+      toast.error(message)
     } finally {
       setIsLoading(false)
     }
@@ -184,9 +195,9 @@ export function FlightPlanDrawer({
         <header className="flight-plan-head">
           <strong>{t('flightPlan.title')}</strong>
           <div className="settings-inline-row">
-            <button
+            <Button
               type="button"
-              className="icon-button"
+              variant="icon"
               onClick={onOpenSettings}
               aria-label={t('flightPlan.openSettings')}
               title={t('flightPlan.openSettings')}
@@ -195,12 +206,12 @@ export function FlightPlanDrawer({
                 <path d="M12 8.5A3.5 3.5 0 1 0 12 15.5A3.5 3.5 0 1 0 12 8.5Z" />
                 <path d="M19.4 15A1 1 0 0 0 19.6 16.1L19.7 16.2A1 1 0 1 1 18.3 17.6L18.2 17.5A1 1 0 0 0 17.1 17.3A1 1 0 0 0 16.5 18.2V18.5A1 1 0 1 1 14.5 18.5V18.3A1 1 0 0 0 13.8 17.4A1 1 0 0 0 12.7 17.7L12.6 17.8A1 1 0 0 1 11.2 16.4L11.3 16.3A1 1 0 0 0 11.5 15.2A1 1 0 0 0 10.6 14.6H10.3A1 1 0 1 1 10.3 12.6H10.5A1 1 0 0 0 11.4 11.9A1 1 0 0 0 11.1 10.8L11 10.7A1 1 0 1 1 12.4 9.3L12.5 9.4A1 1 0 0 0 13.6 9.6A1 1 0 0 0 14.2 8.7V8.4A1 1 0 1 1 16.2 8.4V8.6A1 1 0 0 0 16.9 9.5A1 1 0 0 0 18 9.2L18.1 9.1A1 1 0 0 1 19.5 10.5L19.4 10.6A1 1 0 0 0 19.2 11.7A1 1 0 0 0 20.1 12.3H20.4A1 1 0 1 1 20.4 14.3H20.2A1 1 0 0 0 19.4 15Z" />
               </svg>
-            </button>
-            <button type="button" className="icon-button" onClick={onClose} aria-label={t('flightPlan.close')}>
+            </Button>
+            <Button type="button" variant="icon" onClick={onClose} aria-label={t('flightPlan.close')}>
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M6 6L18 18M18 6L6 18" />
               </svg>
-            </button>
+            </Button>
           </div>
         </header>
 
@@ -212,8 +223,7 @@ export function FlightPlanDrawer({
 
           <label className="settings-field">
             <span>{t('flightPlan.departureAirport')}</span>
-            <input
-              className="text-input"
+            <Input
               value={departureAirport}
               onChange={(event) => setDepartureAirport(event.target.value.toUpperCase())}
               list="departure-airports"
@@ -228,32 +238,32 @@ export function FlightPlanDrawer({
 
           <label className="settings-field">
             <span>{t('flightPlan.departureRunway')}</span>
-            <select value={departureRunway} onChange={(event) => setDepartureRunway(event.target.value)}>
+            <Select value={departureRunway} onChange={(event) => setDepartureRunway(event.target.value)}>
               <option value="">{t('flightPlan.notSpecified')}</option>
               {depProcedures.runways.map((runway) => (
                 <option key={runway.name} value={runway.name}>
                   {runway.name}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
 
           <label className="settings-field">
             <span>{t('flightPlan.departureProcedure')}</span>
-            <select value={departureProcedureId} onChange={(event) => setDepartureProcedureId(event.target.value)}>
+            <Select value={departureProcedureId} onChange={(event) => setDepartureProcedureId(event.target.value)}>
               <option value="">{t('flightPlan.notSpecified')}</option>
               {depProcedures.departures.map((procedure) => (
                 <option key={procedure.id} value={procedure.id}>
                   {procedure.name}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
 
           <label className="settings-field">
             <span>{t('flightPlan.enroute')}</span>
-            <textarea
-              className="text-input flight-plan-textarea"
+            <Textarea
+              className="flight-plan-textarea"
               value={enrouteText}
               onChange={(event) => setEnrouteText(event.target.value.toUpperCase())}
               placeholder={t('flightPlan.enroutePlaceholder')}
@@ -262,8 +272,7 @@ export function FlightPlanDrawer({
 
           <label className="settings-field">
             <span>{t('flightPlan.destinationAirport')}</span>
-            <input
-              className="text-input"
+            <Input
               value={destinationAirport}
               onChange={(event) => setDestinationAirport(event.target.value.toUpperCase())}
               list="destination-airports"
@@ -278,38 +287,38 @@ export function FlightPlanDrawer({
 
           <label className="settings-field">
             <span>{t('flightPlan.arrivalRunway')}</span>
-            <select value={arrivalRunway} onChange={(event) => setArrivalRunway(event.target.value)}>
+            <Select value={arrivalRunway} onChange={(event) => setArrivalRunway(event.target.value)}>
               <option value="">{t('flightPlan.notSpecified')}</option>
               {destProcedures.runways.map((runway) => (
                 <option key={runway.name} value={runway.name}>
                   {runway.name}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
 
           <label className="settings-field">
             <span>{t('flightPlan.approachProcedure')}</span>
-            <select value={approachProcedureId} onChange={(event) => setApproachProcedureId(event.target.value)}>
+            <Select value={approachProcedureId} onChange={(event) => setApproachProcedureId(event.target.value)}>
               <option value="">{t('flightPlan.notSpecified')}</option>
               {destProcedures.approaches.map((procedure) => (
                 <option key={procedure.id} value={procedure.id}>
                   {procedure.name}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
 
           <div className="button-row">
-            <button type="button" className="secondary-button" disabled={isLoading} onClick={handleImportSimBrief}>
+            <Button type="button" variant="secondary" disabled={isLoading} onClick={handleImportSimBrief}>
               {t('flightPlan.importSimbrief')}
-            </button>
-            <button type="button" className="secondary-button" disabled={isLoading} onClick={onClearPlan}>
+            </Button>
+            <Button type="button" variant="secondary" disabled={isLoading} onClick={onClearPlan}>
               {t('flightPlan.clear')}
-            </button>
-            <button type="button" className="primary-button" disabled={!canBuild || isLoading} onClick={handleBuild}>
+            </Button>
+            <Button type="button" disabled={!canBuild || isLoading} onClick={handleBuild}>
               {t('flightPlan.build')}
-            </button>
+            </Button>
           </div>
 
           {summary ? <div className="settings-note-card">{summary}</div> : null}

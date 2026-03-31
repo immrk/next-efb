@@ -9,6 +9,7 @@ import { ChartImagePreview } from '../components/ChartImagePreview'
 import { useChartDetailData } from '../hooks/useChartDetailData'
 import { getMapTileConfig } from '../utils/mapTileProviders'
 import { notifyChartChanged } from '../utils/chartSync'
+import { toast } from '../components/ui/use-toast'
 
 interface ChartDetailPageProps {
   chartId: string
@@ -163,17 +164,22 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
 
   const saveMetadata = async () => {
     if (!chart) return
-    const updated = await appClient.updateChart({
-      id: chart.id,
-      title,
-      airportCode: airportCode || null,
-      chartType
-    })
-    if (updated) {
-      setChart(updated)
-      notifyChartChanged()
-      onSaved()
-      setIsMetaModalOpen(false)
+    try {
+      const updated = await appClient.updateChart({
+        id: chart.id,
+        title,
+        airportCode: airportCode || null,
+        chartType
+      })
+      if (updated) {
+        setChart(updated)
+        notifyChartChanged()
+        onSaved()
+        setIsMetaModalOpen(false)
+        toast.success(t('feedback.saved'))
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t('feedback.failed'))
     }
   }
 
@@ -190,19 +196,29 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
       chartY: draftChartPoints[index].y
     }))
 
-    const saved = await appClient.saveChartReferencePoints(chart.id, nextPoints)
-    setPoints(saved)
-    notifyChartChanged()
-    onSaved()
+    try {
+      const saved = await appClient.saveChartReferencePoints(chart.id, nextPoints)
+      setPoints(saved)
+      notifyChartChanged()
+      onSaved()
+      toast.success(t('feedback.saved'))
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t('feedback.failed'))
+    }
   }
 
   const deleteChart = async () => {
     if (!chart) return
     if (deleteConfirmText.trim() !== chart.title) return
 
-    await appClient.deleteChart(chart.id)
-    notifyChartChanged()
-    onDeleted()
+    try {
+      await appClient.deleteChart(chart.id)
+      notifyChartChanged()
+      onDeleted()
+      toast.success(t('feedback.deleted'))
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t('feedback.failed'))
+    }
   }
 
   return (
