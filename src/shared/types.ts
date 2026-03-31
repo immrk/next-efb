@@ -38,6 +38,14 @@ export interface AppSettings {
   refreshIntervalMs: number
   providerMode: AircraftSource
   mapTileProvider: MapTileProvider
+  navData: {
+    sqlitePath: string | null
+    autoDetect: boolean
+  }
+  simbrief: {
+    username: string
+    userId: string
+  }
   lanAccess: LanAccessSettings
 }
 

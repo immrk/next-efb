@@ -14,6 +14,15 @@ import type {
   ConnectionState,
   RemoteAccessStatus
 } from '@shared/types'
+import type {
+  BuildFlightPlanInput,
+  BuildFlightPlanResult,
+  NavAirportOption,
+  NavAirportProcedures,
+  NavDataStatus,
+  SimBriefImportInput,
+  SimBriefImportResult
+} from '@shared/flight-plan-types'
 import type { AppClient } from './AppClient'
 import type { SnapshotPayload } from './AppClient'
 
@@ -52,6 +61,37 @@ export class WebLanAppClient implements AppClient {
 
   getSettings(): Promise<AppSettings> {
     return this.fetchJson('/api/settings')
+  }
+
+  getNavDataStatus(): Promise<NavDataStatus> {
+    return this.fetchJson('/api/nav/status')
+  }
+
+  async pickNavSqliteFile(): Promise<string | null> {
+    return null
+  }
+
+  searchNavAirports(query: string): Promise<NavAirportOption[]> {
+    const url = `/api/nav/airports?query=${encodeURIComponent(query)}`
+    return this.fetchJson(url)
+  }
+
+  getNavAirportProcedures(airportIdent: string): Promise<NavAirportProcedures> {
+    return this.fetchJson(`/api/nav/airport/${encodeURIComponent(airportIdent)}/procedures`)
+  }
+
+  buildFlightPlan(input: BuildFlightPlanInput): Promise<BuildFlightPlanResult> {
+    return this.fetchJson('/api/nav/plan', {
+      method: 'POST',
+      body: JSON.stringify(input)
+    })
+  }
+
+  importSimBrief(input: SimBriefImportInput): Promise<SimBriefImportResult> {
+    return this.fetchJson('/api/simbrief/import', {
+      method: 'POST',
+      body: JSON.stringify(input)
+    })
   }
 
   async getRemoteAccessStatus(): Promise<RemoteAccessStatus> {

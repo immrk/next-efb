@@ -1,8 +1,9 @@
 import { DomUtil } from 'leaflet'
 import { useEffect, useRef, useState } from 'react'
-import { MapContainer, Marker, TileLayer, useMap } from 'react-leaflet'
+import { CircleMarker, MapContainer, Marker, Polyline, TileLayer, Tooltip, useMap } from 'react-leaflet'
 import { useTranslation } from 'react-i18next'
 import type { GeoReferencePoint } from '@shared/chart-types'
+import type { FlightPlanPoint } from '@shared/flight-plan-types'
 import type { MapTileProvider } from '@shared/types'
 import { createAircraftLeafletIcon } from './AircraftArrow'
 import { ConnectionBadge } from './ConnectionBadge'
@@ -238,10 +239,12 @@ function MountedChartOverlay({
 
 export function MapPanel({
   mountedChartIds,
-  activeChartId
+  activeChartId,
+  routePoints
 }: {
   mountedChartIds: string[]
   activeChartId: string | null
+  routePoints: FlightPlanPoint[]
 }) {
   const { t } = useTranslation()
   const appClient = getAppClient()
@@ -290,6 +293,27 @@ export function MapPanel({
               isActive={chartId === activeChartId}
               stackIndex={index}
             />
+          ))}
+          {routePoints.length > 1 ? (
+            <Polyline
+              positions={routePoints.map((point) => [point.lat, point.lon])}
+              pathOptions={{ color: '#ffcf5a', weight: 3, opacity: 0.9 }}
+            />
+          ) : null}
+          {routePoints.map((point, index) => (
+            <CircleMarker
+              key={`${point.ident}:${index}`}
+              center={[point.lat, point.lon]}
+              radius={index === 0 || index === routePoints.length - 1 ? 6 : 4}
+              pathOptions={{
+                color: '#0a1a2b',
+                weight: 1,
+                fillColor: index === 0 || index === routePoints.length - 1 ? '#ff7f50' : '#ffd46c',
+                fillOpacity: 0.95
+              }}
+            >
+              <Tooltip direction="top" offset={[0, -4]}>{`${index + 1}. ${point.ident}`}</Tooltip>
+            </CircleMarker>
           ))}
           <FollowAircraft
             lat={lat}

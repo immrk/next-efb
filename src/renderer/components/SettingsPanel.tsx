@@ -4,6 +4,7 @@ import QRCode from 'qrcode'
 import { getAppClient } from '../client'
 import i18n from '../i18n'
 import type { AppLanguage, AircraftSource, MapTileProvider, RemoteAccessStatus } from '@shared/types'
+import type { NavDataStatus } from '@shared/flight-plan-types'
 import { useAppStore } from '../store/useAppStore'
 
 export function SettingsPanel() {
@@ -13,16 +14,27 @@ export function SettingsPanel() {
   const settings = useAppStore((state) => state.settings)
   const setSettings = useAppStore((state) => state.setSettings)
   const [remoteAccessStatus, setRemoteAccessStatus] = useState<RemoteAccessStatus | null>(null)
+  const [navDataStatus, setNavDataStatus] = useState<NavDataStatus | null>(null)
   const [portDraft, setPortDraft] = useState('31831')
+  const [navPathDraft, setNavPathDraft] = useState('')
+  const [simbriefUsernameDraft, setSimbriefUsernameDraft] = useState('')
+  const [simbriefUserIdDraft, setSimbriefUserIdDraft] = useState('')
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null)
 
   useEffect(() => {
     const refreshRemoteAccessStatus = () => {
       void appClient.getRemoteAccessStatus().then(setRemoteAccessStatus)
     }
+    const refreshNavDataStatus = () => {
+      void appClient.getNavDataStatus().then(setNavDataStatus)
+    }
 
     refreshRemoteAccessStatus()
-    const offSettings = appClient.onSettingsChanged(refreshRemoteAccessStatus)
+    refreshNavDataStatus()
+    const offSettings = appClient.onSettingsChanged(() => {
+      refreshRemoteAccessStatus()
+      refreshNavDataStatus()
+    })
     return () => {
       offSettings()
     }
@@ -31,6 +43,12 @@ export function SettingsPanel() {
   useEffect(() => {
     setPortDraft(String(settings?.lanAccess.port ?? 31831))
   }, [settings?.lanAccess.port])
+
+  useEffect(() => {
+    setNavPathDraft(settings?.navData.sqlitePath ?? '')
+    setSimbriefUsernameDraft(settings?.simbrief.username ?? '')
+    setSimbriefUserIdDraft(settings?.simbrief.userId ?? '')
+  }, [settings?.navData.sqlitePath, settings?.simbrief.userId, settings?.simbrief.username])
 
   useEffect(() => {
     const accessUrl = remoteAccessStatus?.primaryAccessUrl
@@ -83,6 +101,28 @@ export function SettingsPanel() {
     setRemoteAccessStatus(nextStatus)
   }
 
+  const saveNavDataPath = async (sqlitePath: string) => {
+    const nextSettings = await appClient.updateSettings({
+      navData: {
+        autoDetect: true,
+        sqlitePath: sqlitePath.trim() || null
+      }
+    })
+    setSettings(nextSettings)
+    const nextStatus = await appClient.getNavDataStatus()
+    setNavDataStatus(nextStatus)
+  }
+
+  const saveSimBriefSettings = async () => {
+    const nextSettings = await appClient.updateSettings({
+      simbrief: {
+        username: simbriefUsernameDraft.trim(),
+        userId: simbriefUserIdDraft.trim()
+      }
+    })
+    setSettings(nextSettings)
+  }
+
   return (
     <section className="panel settings-panel settings-panel-compact" aria-label={t('settings.title')}>
       <div className="settings-field">
@@ -130,6 +170,78 @@ export function SettingsPanel() {
           <option value="osmfr">{t('settings.mapTileProviderOsmFr')}</option>
         </select>
         <span className="settings-note-inline">{t('settings.mapTileProviderHint')}</span>
+      </div>
+
+      <div className="settings-field">
+        <label>{t('settings.navDataTitle')}</label>
+        <div className="settings-note settings-note-card">
+          <span>{t('settings.navDataDefaultPath', { path: navDataStatus?.defaultPath ?? '-' })}</span>
+          <span>
+            {t('settings.navDataActivePath', { path: navDataStatus?.activePath ?? t('settings.navDataMissing') })}
+          </span>
+          <div className="settings-inline-row">
+            <input
+              className="text-input"
+              value={navPathDraft}
+              onChange={(event) => setNavPathDraft(event.target.value)}
+              placeholder={t('settings.navDataPathPlaceholder')}
+            />
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={async () => {
+                const picked = await appClient.pickNavSqliteFile()
+                if (!picked) return
+                setNavPathDraft(picked)
+                await saveNavDataPath(picked)
+              }}
+            >
+              {t('settings.navDataBrowse')}
+            </button>
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={() => {
+                void saveNavDataPath(navPathDraft)
+              }}
+            >
+              {t('settings.navDataSave')}
+            </button>
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={() => {
+                setNavPathDraft('')
+                void saveNavDataPath('')
+              }}
+            >
+              {t('settings.navDataClear')}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="settings-field">
+        <label>{t('settings.simbriefTitle')}</label>
+        <div className="settings-note settings-note-card">
+          <input
+            className="text-input"
+            value={simbriefUsernameDraft}
+            onChange={(event) => setSimbriefUsernameDraft(event.target.value)}
+            placeholder={t('settings.simbriefUsername')}
+          />
+          <input
+            className="text-input"
+            value={simbriefUserIdDraft}
+            onChange={(event) => setSimbriefUserIdDraft(event.target.value)}
+            placeholder={t('settings.simbriefUserId')}
+          />
+          <div className="settings-inline-row">
+            <button type="button" className="secondary-button" onClick={saveSimBriefSettings}>
+              {t('settings.simbriefSave')}
+            </button>
+          </div>
+        </div>
       </div>
 
       <div className="settings-field">

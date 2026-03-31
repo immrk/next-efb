@@ -10,6 +10,14 @@ const DEFAULT_SETTINGS: AppSettings = {
   refreshIntervalMs: 500,
   providerMode: 'simconnect',
   mapTileProvider: 'osm',
+  navData: {
+    sqlitePath: null,
+    autoDetect: true
+  },
+  simbrief: {
+    username: '',
+    userId: ''
+  },
   lanAccess: {
     enabled: false,
     port: 31831,
@@ -38,6 +46,14 @@ export class SettingsStore {
     this.settings = {
       ...this.settings,
       ...partial,
+      navData: {
+        ...this.settings.navData,
+        ...partial.navData
+      },
+      simbrief: {
+        ...this.settings.simbrief,
+        ...partial.simbrief
+      },
       lanAccess: {
         ...this.settings.lanAccess,
         ...partial.lanAccess
@@ -59,6 +75,14 @@ export class SettingsStore {
       return {
         ...DEFAULT_SETTINGS,
         ...parsed,
+        navData: {
+          ...DEFAULT_SETTINGS.navData,
+          ...parsed.navData
+        },
+        simbrief: {
+          ...DEFAULT_SETTINGS.simbrief,
+          ...parsed.simbrief
+        },
         lanAccess: {
           ...DEFAULT_SETTINGS.lanAccess,
           ...parsed.lanAccess,

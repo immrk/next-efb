@@ -50,6 +50,7 @@ export function App() {
               setChartDetailBackRoute('map')
               setRoute('chartDetail')
             }}
+            onOpenSettings={() => setRoute('settings')}
           />
         </section>
 

@@ -14,6 +14,12 @@ export const IPC_CHANNELS = {
   connectionUpdate: 'connection:update',
   settingsGet: 'settings:get',
   settingsUpdate: 'settings:update',
+  navDataStatus: 'nav-data:status',
+  navDataPickSqlite: 'nav-data:pick-sqlite',
+  navAirportsSearch: 'nav-data:airports:search',
+  navAirportProcedures: 'nav-data:airport:procedures',
+  navBuildPlan: 'nav-data:plan:build',
+  simbriefImport: 'simbrief:import',
   remoteAccessStatus: 'remote-access:status',
   openExternal: 'system:open-external'
 } as const

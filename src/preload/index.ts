@@ -11,11 +11,30 @@ import type {
   GeoReferencePoint,
   StorageSummary
 } from '@shared/chart-types'
+import type {
+  BuildFlightPlanInput,
+  BuildFlightPlanResult,
+  NavAirportOption,
+  NavAirportProcedures,
+  NavDataStatus,
+  SimBriefImportInput,
+  SimBriefImportResult
+} from '@shared/flight-plan-types'
 
 const api = {
   getSnapshot: async (): Promise<{ aircraft: AircraftState; connection: ConnectionState }> =>
     ipcRenderer.invoke(IPC_CHANNELS.aircraftSnapshot),
   getSettings: async (): Promise<AppSettings> => ipcRenderer.invoke(IPC_CHANNELS.settingsGet),
+  getNavDataStatus: async (): Promise<NavDataStatus> => ipcRenderer.invoke(IPC_CHANNELS.navDataStatus),
+  pickNavSqliteFile: async (): Promise<string | null> => ipcRenderer.invoke(IPC_CHANNELS.navDataPickSqlite),
+  searchNavAirports: async (query: string): Promise<NavAirportOption[]> =>
+    ipcRenderer.invoke(IPC_CHANNELS.navAirportsSearch, query),
+  getNavAirportProcedures: async (airportIdent: string): Promise<NavAirportProcedures> =>
+    ipcRenderer.invoke(IPC_CHANNELS.navAirportProcedures, airportIdent),
+  buildFlightPlan: async (input: BuildFlightPlanInput): Promise<BuildFlightPlanResult> =>
+    ipcRenderer.invoke(IPC_CHANNELS.navBuildPlan, input),
+  importSimBrief: async (input: SimBriefImportInput): Promise<SimBriefImportResult> =>
+    ipcRenderer.invoke(IPC_CHANNELS.simbriefImport, input),
   getChart: async (chartId: string): Promise<ChartRecord | null> =>
     ipcRenderer.invoke(IPC_CHANNELS.chartGet, chartId),
   getChartAsset: async (chartId: string): Promise<ChartAssetPayload | null> =>

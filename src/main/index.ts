@@ -7,6 +7,7 @@ import { SimConnectService } from './services/simconnect/SimConnectService'
 import { ChartRepository } from './services/storage/ChartRepository'
 import { StorageService } from './services/storage/StorageService'
 import { LanServer } from './services/lan/LanServer'
+import { NavDataService } from './services/navigation/NavDataService'
 
 let mainWindow: BrowserWindow | null = null
 const DEV_LOAD_RETRY_MS = 1200
@@ -43,6 +44,7 @@ async function createWindow(): Promise<void> {
   const flightStateStore = new FlightStateStore()
   const simConnectService = new SimConnectService(settingsStore.get())
   const storageService = new StorageService()
+  const navDataService = new NavDataService()
   const chartRepository = new ChartRepository(storageService.getSummary())
   const lanServer = new LanServer({
     settings: settingsStore.get(),
@@ -51,7 +53,8 @@ async function createWindow(): Promise<void> {
     settingsStore,
     simConnectService,
     chartRepository,
-    storageService
+    storageService,
+    navDataService
   })
 
   mainWindow = new BrowserWindow({
@@ -74,7 +77,8 @@ async function createWindow(): Promise<void> {
     simConnectService,
     chartRepository,
     storageService,
-    lanServer
+    lanServer,
+    navDataService
   })
 
   simConnectService.start()

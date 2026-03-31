@@ -24,6 +24,12 @@ const IPC_CHANNELS = {
   connectionUpdate: "connection:update",
   settingsGet: "settings:get",
   settingsUpdate: "settings:update",
+  navDataStatus: "nav-data:status",
+  navDataPickSqlite: "nav-data:pick-sqlite",
+  navAirportsSearch: "nav-data:airports:search",
+  navAirportProcedures: "nav-data:airport:procedures",
+  navBuildPlan: "nav-data:plan:build",
+  simbriefImport: "simbrief:import",
   remoteAccessStatus: "remote-access:status",
   openExternal: "system:open-external"
 };
@@ -35,7 +41,8 @@ function registerIpc(options) {
     simConnectService,
     chartRepository,
     storageService,
-    lanServer
+    lanServer,
+    navDataService
   } = options;
   simConnectService.onAircraftState((state) => {
     flightStateStore.setAircraftState(state);
@@ -54,6 +61,36 @@ function registerIpc(options) {
     };
   });
   electron.ipcMain.handle(IPC_CHANNELS.settingsGet, () => settingsStore.get());
+  electron.ipcMain.handle(IPC_CHANNELS.navDataStatus, () => navDataService.getStatus(settingsStore.get()));
+  electron.ipcMain.handle(IPC_CHANNELS.navDataPickSqlite, async () => {
+    const result = await electron.dialog.showOpenDialog(mainWindow2, {
+      properties: ["openFile"],
+      filters: [{ name: "SQLite Database", extensions: ["sqlite", "db"] }]
+    });
+    if (result.canceled || result.filePaths.length === 0) {
+      return null;
+    }
+    return result.filePaths[0];
+  });
+  electron.ipcMain.handle(
+    IPC_CHANNELS.navAirportsSearch,
+    (_event, query) => navDataService.searchAirports(settingsStore.get(), query)
+  );
+  electron.ipcMain.handle(
+    IPC_CHANNELS.navAirportProcedures,
+    (_event, airportIdent) => navDataService.getAirportProcedures(settingsStore.get(), airportIdent)
+  );
+  electron.ipcMain.handle(
+    IPC_CHANNELS.navBuildPlan,
+    (_event, input) => navDataService.buildFlightPlan(settingsStore.get(), input)
+  );
+  electron.ipcMain.handle(
+    IPC_CHANNELS.simbriefImport,
+    async (_event, input) => navDataService.importFromSimBrief({
+      username: input.username ?? settingsStore.get().simbrief.username,
+      userId: input.userId ?? settingsStore.get().simbrief.userId
+    })
+  );
   electron.ipcMain.handle(IPC_CHANNELS.remoteAccessStatus, () => lanServer.getStatus());
   electron.ipcMain.handle(IPC_CHANNELS.openExternal, async (_event, url) => {
     await electron.shell.openExternal(url);
@@ -237,6 +274,14 @@ const DEFAULT_SETTINGS = {
   refreshIntervalMs: 500,
   providerMode: "simconnect",
   mapTileProvider: "osm",
+  navData: {
+    sqlitePath: null,
+    autoDetect: true
+  },
+  simbrief: {
+    username: "",
+    userId: ""
+  },
   lanAccess: {
     enabled: false,
     port: 31831,
@@ -260,6 +305,14 @@ class SettingsStore {
     this.settings = {
       ...this.settings,
       ...partial,
+      navData: {
+        ...this.settings.navData,
+        ...partial.navData
+      },
+      simbrief: {
+        ...this.settings.simbrief,
+        ...partial.simbrief
+      },
       lanAccess: {
         ...this.settings.lanAccess,
         ...partial.lanAccess
@@ -279,6 +332,14 @@ class SettingsStore {
       return {
         ...DEFAULT_SETTINGS,
         ...parsed,
+        navData: {
+          ...DEFAULT_SETTINGS.navData,
+          ...parsed.navData
+        },
+        simbrief: {
+          ...DEFAULT_SETTINGS.simbrief,
+          ...parsed.simbrief
+        },
         lanAccess: {
           ...DEFAULT_SETTINGS.lanAccess,
           ...parsed.lanAccess,
@@ -835,6 +896,7 @@ class LanServer {
     this.simConnectService = options.simConnectService;
     this.chartRepository = options.chartRepository;
     this.storageService = options.storageService;
+    this.navDataService = options.navDataService;
   }
   async start() {
     if (!this.settings.lanAccess.enabled || this.server) {
@@ -959,6 +1021,39 @@ class LanServer {
           return;
         }
         this.sendJson(response, sanitizeSettings(this.settings));
+        return;
+      }
+      if (url.pathname === "/api/nav/status") {
+        this.sendJson(response, this.navDataService.getStatus(this.settingsStore.get()));
+        return;
+      }
+      if (url.pathname === "/api/nav/airports") {
+        const query = url.searchParams.get("query") ?? "";
+        this.sendJson(response, this.navDataService.searchAirports(this.settingsStore.get(), query));
+        return;
+      }
+      const navProceduresMatch = url.pathname.match(/^\/api\/nav\/airport\/([^/]+)\/procedures$/);
+      if (navProceduresMatch) {
+        this.sendJson(
+          response,
+          this.navDataService.getAirportProcedures(this.settingsStore.get(), navProceduresMatch[1] ?? "")
+        );
+        return;
+      }
+      if (url.pathname === "/api/nav/plan" && request.method === "POST") {
+        const input = await this.readJsonBody(request);
+        this.sendJson(response, this.navDataService.buildFlightPlan(this.settingsStore.get(), input));
+        return;
+      }
+      if (url.pathname === "/api/simbrief/import" && request.method === "POST") {
+        const input = await this.readJsonBody(request);
+        this.sendJson(
+          response,
+          await this.navDataService.importFromSimBrief({
+            username: input.username ?? this.settingsStore.get().simbrief.username,
+            userId: input.userId ?? this.settingsStore.get().simbrief.userId
+          })
+        );
         return;
       }
       if (url.pathname === "/api/storage-summary") {
@@ -1224,6 +1319,398 @@ function getContentType(filePath) {
       return "text/html; charset=utf-8";
   }
 }
+class NavDataService {
+  getDefaultDbPath() {
+    return node_path.join(
+      node_os.homedir(),
+      "AppData",
+      "Roaming",
+      "ABarthel",
+      "little_navmap_db",
+      "little_navmap_navigraph.sqlite"
+    );
+  }
+  getStatus(settings) {
+    const defaultPath = this.getDefaultDbPath();
+    const configuredPath = normalizeNullablePath(settings.navData.sqlitePath);
+    const manualExists = configuredPath ? node_fs.existsSync(configuredPath) : false;
+    const autoExists = node_fs.existsSync(defaultPath);
+    if (configuredPath && manualExists) {
+      return {
+        defaultPath,
+        configuredPath,
+        activePath: configuredPath,
+        exists: true,
+        source: "manual",
+        message: "Using manual Little Navmap SQLite path."
+      };
+    }
+    if (settings.navData.autoDetect !== false && autoExists) {
+      return {
+        defaultPath,
+        configuredPath,
+        activePath: defaultPath,
+        exists: true,
+        source: "auto",
+        message: "Detected Little Navmap SQLite path automatically."
+      };
+    }
+    return {
+      defaultPath,
+      configuredPath,
+      activePath: null,
+      exists: false,
+      source: "none",
+      message: "Little Navmap SQLite file was not found."
+    };
+  }
+  searchAirports(settings, query, limit = 20) {
+    const db = this.openDatabase(settings);
+    if (!db) return [];
+    const term = query.trim().toUpperCase();
+    if (!term) return [];
+    const rows = db.prepare(
+      `
+        SELECT ident, name, city, country, laty, lonx
+        FROM airport
+        WHERE ident LIKE @prefix OR name LIKE @wild
+        ORDER BY CASE WHEN ident = @exact THEN 0 ELSE 1 END, ident
+        LIMIT @limit
+        `
+    ).all({
+      prefix: `${term}%`,
+      wild: `%${term}%`,
+      exact: term,
+      limit: Math.max(1, Math.min(100, limit))
+    });
+    db.close();
+    return rows.map((row) => ({
+      ident: row.ident,
+      name: row.name ?? row.ident,
+      city: row.city,
+      country: row.country,
+      lat: row.laty,
+      lon: row.lonx
+    }));
+  }
+  getAirportProcedures(settings, airportIdent) {
+    const db = this.openDatabase(settings);
+    if (!db) {
+      return emptyProcedures();
+    }
+    const ident = airportIdent.trim().toUpperCase();
+    if (!ident) {
+      db.close();
+      return emptyProcedures();
+    }
+    const airport = db.prepare(
+      "SELECT airport_id, ident, name, city, country, laty, lonx FROM airport WHERE ident = ? LIMIT 1"
+    ).get(ident);
+    if (!airport) {
+      db.close();
+      return emptyProcedures();
+    }
+    const runways = db.prepare(
+      `
+        SELECT runway_name, MAX(length) AS length, MAX(width) AS width, MAX(surface) AS surface, MAX(heading) AS heading
+        FROM (
+          SELECT runway_id, airport_id, surface, length, width, heading,
+            CASE
+              WHEN primary_name IS NOT NULL AND secondary_name IS NOT NULL THEN primary_name || '/' || secondary_name
+              WHEN primary_name IS NOT NULL THEN primary_name
+              WHEN secondary_name IS NOT NULL THEN secondary_name
+              ELSE printf('RWY-%d', runway_id)
+            END AS runway_name
+          FROM (
+            SELECT r.runway_id, r.airport_id, r.surface, r.length, r.width, r.heading,
+              (SELECT name FROM runway_end re WHERE re.runway_end_id = r.primary_end_id) AS primary_name,
+              (SELECT name FROM runway_end re WHERE re.runway_end_id = r.secondary_end_id) AS secondary_name
+            FROM runway r
+            WHERE r.airport_id = @airportId
+          )
+        )
+        GROUP BY runway_name
+        ORDER BY length DESC, runway_name
+        `
+    ).all({ airportId: airport.airport_id });
+    const departures = db.prepare(
+      `
+        SELECT start_id, runway_name
+        FROM start
+        WHERE airport_id = ?
+        ORDER BY runway_name
+        `
+    ).all(airport.airport_id);
+    const approaches = db.prepare(
+      `
+        SELECT approach_id, runway_name, type, arinc_name
+        FROM approach
+        WHERE airport_ident = ?
+        ORDER BY runway_name, type, arinc_name
+        `
+    ).all(ident);
+    db.close();
+    const runwayOptions = runways.map((row) => ({
+      name: row.runway_name,
+      lengthM: asFiniteOrNull(row.length),
+      widthM: asFiniteOrNull(row.width),
+      surface: row.surface,
+      headingDeg: asFiniteOrNull(row.heading)
+    }));
+    const depOptions = departures.map((row) => ({
+      id: `start:${row.start_id}`,
+      name: row.runway_name ? `RWY ${row.runway_name} Departure` : `Departure ${row.start_id}`,
+      procedureType: "departure",
+      runwayName: row.runway_name
+    }));
+    const apprOptions = approaches.map((row) => ({
+      id: `approach:${row.approach_id}`,
+      name: [row.type, row.runway_name ? `RWY ${row.runway_name}` : null, row.arinc_name].filter(Boolean).join(" "),
+      procedureType: "approach",
+      runwayName: row.runway_name
+    }));
+    return {
+      airport: {
+        ident: airport.ident,
+        name: airport.name ?? airport.ident,
+        city: airport.city,
+        country: airport.country,
+        lat: airport.laty,
+        lon: airport.lonx
+      },
+      runways: runwayOptions,
+      departures: depOptions,
+      arrivals: [],
+      approaches: apprOptions
+    };
+  }
+  buildFlightPlan(settings, input) {
+    const db = this.openDatabase(settings);
+    if (!db) {
+      return {
+        points: [],
+        unresolvedTokens: [],
+        summary: "Navigation database is not available."
+      };
+    }
+    const departureIdent = input.departureAirport.trim().toUpperCase();
+    const destinationIdent = input.destinationAirport.trim().toUpperCase();
+    const unresolvedTokens = [];
+    const points = [];
+    const departure = this.getAirportByIdent(db, departureIdent);
+    const destination = this.getAirportByIdent(db, destinationIdent);
+    if (departure) {
+      points.push({
+        ident: departure.ident,
+        lat: departure.laty,
+        lon: departure.lonx,
+        source: "airport"
+      });
+    }
+    const departureProcedure = this.resolveStartProcedurePoint(db, input.departureProcedureId);
+    if (departureProcedure) {
+      points.push(departureProcedure);
+    }
+    const tokens = normalizeRouteTokens(input.enrouteText);
+    for (const token of tokens) {
+      if (token === departureIdent || token === destinationIdent) {
+        continue;
+      }
+      const fix = this.resolveFix(db, token);
+      if (fix) {
+        points.push({
+          ident: fix.ident,
+          lat: fix.laty,
+          lon: fix.lonx,
+          source: fix.source
+        });
+      } else {
+        unresolvedTokens.push(token);
+      }
+    }
+    const approachLegs = this.resolveApproachLegPoints(db, input.approachProcedureId);
+    points.push(...approachLegs);
+    if (destination) {
+      points.push({
+        ident: destination.ident,
+        lat: destination.laty,
+        lon: destination.lonx,
+        source: "airport"
+      });
+    }
+    db.close();
+    const uniquePoints = dedupeConsecutivePoints(points);
+    return {
+      points: uniquePoints,
+      unresolvedTokens,
+      summary: `${departureIdent || "----"} -> ${destinationIdent || "----"} | ${uniquePoints.length} points`
+    };
+  }
+  async importFromSimBrief(input) {
+    const username = input.username?.trim() ?? "";
+    const userId = input.userId?.trim() ?? "";
+    if (!username && !userId) {
+      throw new Error("SIMBRIEF_ID_REQUIRED");
+    }
+    const query = new URLSearchParams();
+    query.set("json", "1");
+    if (username) query.set("username", username);
+    if (userId) query.set("userid", userId);
+    const url = `https://www.simbrief.com/api/xml.fetcher.php?${query.toString()}`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`SIMBRIEF_HTTP_${response.status}`);
+    }
+    const payload = await response.json();
+    const departureAirport = readStringPath(payload, ["origin", "icao_code"]) ?? readStringPath(payload, ["params", "orig"]);
+    const destinationAirport = readStringPath(payload, ["destination", "icao_code"]) ?? readStringPath(payload, ["params", "dest"]);
+    const alternateAirport = readStringPath(payload, ["alternate", "icao_code"]) ?? null;
+    const routeText = readStringPath(payload, ["general", "route"]) ?? readStringPath(payload, ["navlog", "route"]) ?? readStringPath(payload, ["params", "route"]) ?? "";
+    if (!departureAirport || !destinationAirport) {
+      throw new Error("SIMBRIEF_PARSE_FAILED");
+    }
+    return {
+      departureAirport: departureAirport.trim().toUpperCase(),
+      destinationAirport: destinationAirport.trim().toUpperCase(),
+      alternateAirport: alternateAirport ? alternateAirport.trim().toUpperCase() : null,
+      routeText: routeText.trim(),
+      source: "simbrief"
+    };
+  }
+  openDatabase(settings) {
+    const status = this.getStatus(settings);
+    if (!status.activePath || !node_fs.existsSync(status.activePath)) {
+      return null;
+    }
+    return new Database(status.activePath, {
+      readonly: true,
+      fileMustExist: true
+    });
+  }
+  getAirportByIdent(db, ident) {
+    if (!ident) return null;
+    return db.prepare(
+      "SELECT airport_id, ident, name, city, country, laty, lonx FROM airport WHERE ident = ? LIMIT 1"
+    ).get(ident) ?? null;
+  }
+  resolveFix(db, token) {
+    const ident = token.trim().toUpperCase();
+    if (!ident) return null;
+    const waypoint = db.prepare(
+      `
+        SELECT ident, laty, lonx, 'waypoint' AS source
+        FROM waypoint
+        WHERE ident = ?
+        ORDER BY CASE WHEN airport_ident IS NULL OR airport_ident = '' THEN 0 ELSE 1 END, waypoint_id
+        LIMIT 1
+        `
+    ).get(ident);
+    if (waypoint) return waypoint;
+    const vor = db.prepare(
+      `
+        SELECT ident, laty, lonx, 'vor' AS source
+        FROM vor
+        WHERE ident = ?
+        LIMIT 1
+        `
+    ).get(ident);
+    if (vor) return vor;
+    const ndb = db.prepare(
+      `
+        SELECT ident, laty, lonx, 'ndb' AS source
+        FROM ndb
+        WHERE ident = ?
+        LIMIT 1
+        `
+    ).get(ident);
+    if (ndb) return ndb;
+    return null;
+  }
+  resolveStartProcedurePoint(db, departureProcedureId) {
+    if (!departureProcedureId?.startsWith("start:")) {
+      return null;
+    }
+    const startId = Number(departureProcedureId.slice("start:".length));
+    if (!Number.isFinite(startId)) {
+      return null;
+    }
+    const row = db.prepare("SELECT runway_name, laty, lonx FROM start WHERE start_id = ? LIMIT 1").get(startId);
+    if (!row) {
+      return null;
+    }
+    return {
+      ident: row.runway_name ? `RWY${row.runway_name}` : "DEP",
+      lat: row.laty,
+      lon: row.lonx,
+      source: "procedure"
+    };
+  }
+  resolveApproachLegPoints(db, approachProcedureId) {
+    if (!approachProcedureId?.startsWith("approach:")) {
+      return [];
+    }
+    const approachId = Number(approachProcedureId.slice("approach:".length));
+    if (!Number.isFinite(approachId)) {
+      return [];
+    }
+    const legs = db.prepare(
+      `
+        SELECT fix_ident, fix_laty, fix_lonx
+        FROM approach_leg
+        WHERE approach_id = ? AND fix_laty IS NOT NULL AND fix_lonx IS NOT NULL
+        ORDER BY approach_leg_id
+        `
+    ).all(approachId);
+    return legs.map((leg) => ({
+      ident: leg.fix_ident?.trim() || "APPR",
+      lat: leg.fix_laty,
+      lon: leg.fix_lonx,
+      source: "procedure"
+    }));
+  }
+}
+function normalizeNullablePath(pathValue) {
+  if (!pathValue) return null;
+  const trimmed = pathValue.trim();
+  return trimmed || null;
+}
+function normalizeRouteTokens(routeText) {
+  return routeText.replace(/,/g, " ").split(/\s+/).map((token) => token.trim().toUpperCase()).filter((token) => token.length > 0).filter((token) => token !== "DCT" && token !== "DIRECT");
+}
+function asFiniteOrNull(value) {
+  if (typeof value !== "number") return null;
+  return Number.isFinite(value) ? value : null;
+}
+function dedupeConsecutivePoints(points) {
+  const output = [];
+  for (const point of points) {
+    const prev = output[output.length - 1];
+    if (prev && Math.abs(prev.lat - point.lat) < 1e-7 && Math.abs(prev.lon - point.lon) < 1e-7) {
+      continue;
+    }
+    output.push(point);
+  }
+  return output;
+}
+function readStringPath(data, path) {
+  let current = data;
+  for (const key of path) {
+    if (!current || typeof current !== "object" || !(key in current)) {
+      return null;
+    }
+    current = current[key];
+  }
+  return typeof current === "string" ? current : null;
+}
+function emptyProcedures() {
+  return {
+    airport: null,
+    runways: [],
+    departures: [],
+    arrivals: [],
+    approaches: []
+  };
+}
 let mainWindow = null;
 const DEV_LOAD_RETRY_MS = 1200;
 const DEV_LOAD_MAX_ATTEMPTS = 12;
@@ -1253,6 +1740,7 @@ async function createWindow() {
   const flightStateStore = new FlightStateStore();
   const simConnectService = new SimConnectService(settingsStore.get());
   const storageService = new StorageService();
+  const navDataService = new NavDataService();
   const chartRepository = new ChartRepository(storageService.getSummary());
   const lanServer = new LanServer({
     settings: settingsStore.get(),
@@ -1261,7 +1749,8 @@ async function createWindow() {
     settingsStore,
     simConnectService,
     chartRepository,
-    storageService
+    storageService,
+    navDataService
   });
   mainWindow = new electron.BrowserWindow({
     width: 1440,
@@ -1282,7 +1771,8 @@ async function createWindow() {
     simConnectService,
     chartRepository,
     storageService,
-    lanServer
+    lanServer,
+    navDataService
   });
   simConnectService.start();
   await lanServer.start();

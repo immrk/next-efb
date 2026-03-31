@@ -9,6 +9,15 @@ import type {
   StorageSummary
 } from '@shared/chart-types'
 import type { AircraftState, AppSettings, ConnectionState, RemoteAccessStatus } from '@shared/types'
+import type {
+  BuildFlightPlanInput,
+  BuildFlightPlanResult,
+  NavAirportOption,
+  NavAirportProcedures,
+  NavDataStatus,
+  SimBriefImportInput,
+  SimBriefImportResult
+} from '@shared/flight-plan-types'
 
 export interface AppClientRuntime {
   host: 'electron' | 'web'
@@ -25,6 +34,12 @@ export interface AppClient {
   getRuntime(): AppClientRuntime
   getSnapshot(): Promise<SnapshotPayload>
   getSettings(): Promise<AppSettings>
+  getNavDataStatus(): Promise<NavDataStatus>
+  pickNavSqliteFile(): Promise<string | null>
+  searchNavAirports(query: string): Promise<NavAirportOption[]>
+  getNavAirportProcedures(airportIdent: string): Promise<NavAirportProcedures>
+  buildFlightPlan(input: BuildFlightPlanInput): Promise<BuildFlightPlanResult>
+  importSimBrief(input: SimBriefImportInput): Promise<SimBriefImportResult>
   getRemoteAccessStatus(): Promise<RemoteAccessStatus>
   getChart(chartId: string): Promise<ChartRecord | null>
   getChartAsset(chartId: string): Promise<ChartAssetPayload | null>

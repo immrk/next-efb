@@ -1,17 +1,20 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ChartRecord } from '@shared/chart-types'
+import type { BuildFlightPlanResult, FlightPlanPoint } from '@shared/flight-plan-types'
 import { getAppClient } from '../client'
 import { ChartMountDrawer } from '../components/ChartMountDrawer'
+import { FlightPlanDrawer } from '../components/FlightPlanDrawer'
 import { MapPanel } from '../components/MapPanel'
 import { useChartLibraryData } from '../hooks/useChartLibraryData'
 
 interface MapPageProps {
   onOpenChartLibrary: (chartId: string) => void
   onEditChart: (chartId: string) => void
+  onOpenSettings: () => void
 }
 
-export function MapPage({ onOpenChartLibrary, onEditChart }: MapPageProps) {
+export function MapPage({ onOpenChartLibrary, onEditChart, onOpenSettings }: MapPageProps) {
   const runtime = getAppClient().getRuntime()
   const { t } = useTranslation()
   const { charts } = useChartLibraryData()
@@ -22,6 +25,8 @@ export function MapPage({ onOpenChartLibrary, onEditChart }: MapPageProps) {
   const [mountedChartIds, setMountedChartIds] = useState<string[]>([])
   const [activeChartId, setActiveChartId] = useState<string | null>(null)
   const [isChartDrawerOpen, setIsChartDrawerOpen] = useState(false)
+  const [isFlightPlanDrawerOpen, setIsFlightPlanDrawerOpen] = useState(false)
+  const [flightPlanPoints, setFlightPlanPoints] = useState<FlightPlanPoint[]>([])
 
   const mountedCharts = useMemo(
     () =>
@@ -62,9 +67,17 @@ export function MapPage({ onOpenChartLibrary, onEditChart }: MapPageProps) {
     setMountedChartIds((current) => current.filter((id) => id !== chartId))
   }
 
+  const handlePlanBuilt = (result: BuildFlightPlanResult) => {
+    setFlightPlanPoints(result.points)
+  }
+
   return (
     <section className="map-workspace">
-      <MapPanel mountedChartIds={mountedChartIds} activeChartId={activeChartId} />
+      <MapPanel
+        mountedChartIds={mountedChartIds}
+        activeChartId={activeChartId}
+        routePoints={flightPlanPoints}
+      />
 
       <section className="chart-dock">
         <div className="chart-dock-main">
@@ -76,6 +89,18 @@ export function MapPage({ onOpenChartLibrary, onEditChart }: MapPageProps) {
           >
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M12 5V19M5 12H19" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            className="chart-dock-add-button"
+            onClick={() => setIsFlightPlanDrawerOpen(true)}
+            aria-label={t('flightPlan.openDrawer')}
+            title={t('flightPlan.openDrawer')}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M3 7H7L10 13L14 9L17 13H21" />
+              <path d="M7 7L9 5M17 13L19 11" />
             </svg>
           </button>
 
@@ -123,6 +148,14 @@ export function MapPage({ onOpenChartLibrary, onEditChart }: MapPageProps) {
         onSelect={onOpenChartLibrary}
         onEdit={runtime.canWrite ? onEditChart : undefined}
         onPin={mountChart}
+      />
+
+      <FlightPlanDrawer
+        isOpen={isFlightPlanDrawerOpen}
+        onClose={() => setIsFlightPlanDrawerOpen(false)}
+        onOpenSettings={onOpenSettings}
+        onPlanBuilt={handlePlanBuilt}
+        onClearPlan={() => setFlightPlanPoints([])}
       />
     </section>
   )

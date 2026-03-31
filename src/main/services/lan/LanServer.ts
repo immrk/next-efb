@@ -17,12 +17,17 @@ import type {
   ConnectionState,
   RemoteAccessStatus
 } from '@shared/types'
+import type {
+  BuildFlightPlanInput,
+  SimBriefImportInput
+} from '@shared/flight-plan-types'
 import { WebSocket, WebSocketServer } from 'ws'
 import { SettingsStore } from '../config/SettingsStore'
 import { SimConnectService } from '../simconnect/SimConnectService'
 import { FlightStateStore } from '../state/FlightStateStore'
 import { ChartRepository } from '../storage/ChartRepository'
 import { StorageService } from '../storage/StorageService'
+import { NavDataService } from '../navigation/NavDataService'
 
 interface LanServerOptions {
   settings: AppSettings
@@ -32,6 +37,7 @@ interface LanServerOptions {
   simConnectService: SimConnectService
   chartRepository: ChartRepository
   storageService: StorageService
+  navDataService: NavDataService
 }
 
 type ServerEvent =
@@ -48,6 +54,7 @@ export class LanServer {
   private readonly simConnectService: SimConnectService
   private readonly chartRepository: ChartRepository
   private readonly storageService: StorageService
+  private readonly navDataService: NavDataService
   private server: ReturnType<typeof createServer> | null = null
   private readonly wsServer = new WebSocketServer({ noServer: true })
   private readonly sockets = new Set<WebSocket>()
@@ -60,6 +67,7 @@ export class LanServer {
     this.simConnectService = options.simConnectService
     this.chartRepository = options.chartRepository
     this.storageService = options.storageService
+    this.navDataService = options.navDataService
   }
 
   async start(): Promise<void> {
@@ -214,6 +222,44 @@ export class LanServer {
         }
 
         this.sendJson(response, sanitizeSettings(this.settings))
+        return
+      }
+
+      if (url.pathname === '/api/nav/status') {
+        this.sendJson(response, this.navDataService.getStatus(this.settingsStore.get()))
+        return
+      }
+
+      if (url.pathname === '/api/nav/airports') {
+        const query = url.searchParams.get('query') ?? ''
+        this.sendJson(response, this.navDataService.searchAirports(this.settingsStore.get(), query))
+        return
+      }
+
+      const navProceduresMatch = url.pathname.match(/^\/api\/nav\/airport\/([^/]+)\/procedures$/)
+      if (navProceduresMatch) {
+        this.sendJson(
+          response,
+          this.navDataService.getAirportProcedures(this.settingsStore.get(), navProceduresMatch[1] ?? '')
+        )
+        return
+      }
+
+      if (url.pathname === '/api/nav/plan' && request.method === 'POST') {
+        const input = (await this.readJsonBody(request)) as BuildFlightPlanInput
+        this.sendJson(response, this.navDataService.buildFlightPlan(this.settingsStore.get(), input))
+        return
+      }
+
+      if (url.pathname === '/api/simbrief/import' && request.method === 'POST') {
+        const input = (await this.readJsonBody(request)) as SimBriefImportInput
+        this.sendJson(
+          response,
+          await this.navDataService.importFromSimBrief({
+            username: input.username ?? this.settingsStore.get().simbrief.username,
+            userId: input.userId ?? this.settingsStore.get().simbrief.userId
+          })
+        )
         return
       }
 

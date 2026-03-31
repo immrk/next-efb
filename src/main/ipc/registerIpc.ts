@@ -3,6 +3,15 @@ import { BrowserWindow, dialog, ipcMain, shell } from 'electron'
 import { IPC_CHANNELS } from '@shared/channels'
 import type { AppSettings } from '@shared/types'
 import type {
+  BuildFlightPlanInput,
+  BuildFlightPlanResult,
+  NavAirportOption,
+  NavAirportProcedures,
+  NavDataStatus,
+  SimBriefImportInput,
+  SimBriefImportResult
+} from '@shared/flight-plan-types'
+import type {
   ChartAssetPayload,
   ChartImportResult,
   ChartRecord,
@@ -17,6 +26,7 @@ import { SimConnectService } from '../services/simconnect/SimConnectService'
 import { ChartRepository } from '../services/storage/ChartRepository'
 import { StorageService } from '../services/storage/StorageService'
 import { LanServer } from '../services/lan/LanServer'
+import { NavDataService } from '../services/navigation/NavDataService'
 
 interface RegisterIpcOptions {
   mainWindow: BrowserWindow
@@ -26,6 +36,7 @@ interface RegisterIpcOptions {
   chartRepository: ChartRepository
   storageService: StorageService
   lanServer: LanServer
+  navDataService: NavDataService
 }
 
 export function registerIpc(options: RegisterIpcOptions): void {
@@ -36,7 +47,8 @@ export function registerIpc(options: RegisterIpcOptions): void {
     simConnectService,
     chartRepository,
     storageService,
-    lanServer
+    lanServer,
+    navDataService
   } = options
 
   simConnectService.onAircraftState((state) => {
@@ -59,6 +71,38 @@ export function registerIpc(options: RegisterIpcOptions): void {
   })
 
   ipcMain.handle(IPC_CHANNELS.settingsGet, () => settingsStore.get())
+  ipcMain.handle(IPC_CHANNELS.navDataStatus, (): NavDataStatus => navDataService.getStatus(settingsStore.get()))
+  ipcMain.handle(IPC_CHANNELS.navDataPickSqlite, async (): Promise<string | null> => {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openFile'],
+      filters: [{ name: 'SQLite Database', extensions: ['sqlite', 'db'] }]
+    })
+    if (result.canceled || result.filePaths.length === 0) {
+      return null
+    }
+    return result.filePaths[0]
+  })
+  ipcMain.handle(IPC_CHANNELS.navAirportsSearch, (_event, query: string): NavAirportOption[] =>
+    navDataService.searchAirports(settingsStore.get(), query)
+  )
+  ipcMain.handle(
+    IPC_CHANNELS.navAirportProcedures,
+    (_event, airportIdent: string): NavAirportProcedures =>
+      navDataService.getAirportProcedures(settingsStore.get(), airportIdent)
+  )
+  ipcMain.handle(
+    IPC_CHANNELS.navBuildPlan,
+    (_event, input: BuildFlightPlanInput): BuildFlightPlanResult =>
+      navDataService.buildFlightPlan(settingsStore.get(), input)
+  )
+  ipcMain.handle(
+    IPC_CHANNELS.simbriefImport,
+    async (_event, input: SimBriefImportInput): Promise<SimBriefImportResult> =>
+      navDataService.importFromSimBrief({
+        username: input.username ?? settingsStore.get().simbrief.username,
+        userId: input.userId ?? settingsStore.get().simbrief.userId
+      })
+  )
   ipcMain.handle(IPC_CHANNELS.remoteAccessStatus, () => lanServer.getStatus())
   ipcMain.handle(IPC_CHANNELS.openExternal, async (_event, url: string) => {
     await shell.openExternal(url)

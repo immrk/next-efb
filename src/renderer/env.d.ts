@@ -9,12 +9,27 @@ import type {
   GeoReferencePoint,
   StorageSummary
 } from '@shared/chart-types'
+import type {
+  BuildFlightPlanInput,
+  BuildFlightPlanResult,
+  NavAirportOption,
+  NavAirportProcedures,
+  NavDataStatus,
+  SimBriefImportInput,
+  SimBriefImportResult
+} from '@shared/flight-plan-types'
 
 declare global {
   interface Window {
     msfsApi: {
       getSnapshot: () => Promise<{ aircraft: AircraftState; connection: ConnectionState }>
       getSettings: () => Promise<AppSettings>
+      getNavDataStatus: () => Promise<NavDataStatus>
+      pickNavSqliteFile: () => Promise<string | null>
+      searchNavAirports: (query: string) => Promise<NavAirportOption[]>
+      getNavAirportProcedures: (airportIdent: string) => Promise<NavAirportProcedures>
+      buildFlightPlan: (input: BuildFlightPlanInput) => Promise<BuildFlightPlanResult>
+      importSimBrief: (input: SimBriefImportInput) => Promise<SimBriefImportResult>
       getChart: (chartId: string) => Promise<ChartRecord | null>
       getChartAsset: (chartId: string) => Promise<ChartAssetPayload | null>
       getChartReferencePoints: (chartId: string) => Promise<GeoReferencePoint[]>

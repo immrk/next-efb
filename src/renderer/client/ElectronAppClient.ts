@@ -17,6 +17,30 @@ export class ElectronAppClient implements AppClient {
     return window.msfsApi.getSettings()
   }
 
+  getNavDataStatus() {
+    return window.msfsApi.getNavDataStatus()
+  }
+
+  pickNavSqliteFile() {
+    return window.msfsApi.pickNavSqliteFile()
+  }
+
+  searchNavAirports(query: string) {
+    return window.msfsApi.searchNavAirports(query)
+  }
+
+  getNavAirportProcedures(airportIdent: string) {
+    return window.msfsApi.getNavAirportProcedures(airportIdent)
+  }
+
+  buildFlightPlan(input: Parameters<typeof window.msfsApi.buildFlightPlan>[0]) {
+    return window.msfsApi.buildFlightPlan(input)
+  }
+
+  importSimBrief(input: Parameters<typeof window.msfsApi.importSimBrief>[0]) {
+    return window.msfsApi.importSimBrief(input)
+  }
+
   getRemoteAccessStatus() {
     return window.msfsApi.getRemoteAccessStatus()
   }
