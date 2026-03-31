@@ -1,13 +1,13 @@
 import { copyFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { basename, extname, join } from 'node:path'
-import { app } from 'electron'
 import type { ChartFileFormat, StorageSummary } from '@shared/chart-types'
+import { ensureDataRootDir } from './AppDataPaths'
 
 export class StorageService {
   private readonly storageSummary: StorageSummary
 
   constructor() {
-    const root = join(app.getPath('userData'), 'data')
+    const root = ensureDataRootDir()
     const chartsRoot = join(root, 'charts')
 
     mkdirSync(root, { recursive: true })

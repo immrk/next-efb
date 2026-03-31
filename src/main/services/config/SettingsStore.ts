@@ -1,8 +1,8 @@
 import { randomBytes } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { app } from 'electron'
 import type { AppSettings } from '@shared/types'
+import { ensureDataRootDir } from '../storage/AppDataPaths'
 
 const DEFAULT_SETTINGS: AppSettings = {
   language: 'zh-CN',
@@ -24,7 +24,7 @@ export class SettingsStore {
   private settings: AppSettings = DEFAULT_SETTINGS
 
   constructor() {
-    const baseDir = app.getPath('userData')
+    const baseDir = ensureDataRootDir()
     mkdirSync(baseDir, { recursive: true })
     this.filePath = join(baseDir, 'settings.json')
     this.settings = this.load()

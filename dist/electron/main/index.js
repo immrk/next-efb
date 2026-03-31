@@ -219,6 +219,18 @@ class FlightStateStore {
     this.connectionState = next;
   }
 }
+function resolveInstallRoot() {
+  const portableDir = process.env.PORTABLE_EXECUTABLE_DIR?.trim();
+  if (portableDir) {
+    return portableDir;
+  }
+  return electron.app.isPackaged ? node_path.dirname(process.execPath) : process.cwd();
+}
+function ensureDataRootDir() {
+  const dataRoot = node_path.join(resolveInstallRoot(), "data");
+  node_fs.mkdirSync(dataRoot, { recursive: true });
+  return dataRoot;
+}
 const DEFAULT_SETTINGS = {
   language: "zh-CN",
   followAircraft: true,
@@ -236,7 +248,7 @@ const DEFAULT_SETTINGS = {
 class SettingsStore {
   constructor() {
     this.settings = DEFAULT_SETTINGS;
-    const baseDir = electron.app.getPath("userData");
+    const baseDir = ensureDataRootDir();
     node_fs.mkdirSync(baseDir, { recursive: true });
     this.filePath = node_path.join(baseDir, "settings.json");
     this.settings = this.load();
@@ -759,7 +771,7 @@ class ChartRepository {
 }
 class StorageService {
   constructor() {
-    const root = node_path.join(electron.app.getPath("userData"), "data");
+    const root = ensureDataRootDir();
     const chartsRoot = node_path.join(root, "charts");
     node_fs.mkdirSync(root, { recursive: true });
     node_fs.mkdirSync(chartsRoot, { recursive: true });
