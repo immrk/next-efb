@@ -50197,7 +50197,8 @@ function MapPanel({
             {
               attribution: tileConfig.attribution,
               url: tileConfig.url,
-              subdomains: tileConfig.subdomains
+              subdomains: tileConfig.subdomains,
+              updateWhenIdle: false
             }
           ),
           aircraftPositionUsable ? /* @__PURE__ */ jsxRuntimeExports.jsx(

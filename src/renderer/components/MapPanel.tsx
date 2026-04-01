@@ -314,6 +314,7 @@ export function MapPanel({
             attribution={tileConfig.attribution}
             url={tileConfig.url}
             subdomains={tileConfig.subdomains}
+            updateWhenIdle={false}
           />
           {aircraftPositionUsable ? (
             <Marker
