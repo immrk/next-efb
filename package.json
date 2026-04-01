@@ -1,15 +1,16 @@
 {
-  "name": "msfs-desktop-tracker",
+  "name": "nextefb",
   "version": "0.1.0",
   "private": true,
-  "description": "Electron + React + TypeScript MVP for tracking MSFS aircraft on a map.",
+  "description": "NextEFB desktop companion for map, chart, and flight-deck workflows.",
   "main": "dist/electron/main/index.js",
   "scripts": {
-    "dev": "electron-vite dev",
-    "build:bundle": "electron-vite build",
+    "branding:generate": "node scripts/generate-branding.mjs",
+    "dev": "npm run branding:generate && electron-vite dev",
+    "build:bundle": "npm run branding:generate && electron-vite build",
     "clean:release": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"if (Test-Path 'artifacts') { Remove-Item -LiteralPath 'artifacts' -Recurse -Force }\"",
     "build": "npm run clean:release && npm run build:bundle && set CSC_IDENTITY_AUTO_DISCOVERY=false&& electron-builder --win nsis portable",
-    "preview": "electron-vite preview",
+    "preview": "npm run branding:generate && electron-vite preview",
     "rebuild-native": "electron-rebuild -f -w better-sqlite3",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
     "pack:dir": "npm run clean:release && npm run build:bundle && set CSC_IDENTITY_AUTO_DISCOVERY=false&& electron-builder --dir",
@@ -48,13 +49,16 @@
     "vite": "^6.0.0"
   },
   "build": {
-    "appId": "com.nextflight.msfs-desktop-tracker",
-    "productName": "MSFS Desktop Tracker",
+    "appId": "com.nextflight.nextefb",
+    "productName": "NextEFB",
+    "artifactName": "NextEFB-${version}-${arch}.${ext}",
+    "executableName": "NextEFB",
     "directories": {
       "output": "artifacts"
     },
     "files": [
       "dist/**/*",
+      "assets/branding/**/*",
       "package.json",
       "node_modules/**/*"
     ],
@@ -62,6 +66,7 @@
       "node_modules/better-sqlite3/**/*"
     ],
     "win": {
+      "icon": "assets/branding/NextEFB.ico",
       "signAndEditExecutable": false,
       "target": [
         "nsis",
@@ -69,6 +74,8 @@
       ]
     },
     "nsis": {
+      "installerIcon": "assets/branding/NextEFB.ico",
+      "uninstallerIcon": "assets/branding/NextEFB.ico",
       "oneClick": false,
       "allowToChangeInstallationDirectory": true
     }

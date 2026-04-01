@@ -1,4 +1,4 @@
-# MSFS Desktop Tracker MVP
+# NextEFB MVP
 
 ## 1. Goal
 

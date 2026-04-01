@@ -51,7 +51,8 @@ export class WebLanAppClient implements AppClient {
     return {
       host: 'web' as const,
       canWrite: true,
-      canManageLocalFiles: true
+      canManageLocalFiles: true,
+      isDev: import.meta.env.DEV
     }
   }
 
@@ -61,6 +62,22 @@ export class WebLanAppClient implements AppClient {
 
   getSettings(): Promise<AppSettings> {
     return this.fetchJson('/api/settings')
+  }
+
+  async getWindowState() {
+    return { isMaximized: false }
+  }
+
+  async performWindowAction() {
+    return { isMaximized: false }
+  }
+
+  async performDevAction() {
+    return false
+  }
+
+  onWindowStateChange() {
+    return () => void 0
   }
 
   getNavDataStatus(): Promise<NavDataStatus> {

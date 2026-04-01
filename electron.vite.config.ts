@@ -30,12 +30,14 @@ export default defineConfig({
   },
   renderer: {
     root: 'src/renderer',
+    publicDir: resolve(__dirname, 'assets/branding'),
     plugins: [react()],
     server: {
       host: '127.0.0.1'
     },
     resolve: {
       alias: {
+        '@branding': resolve(__dirname, 'assets/branding'),
         '@renderer': resolve(__dirname, 'src/renderer'),
         '@shared': resolve(__dirname, 'src/shared')
       }

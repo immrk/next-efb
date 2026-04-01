@@ -11,6 +11,9 @@ const ws = require("ws");
 const IPC_CHANNELS = {
   aircraftSnapshot: "aircraft:snapshot",
   aircraftUpdate: "aircraft:update",
+  windowAction: "window:action",
+  windowStateGet: "window:state:get",
+  windowStateChanged: "window:state:changed",
   chartAsset: "chart:asset",
   chartDelete: "chart:delete",
   chartFinalizeImport: "chart:finalize-import",
@@ -31,8 +34,10 @@ const IPC_CHANNELS = {
   navBuildPlan: "nav-data:plan:build",
   simbriefImport: "simbrief:import",
   remoteAccessStatus: "remote-access:status",
-  openExternal: "system:open-external"
+  openExternal: "system:open-external",
+  devAction: "dev:action"
 };
+const APP_NAME = "NextEFB";
 function registerIpc(options) {
   const {
     mainWindow: mainWindow2,
@@ -94,6 +99,15 @@ function registerIpc(options) {
   electron.ipcMain.handle(IPC_CHANNELS.remoteAccessStatus, () => lanServer.getStatus());
   electron.ipcMain.handle(IPC_CHANNELS.openExternal, async (_event, url) => {
     await electron.shell.openExternal(url);
+    return true;
+  });
+  electron.ipcMain.handle(IPC_CHANNELS.windowStateGet, () => getWindowState(mainWindow2));
+  electron.ipcMain.handle(IPC_CHANNELS.windowAction, (_event, action) => {
+    performWindowAction(mainWindow2, action);
+    return getWindowState(mainWindow2);
+  });
+  electron.ipcMain.handle(IPC_CHANNELS.devAction, (_event, action) => {
+    performDevAction(mainWindow2, action);
     return true;
   });
   electron.ipcMain.handle(IPC_CHANNELS.chartsList, () => chartRepository.listCharts());
@@ -202,6 +216,45 @@ function registerIpc(options) {
     lanServer.broadcastSettingsChanged();
     return nextSettings;
   });
+}
+function getWindowState(window) {
+  return {
+    isMaximized: window.isMaximized()
+  };
+}
+function performWindowAction(window, action) {
+  switch (action) {
+    case "minimize":
+      window.minimize();
+      break;
+    case "toggle-maximize":
+      if (window.isMaximized()) {
+        window.unmaximize();
+      } else {
+        window.maximize();
+      }
+      break;
+    case "close-to-tray":
+      window.hide();
+      break;
+    case "show":
+      if (window.isMinimized()) {
+        window.restore();
+      }
+      window.show();
+      window.focus();
+      break;
+  }
+}
+function performDevAction(window, action) {
+  switch (action) {
+    case "toggle-devtools":
+      window.webContents.toggleDevTools();
+      break;
+    case "reload":
+      window.webContents.reload();
+      break;
+  }
 }
 function getFileFormat$1(filePath) {
   const ext = filePath.toLowerCase().split(".").pop();
@@ -505,7 +558,7 @@ class NodeSimConnectProvider {
       updatedAt: Date.now()
     });
     try {
-      const { handle } = await nodeSimconnect.open("MSFS Desktop Tracker", nodeSimconnect.Protocol.KittyHawk);
+      const { handle } = await nodeSimconnect.open(APP_NAME, nodeSimconnect.Protocol.KittyHawk);
       if (!this.started) {
         handle.close();
         return;
@@ -2095,6 +2148,8 @@ function isAirwayToken(token) {
   return /^(?:[A-Z]{1,3}\d+[A-Z]?|N\d+|Q\d+|T\d+|V\d+|J\d+|Y\d+|UL\d+|UM\d+|UY\d+|UT\d+)$/u.test(token);
 }
 let mainWindow = null;
+let appTray = null;
+let isQuitting = false;
 const DEV_LOAD_RETRY_MS = 1200;
 const DEV_LOAD_MAX_ATTEMPTS = 12;
 async function delay(ms) {
@@ -2136,17 +2191,33 @@ async function createWindow() {
     navDataService
   });
   mainWindow = new electron.BrowserWindow({
+    title: APP_NAME,
     width: 1440,
     height: 920,
     minWidth: 1100,
     minHeight: 720,
     backgroundColor: "#102033",
+    icon: getBrandingAssetPath("app-icon-256.png"),
+    frame: false,
+    titleBarStyle: "hidden",
+    titleBarOverlay: false,
     webPreferences: {
       preload: node_path.join(__dirname, "../preload/index.js"),
       contextIsolation: true,
       nodeIntegration: false
     }
   });
+  mainWindow.on("close", (event) => {
+    if (isQuitting) {
+      return;
+    }
+    event.preventDefault();
+    mainWindow?.hide();
+  });
+  mainWindow.on("maximize", () => sendWindowState(mainWindow));
+  mainWindow.on("unmaximize", () => sendWindowState(mainWindow));
+  ensureTray();
+  sendWindowState(mainWindow);
   registerIpc({
     mainWindow,
     flightStateStore,
@@ -2160,11 +2231,15 @@ async function createWindow() {
   simConnectService.start();
   await lanServer.start();
   await loadRenderer(mainWindow);
+  sendWindowState(mainWindow);
 }
 function resolveSystemLanguage(locale) {
   return locale.trim().toLowerCase().startsWith("zh") ? "zh-CN" : "en-US";
 }
 electron.app.whenReady().then(async () => {
+  electron.app.on("before-quit", () => {
+    isQuitting = true;
+  });
   await createWindow();
   electron.app.on("activate", async () => {
     if (electron.BrowserWindow.getAllWindows().length === 0) {
@@ -2177,3 +2252,53 @@ electron.app.on("window-all-closed", () => {
     electron.app.quit();
   }
 });
+function sendWindowState(window) {
+  if (!window || window.isDestroyed()) {
+    return;
+  }
+  const payload = {
+    isMaximized: window.isMaximized()
+  };
+  window.webContents.send(IPC_CHANNELS.windowStateChanged, payload);
+}
+function ensureTray() {
+  if (appTray) {
+    return;
+  }
+  appTray = new electron.Tray(createTrayIcon());
+  appTray.setToolTip(APP_NAME);
+  appTray.setContextMenu(
+    electron.Menu.buildFromTemplate([
+      {
+        label: `Show ${APP_NAME}`,
+        click: () => showMainWindow()
+      },
+      {
+        label: "Exit",
+        click: () => {
+          isQuitting = true;
+          electron.app.quit();
+        }
+      }
+    ])
+  );
+  appTray.on("double-click", () => showMainWindow());
+  appTray.on("click", () => showMainWindow());
+}
+function showMainWindow() {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    return;
+  }
+  if (mainWindow.isMinimized()) {
+    mainWindow.restore();
+  }
+  mainWindow.show();
+  mainWindow.focus();
+  sendWindowState(mainWindow);
+}
+function createTrayIcon() {
+  return electron.nativeImage.createFromPath(getBrandingAssetPath("tray-icon-32.png"));
+}
+function getBrandingAssetPath(fileName) {
+  return node_path.join(electron.app.getAppPath(), "assets", "branding", fileName);
+}

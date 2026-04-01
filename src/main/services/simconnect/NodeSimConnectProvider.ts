@@ -7,6 +7,7 @@ import {
   SimConnectPeriod,
   type ConnectionHandle
 } from 'node-simconnect'
+import { APP_NAME } from '@shared/branding'
 import type { AircraftState, ConnectionState } from '@shared/types'
 import type { AircraftDataProvider } from './AircraftDataProvider'
 
@@ -94,7 +95,7 @@ export class NodeSimConnectProvider implements AircraftDataProvider {
     })
 
     try {
-      const { handle } = await open('MSFS Desktop Tracker', Protocol.KittyHawk)
+      const { handle } = await open(APP_NAME, Protocol.KittyHawk)
       if (!this.started) {
         handle.close()
         return

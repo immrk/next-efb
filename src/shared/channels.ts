@@ -1,6 +1,9 @@
 export const IPC_CHANNELS = {
   aircraftSnapshot: 'aircraft:snapshot',
   aircraftUpdate: 'aircraft:update',
+  windowAction: 'window:action',
+  windowStateGet: 'window:state:get',
+  windowStateChanged: 'window:state:changed',
   chartAsset: 'chart:asset',
   chartDelete: 'chart:delete',
   chartFinalizeImport: 'chart:finalize-import',
@@ -21,5 +24,6 @@ export const IPC_CHANNELS = {
   navBuildPlan: 'nav-data:plan:build',
   simbriefImport: 'simbrief:import',
   remoteAccessStatus: 'remote-access:status',
-  openExternal: 'system:open-external'
+  openExternal: 'system:open-external',
+  devAction: 'dev:action'
 } as const

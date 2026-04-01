@@ -3,6 +3,9 @@ const electron = require("electron");
 const IPC_CHANNELS = {
   aircraftSnapshot: "aircraft:snapshot",
   aircraftUpdate: "aircraft:update",
+  windowAction: "window:action",
+  windowStateGet: "window:state:get",
+  windowStateChanged: "window:state:changed",
   chartAsset: "chart:asset",
   chartDelete: "chart:delete",
   chartFinalizeImport: "chart:finalize-import",
@@ -23,7 +26,8 @@ const IPC_CHANNELS = {
   navBuildPlan: "nav-data:plan:build",
   simbriefImport: "simbrief:import",
   remoteAccessStatus: "remote-access:status",
-  openExternal: "system:open-external"
+  openExternal: "system:open-external",
+  devAction: "dev:action"
 };
 const api = {
   getSnapshot: async () => electron.ipcRenderer.invoke(IPC_CHANNELS.aircraftSnapshot),
@@ -47,6 +51,14 @@ const api = {
   updateSettings: async (partial) => electron.ipcRenderer.invoke(IPC_CHANNELS.settingsUpdate, partial),
   getRemoteAccessStatus: async () => electron.ipcRenderer.invoke(IPC_CHANNELS.remoteAccessStatus),
   openExternal: async (url) => electron.ipcRenderer.invoke(IPC_CHANNELS.openExternal, url),
+  performWindowAction: async (action) => electron.ipcRenderer.invoke(IPC_CHANNELS.windowAction, action),
+  getWindowState: async () => electron.ipcRenderer.invoke(IPC_CHANNELS.windowStateGet),
+  onWindowStateChange: (listener) => {
+    const wrapped = (_event, payload) => listener(payload);
+    electron.ipcRenderer.on(IPC_CHANNELS.windowStateChanged, wrapped);
+    return () => electron.ipcRenderer.removeListener(IPC_CHANNELS.windowStateChanged, wrapped);
+  },
+  performDevAction: async (action) => electron.ipcRenderer.invoke(IPC_CHANNELS.devAction, action),
   onAircraftUpdate: (listener) => {
     const wrapped = (_event, payload) => listener(payload);
     electron.ipcRenderer.on(IPC_CHANNELS.aircraftUpdate, wrapped);

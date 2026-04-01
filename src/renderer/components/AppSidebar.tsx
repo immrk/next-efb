@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import { APP_NAME } from '@shared/branding'
 import type { AppRoute } from '@shared/types'
 import { Button } from './ui/button'
 
@@ -12,10 +13,7 @@ interface AppSidebarProps {
 function SidebarIcon({ kind }: { kind: 'map' | 'charts' | 'settings' | 'brand' | 'collapse' }) {
   if (kind === 'brand') {
     return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M12 3L20 8V16L12 21L4 16V8L12 3Z" />
-        <path d="M12 7V17M8 9L16 13M16 9L8 13" />
-      </svg>
+      <img src="/brand-mark.svg" alt="" />
     )
   }
 
@@ -69,7 +67,7 @@ export function AppSidebar({ route, collapsed, onToggleCollapse, onNavigate }: A
           <span className="sidebar-brand-icon">
             <SidebarIcon kind="brand" />
           </span>
-          <strong className="sidebar-brand-text">NextEFB</strong>
+          <strong className="sidebar-brand-text">{APP_NAME}</strong>
         </div>
       </div>
 

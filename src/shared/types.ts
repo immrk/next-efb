@@ -56,3 +56,10 @@ export interface ConnectionState {
   messageCode: 'READY' | 'CONNECTING' | 'SIM_NOT_CONNECTED' | 'MOCK_READY'
   updatedAt: number
 }
+
+export interface DesktopWindowState {
+  isMaximized: boolean
+}
+
+export type DesktopWindowAction = 'minimize' | 'toggle-maximize' | 'close-to-tray' | 'show'
+export type DesktopDevAction = 'toggle-devtools' | 'reload'

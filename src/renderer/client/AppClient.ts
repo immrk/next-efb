@@ -8,7 +8,15 @@ import type {
   PickedChartFile,
   StorageSummary
 } from '@shared/chart-types'
-import type { AircraftState, AppSettings, ConnectionState, RemoteAccessStatus } from '@shared/types'
+import type {
+  AircraftState,
+  AppSettings,
+  ConnectionState,
+  DesktopDevAction,
+  DesktopWindowAction,
+  DesktopWindowState,
+  RemoteAccessStatus
+} from '@shared/types'
 import type {
   BuildFlightPlanInput,
   BuildFlightPlanResult,
@@ -23,6 +31,7 @@ export interface AppClientRuntime {
   host: 'electron' | 'web'
   canWrite: boolean
   canManageLocalFiles: boolean
+  isDev: boolean
 }
 
 export interface SnapshotPayload {
@@ -53,6 +62,10 @@ export interface AppClient {
   updateChart(input: ChartUpdateInput): Promise<ChartRecord | null>
   updateSettings(partial: Partial<AppSettings>): Promise<AppSettings>
   openExternal(url: string): Promise<boolean>
+  getWindowState(): Promise<DesktopWindowState>
+  performWindowAction(action: DesktopWindowAction): Promise<DesktopWindowState>
+  performDevAction(action: DesktopDevAction): Promise<boolean>
+  onWindowStateChange(listener: (state: DesktopWindowState) => void): () => void
   onAircraftUpdate(listener: (state: AircraftState) => void): () => void
   onConnectionUpdate(listener: (state: ConnectionState) => void): () => void
   onChartsChanged(listener: () => void): () => void

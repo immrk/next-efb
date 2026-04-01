@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { BrowserWindow, dialog, ipcMain, shell } from 'electron'
 import { IPC_CHANNELS } from '@shared/channels'
-import type { AppSettings } from '@shared/types'
+import type { AppSettings, DesktopDevAction, DesktopWindowAction, DesktopWindowState } from '@shared/types'
 import type {
   BuildFlightPlanInput,
   BuildFlightPlanResult,
@@ -106,6 +106,15 @@ export function registerIpc(options: RegisterIpcOptions): void {
   ipcMain.handle(IPC_CHANNELS.remoteAccessStatus, () => lanServer.getStatus())
   ipcMain.handle(IPC_CHANNELS.openExternal, async (_event, url: string) => {
     await shell.openExternal(url)
+    return true
+  })
+  ipcMain.handle(IPC_CHANNELS.windowStateGet, (): DesktopWindowState => getWindowState(mainWindow))
+  ipcMain.handle(IPC_CHANNELS.windowAction, (_event, action: DesktopWindowAction): DesktopWindowState => {
+    performWindowAction(mainWindow, action)
+    return getWindowState(mainWindow)
+  })
+  ipcMain.handle(IPC_CHANNELS.devAction, (_event, action: DesktopDevAction): boolean => {
+    performDevAction(mainWindow, action)
     return true
   })
   ipcMain.handle(IPC_CHANNELS.chartsList, () => chartRepository.listCharts())
@@ -231,6 +240,48 @@ export function registerIpc(options: RegisterIpcOptions): void {
     lanServer.broadcastSettingsChanged()
     return nextSettings
   })
+}
+
+function getWindowState(window: BrowserWindow): DesktopWindowState {
+  return {
+    isMaximized: window.isMaximized()
+  }
+}
+
+function performWindowAction(window: BrowserWindow, action: DesktopWindowAction): void {
+  switch (action) {
+    case 'minimize':
+      window.minimize()
+      break
+    case 'toggle-maximize':
+      if (window.isMaximized()) {
+        window.unmaximize()
+      } else {
+        window.maximize()
+      }
+      break
+    case 'close-to-tray':
+      window.hide()
+      break
+    case 'show':
+      if (window.isMinimized()) {
+        window.restore()
+      }
+      window.show()
+      window.focus()
+      break
+  }
+}
+
+function performDevAction(window: BrowserWindow, action: DesktopDevAction): void {
+  switch (action) {
+    case 'toggle-devtools':
+      window.webContents.toggleDevTools()
+      break
+    case 'reload':
+      window.webContents.reload()
+      break
+  }
 }
 
 function getDefaultTitle(filePath: string): string {

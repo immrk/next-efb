@@ -12755,6 +12755,7 @@ const useTranslation = (ns, props = {}) => {
     }
   });
 };
+const APP_NAME = "NextEFB";
 const variantClassNames$1 = {
   default: "button button-default",
   secondary: "button button-secondary",
@@ -12789,10 +12790,7 @@ function Button({
 }
 function SidebarIcon({ kind }) {
   if (kind === "brand") {
-    return /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { viewBox: "0 0 24 24", "aria-hidden": "true", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M12 3L20 8V16L12 21L4 16V8L12 3Z" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M12 7V17M8 9L16 13M16 9L8 13" })
-    ] });
+    return /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: "/brand-mark.svg", alt: "" });
   }
   if (kind === "collapse") {
     return /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { viewBox: "0 0 24 24", "aria-hidden": "true", children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M15 6L9 12L15 18" }) });
@@ -12824,7 +12822,7 @@ function AppSidebar({ route, collapsed, onToggleCollapse, onNavigate }) {
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("aside", { className: `app-sidebar ${collapsed ? "collapsed" : ""}`, children: [
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "sidebar-brand", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "sidebar-brand-main", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "sidebar-brand-icon", children: /* @__PURE__ */ jsxRuntimeExports.jsx(SidebarIcon, { kind: "brand" }) }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { className: "sidebar-brand-text", children: "NextEFB" })
+      /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { className: "sidebar-brand-text", children: APP_NAME })
     ] }) }),
     /* @__PURE__ */ jsxRuntimeExports.jsx("nav", { className: "sidebar-nav", children: items.map((item) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
       Button,
@@ -12863,7 +12861,8 @@ class ElectronAppClient {
     return {
       host: "electron",
       canWrite: true,
-      canManageLocalFiles: true
+      canManageLocalFiles: true,
+      isDev: false
     };
   }
   getSnapshot() {
@@ -12929,6 +12928,18 @@ class ElectronAppClient {
   openExternal(url) {
     return window.msfsApi.openExternal(url);
   }
+  getWindowState() {
+    return window.msfsApi.getWindowState();
+  }
+  performWindowAction(action) {
+    return window.msfsApi.performWindowAction(action);
+  }
+  performDevAction(action) {
+    return window.msfsApi.performDevAction(action);
+  }
+  onWindowStateChange(listener) {
+    return window.msfsApi.onWindowStateChange(listener);
+  }
   onAircraftUpdate(listener) {
     return window.msfsApi.onAircraftUpdate(listener);
   }
@@ -12958,7 +12969,8 @@ class WebLanAppClient {
     return {
       host: "web",
       canWrite: true,
-      canManageLocalFiles: true
+      canManageLocalFiles: true,
+      isDev: false
     };
   }
   getSnapshot() {
@@ -12966,6 +12978,18 @@ class WebLanAppClient {
   }
   getSettings() {
     return this.fetchJson("/api/settings");
+  }
+  async getWindowState() {
+    return { isMaximized: false };
+  }
+  async performWindowAction() {
+    return { isMaximized: false };
+  }
+  async performDevAction() {
+    return false;
+  }
+  onWindowStateChange() {
+    return () => void 0;
   }
   getNavDataStatus() {
     return this.fetchJson("/api/nav/status");
@@ -13224,6 +13248,119 @@ function getMimeTypeByFormat(fileFormat) {
 const appClient = typeof window !== "undefined" && typeof window.msfsApi !== "undefined" ? new ElectronAppClient() : new WebLanAppClient();
 function getAppClient() {
   return appClient;
+}
+function WindowControlIcon({ kind }) {
+  if (kind === "minimize") {
+    return /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { viewBox: "0 0 24 24", "aria-hidden": "true", children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M5 12H19" }) });
+  }
+  if (kind === "maximize") {
+    return /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { viewBox: "0 0 24 24", "aria-hidden": "true", children: /* @__PURE__ */ jsxRuntimeExports.jsx("rect", { x: "5", y: "5", width: "14", height: "14", rx: "2" }) });
+  }
+  if (kind === "restore") {
+    return /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { viewBox: "0 0 24 24", "aria-hidden": "true", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M9 9H7a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-2" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M11 5H17a2 2 0 0 1 2 2V13" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M10 14L19 5" })
+    ] });
+  }
+  if (kind === "tools") {
+    return /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { viewBox: "0 0 24 24", "aria-hidden": "true", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M10 5L7 8L10 11" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M14 13L17 16L14 19" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M17 8H7" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M7 16H17" })
+    ] });
+  }
+  if (kind === "refresh") {
+    return /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { viewBox: "0 0 24 24", "aria-hidden": "true", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M20 11A8 8 0 1 0 18 16" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M20 4V11H13" })
+    ] });
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { viewBox: "0 0 24 24", "aria-hidden": "true", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M6 6L18 18" }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M18 6L6 18" })
+  ] });
+}
+function DesktopTitleBar() {
+  const { t } = useTranslation();
+  const appClient2 = getAppClient();
+  const runtime = appClient2.getRuntime();
+  const [isMaximized, setIsMaximized] = reactExports.useState(false);
+  reactExports.useEffect(() => {
+    let active = true;
+    void appClient2.getWindowState().then((state) => {
+      if (active) {
+        setIsMaximized(state.isMaximized);
+      }
+    });
+    const unsubscribe = appClient2.onWindowStateChange((state) => {
+      setIsMaximized(state.isMaximized);
+    });
+    return () => {
+      active = false;
+      unsubscribe();
+    };
+  }, [appClient2]);
+  if (runtime.host !== "electron") {
+    return null;
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("header", { className: "desktop-titlebar", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "desktop-titlebar-left", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "desktop-titlebar-brand", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "desktop-titlebar-logo", "aria-hidden": "true", children: /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: "/brand-mark.svg", alt: "" }) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "desktop-titlebar-copy", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: APP_NAME }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: t("desktop.chromeSubtitle") })
+        ] })
+      ] }),
+      runtime.isDev ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "desktop-dev-actions no-drag", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("button", { type: "button", className: "desktop-dev-button", onClick: () => void appClient2.performDevAction("toggle-devtools"), children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(WindowControlIcon, { kind: "tools" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: t("desktop.devtools") })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("button", { type: "button", className: "desktop-dev-button", onClick: () => void appClient2.performDevAction("reload"), children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(WindowControlIcon, { kind: "refresh" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: t("desktop.reload") })
+        ] })
+      ] }) : null
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "desktop-window-controls no-drag", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "button",
+        {
+          type: "button",
+          className: "desktop-window-button",
+          onClick: () => void appClient2.performWindowAction("minimize"),
+          "aria-label": t("desktop.minimize"),
+          title: t("desktop.minimize"),
+          children: /* @__PURE__ */ jsxRuntimeExports.jsx(WindowControlIcon, { kind: "minimize" })
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "button",
+        {
+          type: "button",
+          className: "desktop-window-button",
+          onClick: () => void appClient2.performWindowAction("toggle-maximize"),
+          "aria-label": isMaximized ? t("desktop.restore") : t("desktop.maximize"),
+          title: isMaximized ? t("desktop.restore") : t("desktop.maximize"),
+          children: /* @__PURE__ */ jsxRuntimeExports.jsx(WindowControlIcon, { kind: isMaximized ? "restore" : "maximize" })
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "button",
+        {
+          type: "button",
+          className: "desktop-window-button desktop-window-button-close",
+          onClick: () => void appClient2.performWindowAction("close-to-tray"),
+          "aria-label": t("desktop.hideToTray"),
+          title: t("desktop.hideToTray"),
+          children: /* @__PURE__ */ jsxRuntimeExports.jsx(WindowControlIcon, { kind: "close" })
+        }
+      )
+    ] })
+  ] });
 }
 var define_process_env_default = {};
 const isString = (obj) => typeof obj === "string";
@@ -15666,6 +15803,13 @@ const enUS = {
   "common.back": "Back",
   "common.cancel": "Cancel",
   "common.close": "Close",
+  "desktop.chromeSubtitle": "Desktop Flight Deck",
+  "desktop.devtools": "DevTools",
+  "desktop.reload": "Reload",
+  "desktop.minimize": "Minimize",
+  "desktop.maximize": "Maximize",
+  "desktop.restore": "Restore",
+  "desktop.hideToTray": "Hide to tray",
   "map.aircraftMarker": "Aircraft position marker",
   "map.lat": "LAT",
   "map.lon": "LON",
@@ -56482,24 +56626,89 @@ function MapPage({
         routeSegments: flightPlanSegments
       }
     ),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "map-route-launcher", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
-      Button,
-      {
-        type: "button",
-        variant: "outline",
-        className: "map-route-launcher-button",
-        onClick: () => setIsFlightPlanDrawerOpen(true),
-        "aria-label": t("flightPlan.launchEditor"),
-        title: t("flightPlan.launchEditor"),
-        children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { viewBox: "0 0 24 24", "aria-hidden": "true", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M3 7H7L10 13L14 9L17 13H21" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M7 7L9 5M17 13L19 11" })
-          ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: t("flightPlan.launchEditor") })
-        ]
-      }
-    ) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "map-workspace-overlays", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "map-route-launcher", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        Button,
+        {
+          type: "button",
+          variant: "outline",
+          className: "map-route-launcher-button",
+          onClick: () => setIsFlightPlanDrawerOpen(true),
+          "aria-label": t("flightPlan.launchEditor"),
+          title: t("flightPlan.launchEditor"),
+          children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { viewBox: "0 0 24 24", "aria-hidden": "true", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M3 7H7L10 13L14 9L17 13H21" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M7 7L9 5M17 13L19 11" })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: t("flightPlan.launchEditor") })
+          ]
+        }
+      ) }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        ChartMountDrawer,
+        {
+          mode: "overlay",
+          isOpen: isChartDrawerOpen,
+          charts,
+          selectedChartId: activeChartId,
+          mountedChartIds,
+          onClose: () => setIsChartDrawerOpen(false),
+          onSelect: (chartId) => onOpenChartLibrary(chartId),
+          onEdit: runtime.canWrite ? onEditChart : void 0,
+          onPin: mountChart
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        FlightPlanDrawer,
+        {
+          isOpen: isFlightPlanDrawerOpen,
+          draft: flightPlanDraft,
+          onClose: () => setIsFlightPlanDrawerOpen(false),
+          onOpenSettings,
+          onDraftChange: onFlightPlanDraftChange
+        }
+      ),
+      pendingDisabledCard ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "chart-meta-modal-backdrop", role: "presentation", onClick: () => setPendingDisabledCard(null), children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        "section",
+        {
+          className: "chart-meta-modal chart-mount-reason-modal",
+          role: "dialog",
+          "aria-modal": "true",
+          "aria-label": t("mapMount.reasonTitle"),
+          onClick: (event) => event.stopPropagation(),
+          children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("header", { className: "chart-meta-modal-head", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { children: t("mapMount.reasonTitle") }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                Button,
+                {
+                  type: "button",
+                  variant: "outline",
+                  size: "icon",
+                  onClick: () => setPendingDisabledCard(null),
+                  "aria-label": t("common.close"),
+                  children: /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { viewBox: "0 0 24 24", "aria-hidden": "true", children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M6 6L18 18M18 6L6 18" }) })
+                }
+              )
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "chart-meta-modal-body", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "settings-note settings-note-card", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: pendingDisabledCard.state === "missing-georef" ? t("mapMount.noGeorefTitle") : t("mapMount.noChartTitle") }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: pendingDisabledCard.state === "missing-georef" ? t("mapMount.noGeorefBody", {
+                procedure: pendingDisabledCard.procedureName,
+                chart: pendingDisabledCard.chartTitle ?? ""
+              }) : t("mapMount.noChartBody", {
+                procedure: pendingDisabledCard.procedureName
+              }) })
+            ] }) }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("footer", { className: "chart-meta-modal-foot", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "button", variant: "secondary", onClick: () => setPendingDisabledCard(null), children: t("common.cancel") }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "button", onClick: handleDisabledCardAction, children: pendingDisabledCard.chartId ? t("mapMount.goBindGeo") : t("mapMount.goChartLibrary") })
+            ] })
+          ]
+        }
+      ) }) : null
+    ] }),
     /* @__PURE__ */ jsxRuntimeExports.jsx("section", { className: "chart-dock", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "chart-dock-main", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx(
         Button,
@@ -56570,70 +56779,7 @@ function MapPage({
           card.id
         );
       }) }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "chart-dock-empty-inline", children: t("charts.emptyTitle") })
-    ] }) }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx(
-      ChartMountDrawer,
-      {
-        mode: "overlay",
-        isOpen: isChartDrawerOpen,
-        charts,
-        selectedChartId: activeChartId,
-        mountedChartIds,
-        onClose: () => setIsChartDrawerOpen(false),
-        onSelect: (chartId) => onOpenChartLibrary(chartId),
-        onEdit: runtime.canWrite ? onEditChart : void 0,
-        onPin: mountChart
-      }
-    ),
-    /* @__PURE__ */ jsxRuntimeExports.jsx(
-      FlightPlanDrawer,
-      {
-        isOpen: isFlightPlanDrawerOpen,
-        draft: flightPlanDraft,
-        onClose: () => setIsFlightPlanDrawerOpen(false),
-        onOpenSettings,
-        onDraftChange: onFlightPlanDraftChange
-      }
-    ),
-    pendingDisabledCard ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "chart-meta-modal-backdrop", role: "presentation", onClick: () => setPendingDisabledCard(null), children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
-      "section",
-      {
-        className: "chart-meta-modal chart-mount-reason-modal",
-        role: "dialog",
-        "aria-modal": "true",
-        "aria-label": t("mapMount.reasonTitle"),
-        onClick: (event) => event.stopPropagation(),
-        children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("header", { className: "chart-meta-modal-head", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { children: t("mapMount.reasonTitle") }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx(
-              Button,
-              {
-                type: "button",
-                variant: "outline",
-                size: "icon",
-                onClick: () => setPendingDisabledCard(null),
-                "aria-label": t("common.close"),
-                children: /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { viewBox: "0 0 24 24", "aria-hidden": "true", children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M6 6L18 18M18 6L6 18" }) })
-              }
-            )
-          ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "chart-meta-modal-body", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "settings-note settings-note-card", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: pendingDisabledCard.state === "missing-georef" ? t("mapMount.noGeorefTitle") : t("mapMount.noChartTitle") }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: pendingDisabledCard.state === "missing-georef" ? t("mapMount.noGeorefBody", {
-              procedure: pendingDisabledCard.procedureName,
-              chart: pendingDisabledCard.chartTitle ?? ""
-            }) : t("mapMount.noChartBody", {
-              procedure: pendingDisabledCard.procedureName
-            }) })
-          ] }) }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("footer", { className: "chart-meta-modal-foot", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "button", variant: "secondary", onClick: () => setPendingDisabledCard(null), children: t("common.cancel") }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "button", onClick: handleDisabledCardAction, children: pendingDisabledCard.chartId ? t("mapMount.goBindGeo") : t("mapMount.goChartLibrary") })
-          ] })
-        ]
-      }
-    ) }) : null
+    ] }) })
   ] });
 }
 function buildDraftSignature(draft) {
@@ -59152,6 +59298,7 @@ function SettingsPage() {
 }
 function App() {
   const { t } = useTranslation();
+  const runtime = getAppClient().getRuntime();
   useDesktopData();
   const [route, setRoute] = reactExports.useState("map");
   const [selectedChartId, setSelectedChartId] = reactExports.useState(null);
@@ -59165,67 +59312,71 @@ function App() {
     persistStoredFlightPlanDraft(flightPlanDraft);
   }, [flightPlanDraft]);
   const isFullBleedRoute = route === "map" || route === "charts" || route === "chartDetail" || route === "settings";
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("main", { className: `product-shell ${sidebarCollapsed ? "sidebar-collapsed" : ""}`, children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx(
-      AppSidebar,
-      {
-        route: route === "chartDetail" ? "charts" : route,
-        collapsed: sidebarCollapsed,
-        onToggleCollapse: () => setSidebarCollapsed((current) => !current),
-        onNavigate: (nextRoute) => {
-          if (nextRoute !== "chartDetail") {
-            setRoute(nextRoute);
+  const showDesktopTitleBar = runtime.host === "electron";
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("main", { className: `desktop-shell ${showDesktopTitleBar ? "desktop-shell-with-titlebar" : ""}`, children: [
+    showDesktopTitleBar ? /* @__PURE__ */ jsxRuntimeExports.jsx(DesktopTitleBar, {}) : null,
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: `product-shell ${sidebarCollapsed ? "sidebar-collapsed" : ""}`, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        AppSidebar,
+        {
+          route: route === "chartDetail" ? "charts" : route,
+          collapsed: sidebarCollapsed,
+          onToggleCollapse: () => setSidebarCollapsed((current) => !current),
+          onNavigate: (nextRoute) => {
+            if (nextRoute !== "chartDetail") {
+              setRoute(nextRoute);
+            }
           }
         }
-      }
-    ),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("section", { className: `app-shell ${isFullBleedRoute ? "app-shell-fullbleed" : ""}`, children: [
-      isFullBleedRoute ? null : /* @__PURE__ */ jsxRuntimeExports.jsx("header", { className: "topbar", children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: t("app.subtitle") }) }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("section", { className: `route-view ${route === "map" ? "active" : ""}`, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-        MapPage,
-        {
-          flightPlanDraft,
-          onOpenChartLibrary: (chartId) => {
-            setSelectedChartId(chartId ?? null);
-            setRoute("charts");
-          },
-          onEditChart: (chartId) => {
-            setSelectedChartId(chartId);
-            setDetailChartId(chartId);
-            setChartDetailBackRoute("map");
-            setRoute("chartDetail");
-          },
-          onOpenSettings: () => setRoute("settings"),
-          onFlightPlanDraftChange: setFlightPlanDraft
-        }
-      ) }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("section", { className: `route-view ${route === "charts" ? "active" : ""}`, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-        ChartsPage,
-        {
-          selectedChartId,
-          onSelectChart: setSelectedChartId,
-          onEditChart: (chartId) => {
-            setSelectedChartId(chartId);
-            setDetailChartId(chartId);
-            setChartDetailBackRoute("charts");
-            setRoute("chartDetail");
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("section", { className: `app-shell ${isFullBleedRoute ? "app-shell-fullbleed" : ""}`, children: [
+        isFullBleedRoute ? null : /* @__PURE__ */ jsxRuntimeExports.jsx("header", { className: "topbar", children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: t("app.subtitle") }) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("section", { className: `route-view ${route === "map" ? "active" : ""}`, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+          MapPage,
+          {
+            flightPlanDraft,
+            onOpenChartLibrary: (chartId) => {
+              setSelectedChartId(chartId ?? null);
+              setRoute("charts");
+            },
+            onEditChart: (chartId) => {
+              setSelectedChartId(chartId);
+              setDetailChartId(chartId);
+              setChartDetailBackRoute("map");
+              setRoute("chartDetail");
+            },
+            onOpenSettings: () => setRoute("settings"),
+            onFlightPlanDraftChange: setFlightPlanDraft
           }
-        }
-      ) }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("section", { className: `route-view ${route === "settings" ? "active" : ""}`, children: /* @__PURE__ */ jsxRuntimeExports.jsx(SettingsPage, {}) }),
-      route === "chartDetail" && detailChartId ? /* @__PURE__ */ jsxRuntimeExports.jsx("section", { className: `route-view ${route === "chartDetail" ? "active" : ""}`, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-        ChartDetailPage,
-        {
-          chartId: detailChartId,
-          onBack: () => setRoute(chartDetailBackRoute),
-          onSaved: () => void 0,
-          onDeleted: () => {
-            setSelectedChartId(null);
-            setDetailChartId(null);
-            setRoute(chartDetailBackRoute);
+        ) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("section", { className: `route-view ${route === "charts" ? "active" : ""}`, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+          ChartsPage,
+          {
+            selectedChartId,
+            onSelectChart: setSelectedChartId,
+            onEditChart: (chartId) => {
+              setSelectedChartId(chartId);
+              setDetailChartId(chartId);
+              setChartDetailBackRoute("charts");
+              setRoute("chartDetail");
+            }
           }
-        }
-      ) }) : null
+        ) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("section", { className: `route-view ${route === "settings" ? "active" : ""}`, children: /* @__PURE__ */ jsxRuntimeExports.jsx(SettingsPage, {}) }),
+        route === "chartDetail" && detailChartId ? /* @__PURE__ */ jsxRuntimeExports.jsx("section", { className: `route-view ${route === "chartDetail" ? "active" : ""}`, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+          ChartDetailPage,
+          {
+            chartId: detailChartId,
+            onBack: () => setRoute(chartDetailBackRoute),
+            onSaved: () => void 0,
+            onDeleted: () => {
+              setSelectedChartId(null);
+              setDetailChartId(null);
+              setRoute(chartDetailBackRoute);
+            }
+          }
+        ) }) : null
+      ] })
     ] })
   ] });
 }

@@ -1,4 +1,12 @@
-import type { AircraftState, AppSettings, ConnectionState, RemoteAccessStatus } from '@shared/types'
+import type {
+  AircraftState,
+  AppSettings,
+  ConnectionState,
+  DesktopDevAction,
+  DesktopWindowAction,
+  DesktopWindowState,
+  RemoteAccessStatus
+} from '@shared/types'
 import type {
   ChartAssetPayload,
   ChartImportResult,
@@ -43,6 +51,10 @@ declare global {
       updateSettings: (partial: Partial<AppSettings>) => Promise<AppSettings>
       getRemoteAccessStatus: () => Promise<RemoteAccessStatus>
       openExternal: (url: string) => Promise<boolean>
+      performWindowAction: (action: DesktopWindowAction) => Promise<DesktopWindowState>
+      getWindowState: () => Promise<DesktopWindowState>
+      onWindowStateChange: (listener: (state: DesktopWindowState) => void) => () => void
+      performDevAction: (action: DesktopDevAction) => Promise<boolean>
       onAircraftUpdate: (listener: (state: AircraftState) => void) => () => void
       onConnectionUpdate: (listener: (state: ConnectionState) => void) => () => void
     }

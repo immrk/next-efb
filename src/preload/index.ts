@@ -1,6 +1,14 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { IPC_CHANNELS } from '@shared/channels'
-import type { AircraftState, AppSettings, ConnectionState, RemoteAccessStatus } from '@shared/types'
+import type {
+  AircraftState,
+  AppSettings,
+  ConnectionState,
+  DesktopDevAction,
+  DesktopWindowAction,
+  DesktopWindowState,
+  RemoteAccessStatus
+} from '@shared/types'
 import type {
   ChartAssetPayload,
   ChartImportResult,
@@ -61,6 +69,16 @@ const api = {
   getRemoteAccessStatus: async (): Promise<RemoteAccessStatus> =>
     ipcRenderer.invoke(IPC_CHANNELS.remoteAccessStatus),
   openExternal: async (url: string): Promise<boolean> => ipcRenderer.invoke(IPC_CHANNELS.openExternal, url),
+  performWindowAction: async (action: DesktopWindowAction): Promise<DesktopWindowState> =>
+    ipcRenderer.invoke(IPC_CHANNELS.windowAction, action),
+  getWindowState: async (): Promise<DesktopWindowState> => ipcRenderer.invoke(IPC_CHANNELS.windowStateGet),
+  onWindowStateChange: (listener: (state: DesktopWindowState) => void): (() => void) => {
+    const wrapped = (_event: Electron.IpcRendererEvent, payload: DesktopWindowState) => listener(payload)
+    ipcRenderer.on(IPC_CHANNELS.windowStateChanged, wrapped)
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.windowStateChanged, wrapped)
+  },
+  performDevAction: async (action: DesktopDevAction): Promise<boolean> =>
+    ipcRenderer.invoke(IPC_CHANNELS.devAction, action),
   onAircraftUpdate: (listener: (state: AircraftState) => void): (() => void) => {
     const wrapped = (_event: Electron.IpcRendererEvent, payload: AircraftState) => listener(payload)
     ipcRenderer.on(IPC_CHANNELS.aircraftUpdate, wrapped)

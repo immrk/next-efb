@@ -1,4 +1,4 @@
-# MSFS Desktop Tracker MVP 2.0
+# NextEFB MVP 2.0
 
 ## 1. Product goal
 

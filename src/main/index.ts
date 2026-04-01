@@ -1,5 +1,8 @@
-import { app, BrowserWindow } from 'electron'
+import { Menu, Tray, app, nativeImage, BrowserWindow } from 'electron'
 import { join } from 'node:path'
+import { IPC_CHANNELS } from '@shared/channels'
+import { APP_NAME } from '@shared/branding'
+import type { DesktopWindowState } from '@shared/types'
 import { registerIpc } from './ipc/registerIpc'
 import { FlightStateStore } from './services/state/FlightStateStore'
 import { SettingsStore } from './services/config/SettingsStore'
@@ -10,6 +13,8 @@ import { LanServer } from './services/lan/LanServer'
 import { NavDataService } from './services/navigation/NavDataService'
 
 let mainWindow: BrowserWindow | null = null
+let appTray: Tray | null = null
+let isQuitting = false
 const DEV_LOAD_RETRY_MS = 1200
 const DEV_LOAD_MAX_ATTEMPTS = 12
 
@@ -58,17 +63,37 @@ async function createWindow(): Promise<void> {
   })
 
   mainWindow = new BrowserWindow({
+    title: APP_NAME,
     width: 1440,
     height: 920,
     minWidth: 1100,
     minHeight: 720,
     backgroundColor: '#102033',
+    icon: getBrandingAssetPath('app-icon-256.png'),
+    frame: false,
+    titleBarStyle: 'hidden',
+    titleBarOverlay: false,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       contextIsolation: true,
       nodeIntegration: false
     }
   })
+
+  mainWindow.on('close', (event) => {
+    if (isQuitting) {
+      return
+    }
+
+    event.preventDefault()
+    mainWindow?.hide()
+  })
+
+  mainWindow.on('maximize', () => sendWindowState(mainWindow))
+  mainWindow.on('unmaximize', () => sendWindowState(mainWindow))
+
+  ensureTray()
+  sendWindowState(mainWindow)
 
   registerIpc({
     mainWindow,
@@ -84,6 +109,7 @@ async function createWindow(): Promise<void> {
   simConnectService.start()
   await lanServer.start()
   await loadRenderer(mainWindow)
+  sendWindowState(mainWindow)
 }
 
 function resolveSystemLanguage(locale: string): 'zh-CN' | 'en-US' {
@@ -91,6 +117,10 @@ function resolveSystemLanguage(locale: string): 'zh-CN' | 'en-US' {
 }
 
 app.whenReady().then(async () => {
+  app.on('before-quit', () => {
+    isQuitting = true
+  })
+
   await createWindow()
 
   app.on('activate', async () => {
@@ -105,3 +135,63 @@ app.on('window-all-closed', () => {
     app.quit()
   }
 })
+
+function sendWindowState(window: BrowserWindow | null): void {
+  if (!window || window.isDestroyed()) {
+    return
+  }
+
+  const payload: DesktopWindowState = {
+    isMaximized: window.isMaximized()
+  }
+
+  window.webContents.send(IPC_CHANNELS.windowStateChanged, payload)
+}
+
+function ensureTray(): void {
+  if (appTray) {
+    return
+  }
+
+  appTray = new Tray(createTrayIcon())
+  appTray.setToolTip(APP_NAME)
+  appTray.setContextMenu(
+    Menu.buildFromTemplate([
+      {
+        label: `Show ${APP_NAME}`,
+        click: () => showMainWindow()
+      },
+      {
+        label: 'Exit',
+        click: () => {
+          isQuitting = true
+          app.quit()
+        }
+      }
+    ])
+  )
+  appTray.on('double-click', () => showMainWindow())
+  appTray.on('click', () => showMainWindow())
+}
+
+function showMainWindow(): void {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    return
+  }
+
+  if (mainWindow.isMinimized()) {
+    mainWindow.restore()
+  }
+
+  mainWindow.show()
+  mainWindow.focus()
+  sendWindowState(mainWindow)
+}
+
+function createTrayIcon() {
+  return nativeImage.createFromPath(getBrandingAssetPath('tray-icon-32.png'))
+}
+
+function getBrandingAssetPath(fileName: string): string {
+  return join(app.getAppPath(), 'assets', 'branding', fileName)
+}

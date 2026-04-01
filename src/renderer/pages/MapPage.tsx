@@ -349,21 +349,99 @@ export function MapPage({
         routeSegments={flightPlanSegments}
       />
 
-      <div className="map-route-launcher">
-        <Button
-          type="button"
-          variant="outline"
-          className="map-route-launcher-button"
-          onClick={() => setIsFlightPlanDrawerOpen(true)}
-          aria-label={t('flightPlan.launchEditor')}
-          title={t('flightPlan.launchEditor')}
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M3 7H7L10 13L14 9L17 13H21" />
-            <path d="M7 7L9 5M17 13L19 11" />
-          </svg>
-          <span>{t('flightPlan.launchEditor')}</span>
-        </Button>
+      <div className="map-workspace-overlays">
+        <div className="map-route-launcher">
+          <Button
+            type="button"
+            variant="outline"
+            className="map-route-launcher-button"
+            onClick={() => setIsFlightPlanDrawerOpen(true)}
+            aria-label={t('flightPlan.launchEditor')}
+            title={t('flightPlan.launchEditor')}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M3 7H7L10 13L14 9L17 13H21" />
+              <path d="M7 7L9 5M17 13L19 11" />
+            </svg>
+            <span>{t('flightPlan.launchEditor')}</span>
+          </Button>
+        </div>
+
+        <ChartMountDrawer
+          mode="overlay"
+          isOpen={isChartDrawerOpen}
+          charts={charts}
+          selectedChartId={activeChartId}
+          mountedChartIds={mountedChartIds}
+          onClose={() => setIsChartDrawerOpen(false)}
+          onSelect={(chartId) => onOpenChartLibrary(chartId)}
+          onEdit={runtime.canWrite ? onEditChart : undefined}
+          onPin={mountChart}
+        />
+
+        <FlightPlanDrawer
+          isOpen={isFlightPlanDrawerOpen}
+          draft={flightPlanDraft}
+          onClose={() => setIsFlightPlanDrawerOpen(false)}
+          onOpenSettings={onOpenSettings}
+          onDraftChange={onFlightPlanDraftChange}
+        />
+
+        {pendingDisabledCard ? (
+          <div className="chart-meta-modal-backdrop" role="presentation" onClick={() => setPendingDisabledCard(null)}>
+            <section
+              className="chart-meta-modal chart-mount-reason-modal"
+              role="dialog"
+              aria-modal="true"
+              aria-label={t('mapMount.reasonTitle')}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <header className="chart-meta-modal-head">
+                <h3>{t('mapMount.reasonTitle')}</h3>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setPendingDisabledCard(null)}
+                  aria-label={t('common.close')}
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M6 6L18 18M18 6L6 18" />
+                  </svg>
+                </Button>
+              </header>
+
+              <div className="chart-meta-modal-body">
+                <div className="settings-note settings-note-card">
+                  <strong>
+                    {pendingDisabledCard.state === 'missing-georef'
+                      ? t('mapMount.noGeorefTitle')
+                      : t('mapMount.noChartTitle')}
+                  </strong>
+                  <span>
+                    {pendingDisabledCard.state === 'missing-georef'
+                      ? t('mapMount.noGeorefBody', {
+                          procedure: pendingDisabledCard.procedureName,
+                          chart: pendingDisabledCard.chartTitle ?? ''
+                        })
+                      : t('mapMount.noChartBody', {
+                          procedure: pendingDisabledCard.procedureName
+                        })}
+                  </span>
+                </div>
+              </div>
+
+              <footer className="chart-meta-modal-foot">
+                <Button type="button" variant="secondary" onClick={() => setPendingDisabledCard(null)}>
+                  {t('common.cancel')}
+                </Button>
+                <Button type="button" onClick={handleDisabledCardAction}>
+                  {pendingDisabledCard.chartId ? t('mapMount.goBindGeo') : t('mapMount.goChartLibrary')}
+                </Button>
+              </footer>
+            </section>
+          </div>
+        ) : null}
       </div>
 
       <section className="chart-dock">
@@ -459,82 +537,6 @@ export function MapPage({
           )}
         </div>
       </section>
-
-      <ChartMountDrawer
-        mode="overlay"
-        isOpen={isChartDrawerOpen}
-        charts={charts}
-        selectedChartId={activeChartId}
-        mountedChartIds={mountedChartIds}
-        onClose={() => setIsChartDrawerOpen(false)}
-        onSelect={(chartId) => onOpenChartLibrary(chartId)}
-        onEdit={runtime.canWrite ? onEditChart : undefined}
-        onPin={mountChart}
-      />
-
-      <FlightPlanDrawer
-        isOpen={isFlightPlanDrawerOpen}
-        draft={flightPlanDraft}
-        onClose={() => setIsFlightPlanDrawerOpen(false)}
-        onOpenSettings={onOpenSettings}
-        onDraftChange={onFlightPlanDraftChange}
-      />
-
-      {pendingDisabledCard ? (
-        <div className="chart-meta-modal-backdrop" role="presentation" onClick={() => setPendingDisabledCard(null)}>
-          <section
-            className="chart-meta-modal chart-mount-reason-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-label={t('mapMount.reasonTitle')}
-            onClick={(event) => event.stopPropagation()}
-          >
-            <header className="chart-meta-modal-head">
-              <h3>{t('mapMount.reasonTitle')}</h3>
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={() => setPendingDisabledCard(null)}
-                aria-label={t('common.close')}
-              >
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M6 6L18 18M18 6L6 18" />
-                </svg>
-              </Button>
-            </header>
-
-            <div className="chart-meta-modal-body">
-              <div className="settings-note settings-note-card">
-                <strong>
-                  {pendingDisabledCard.state === 'missing-georef'
-                    ? t('mapMount.noGeorefTitle')
-                    : t('mapMount.noChartTitle')}
-                </strong>
-                <span>
-                  {pendingDisabledCard.state === 'missing-georef'
-                    ? t('mapMount.noGeorefBody', {
-                        procedure: pendingDisabledCard.procedureName,
-                        chart: pendingDisabledCard.chartTitle ?? ''
-                      })
-                    : t('mapMount.noChartBody', {
-                        procedure: pendingDisabledCard.procedureName
-                      })}
-                </span>
-              </div>
-            </div>
-
-            <footer className="chart-meta-modal-foot">
-              <Button type="button" variant="secondary" onClick={() => setPendingDisabledCard(null)}>
-                {t('common.cancel')}
-              </Button>
-              <Button type="button" onClick={handleDisabledCardAction}>
-                {pendingDisabledCard.chartId ? t('mapMount.goBindGeo') : t('mapMount.goChartLibrary')}
-              </Button>
-            </footer>
-          </section>
-        </div>
-      ) : null}
     </section>
   )
 }

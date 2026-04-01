@@ -5,7 +5,8 @@ export class ElectronAppClient implements AppClient {
     return {
       host: 'electron' as const,
       canWrite: true,
-      canManageLocalFiles: true
+      canManageLocalFiles: true,
+      isDev: import.meta.env.DEV
     }
   }
 
@@ -94,6 +95,22 @@ export class ElectronAppClient implements AppClient {
 
   openExternal(url: string) {
     return window.msfsApi.openExternal(url)
+  }
+
+  getWindowState() {
+    return window.msfsApi.getWindowState()
+  }
+
+  performWindowAction(action: Parameters<typeof window.msfsApi.performWindowAction>[0]) {
+    return window.msfsApi.performWindowAction(action)
+  }
+
+  performDevAction(action: Parameters<typeof window.msfsApi.performDevAction>[0]) {
+    return window.msfsApi.performDevAction(action)
+  }
+
+  onWindowStateChange(listener: Parameters<typeof window.msfsApi.onWindowStateChange>[0]) {
+    return window.msfsApi.onWindowStateChange(listener)
   }
 
   onAircraftUpdate(listener: Parameters<typeof window.msfsApi.onAircraftUpdate>[0]) {

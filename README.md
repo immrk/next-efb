@@ -1,6 +1,6 @@
-# MSFS Desktop Tracker
+# NextEFB
 
-An Electron + React + TypeScript desktop MVP for tracking the user aircraft in Microsoft Flight Simulator 2020 on an in-app map.
+An Electron + React + TypeScript desktop MVP for NextEFB map, chart, and flight-deck workflows around Microsoft Flight Simulator 2020.
 
 ## Current status
 
