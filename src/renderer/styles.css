@@ -880,6 +880,11 @@ body {
   -ms-overflow-style: none;
 }
 
+.chart-dock-card-strip {
+  align-items: stretch;
+  flex-wrap: nowrap;
+}
+
 .chart-dock-bar::-webkit-scrollbar {
   display: none;
 }
@@ -887,8 +892,8 @@ body {
 .mounted-chart-card {
   display: flex;
   align-items: stretch;
-  min-width: 240px;
-  height: 44px;
+  min-width: 280px;
+  min-height: 56px;
   border: 1px solid var(--ui-border);
   border-radius: 8px;
   background: var(--ui-panel);
@@ -903,8 +908,14 @@ body {
   background: linear-gradient(135deg, rgba(29, 79, 122, 0.62), rgba(16, 45, 69, 0.62));
 }
 
+.mounted-chart-card.disabled {
+  border-style: dashed;
+  opacity: 0.72;
+}
+
 .mounted-chart-main,
-.mounted-chart-remove {
+.mounted-chart-remove,
+.mounted-chart-action {
   border: 0;
   color: #f4f7fb;
   background: transparent;
@@ -914,13 +925,21 @@ body {
 .mounted-chart-main {
   flex: 1;
   display: flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: flex-start;
-  padding: 0 10px;
-  min-height: 44px;
+  padding: 8px 10px;
+  min-height: 56px;
   cursor: pointer;
   text-align: left;
   min-width: 0;
+  gap: 10px;
+}
+
+.mounted-chart-copy {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 4px;
 }
 
 .mounted-chart-main strong {
@@ -932,9 +951,45 @@ body {
   text-overflow: ellipsis;
 }
 
-.mounted-chart-remove {
+.mounted-chart-main span {
+  color: rgba(244, 247, 251, 0.68);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mounted-chart-pill {
+  align-self: flex-start;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  line-height: 1;
+  color: #d7e9fb;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(139, 196, 255, 0.14);
+  white-space: nowrap;
+}
+
+.mounted-chart-pill.manual {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.mounted-chart-pill.active {
+  background: rgba(72, 180, 122, 0.18);
+  border-color: rgba(72, 180, 122, 0.45);
+}
+
+.mounted-chart-pill.missing-chart,
+.mounted-chart-pill.missing-georef {
+  background: rgba(140, 148, 163, 0.16);
+  border-color: rgba(140, 148, 163, 0.28);
+}
+
+.mounted-chart-remove,
+.mounted-chart-action {
   width: 36px;
-  min-height: 44px;
+  min-height: 56px;
   padding: 0;
   border-left: 1px solid var(--ui-border-soft);
   cursor: pointer;
@@ -942,10 +997,18 @@ body {
   color: var(--ui-muted);
 }
 
+.mounted-chart-action {
+  border-left: 1px solid var(--ui-border-soft);
+}
+
 .chart-dock-empty-inline {
   color: rgba(214, 231, 248, 0.74);
   font-size: 13px;
   letter-spacing: 0.03em;
+}
+
+.chart-mount-reason-modal {
+  width: min(560px, calc(100% - 24px));
 }
 
 .chart-picker-drawer-layer {
@@ -1560,6 +1623,15 @@ body {
 .settings-field input,
 .settings-field select {
   font: inherit;
+}
+
+.settings-chart-opacity-range {
+  width: 100%;
+}
+
+.settings-chart-opacity-row {
+  align-items: center;
+  justify-content: space-between;
 }
 
 .icon-button {

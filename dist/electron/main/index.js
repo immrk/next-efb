@@ -276,6 +276,7 @@ const DEFAULT_SETTINGS_BASE = {
   refreshIntervalMs: 500,
   providerMode: "simconnect",
   mapTileProvider: "osm",
+  chartOpacity: 100,
   navData: {
     sqlitePath: null,
     autoDetect: true

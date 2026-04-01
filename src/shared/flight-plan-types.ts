@@ -75,6 +75,17 @@ export interface BuildFlightPlanInput {
   arrivalTransitionId: string | null
 }
 
+export interface FlightPlanSelection {
+  departureAirport: string
+  destinationAirport: string
+  departureRunway: string | null
+  departureProcedureId: string | null
+  arrivalRunway: string | null
+  arrivalProcedureId: string | null
+  approachProcedureId: string | null
+  arrivalTransitionId: string | null
+}
+
 export interface BuildFlightPlanResult {
   points: FlightPlanPoint[]
   segments: FlightPlanSegment[]

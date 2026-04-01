@@ -98,6 +98,11 @@ export function SettingsPanel() {
     setSettings(nextSettings)
   }
 
+  const updateChartOpacity = async (chartOpacity: number): Promise<void> => {
+    const nextSettings = await appClient.updateSettings({ chartOpacity })
+    setSettings(nextSettings)
+  }
+
   const updateLanAccess = async (partial: Partial<NonNullable<typeof settings>['lanAccess']>) => {
     if (!settings) return
     const nextSettings = await appClient.updateSettings({
@@ -194,6 +199,29 @@ export function SettingsPanel() {
           </SelectContent>
         </Select>
         <span className="settings-note-inline">{t('settings.mapTileProviderHint')}</span>
+      </div>
+
+      <div className="settings-field">
+        <label htmlFor="chart-opacity-range">{t('settings.chartOpacity')}</label>
+        <div className="settings-note settings-note-card">
+          <input
+            id="chart-opacity-range"
+            type="range"
+            className="settings-chart-opacity-range"
+            min={20}
+            max={100}
+            step={5}
+            value={settings?.chartOpacity ?? 100}
+            disabled={!runtime.canWrite}
+            onChange={(event) => {
+              void updateChartOpacity(Number(event.target.value))
+            }}
+          />
+          <div className="settings-inline-row settings-chart-opacity-row">
+            <span className="settings-note-inline">{t('settings.chartOpacityHint')}</span>
+            <strong>{`${settings?.chartOpacity ?? 100}%`}</strong>
+          </div>
+        </div>
       </div>
 
       <div className="settings-field">

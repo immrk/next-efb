@@ -237,16 +237,11 @@ function ChartOverlay({
   return null
 }
 
-function MountedChartOverlay({
-  chartId,
-  isActive,
-  stackIndex
-}: {
-  chartId: string
-  isActive: boolean
-  stackIndex: number
-}) {
+function ActiveChartOverlay({ chartId }: { chartId: string | null }) {
   const overlay = useMapOverlayChart(chartId)
+  const settings = useAppStore((state) => state.settings)
+
+  if (!chartId) return null
 
   return (
     <ChartOverlay
@@ -254,8 +249,8 @@ function MountedChartOverlay({
       width={overlay.width}
       height={overlay.height}
       points={overlay.points}
-      opacity={isActive ? 0.78 : 0.34}
-      zIndex={100 + stackIndex}
+      opacity={Math.max(0, Math.min(1, (settings?.chartOpacity ?? 100) / 100))}
+      zIndex={120}
     />
   )
 }
@@ -273,12 +268,10 @@ function dedupeRoutePoints(points: FlightPlanPoint[]): FlightPlanPoint[] {
 }
 
 export function MapPanel({
-  mountedChartIds,
   activeChartId,
   routePoints,
   routeSegments
 }: {
-  mountedChartIds: string[]
   activeChartId: string | null
   routePoints: FlightPlanPoint[]
   routeSegments: FlightPlanSegment[]
@@ -330,14 +323,7 @@ export function MapPanel({
               title={t('map.aircraftMarker')}
             />
           ) : null}
-          {mountedChartIds.map((chartId, index) => (
-            <MountedChartOverlay
-              key={chartId}
-              chartId={chartId}
-              isActive={chartId === activeChartId}
-              stackIndex={index}
-            />
-          ))}
+          <ActiveChartOverlay chartId={activeChartId} />
           {routeSegments.length > 0
             ? routeSegments.map((segment, index) =>
                 segment.points.length > 1 ? (

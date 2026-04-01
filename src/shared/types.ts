@@ -38,6 +38,7 @@ export interface AppSettings {
   refreshIntervalMs: number
   providerMode: AircraftSource
   mapTileProvider: MapTileProvider
+  chartOpacity: number
   navData: {
     sqlitePath: string | null
     autoDetect: boolean

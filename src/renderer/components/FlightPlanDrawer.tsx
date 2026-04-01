@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { BuildFlightPlanResult, NavAirportProcedures, NavDataStatus } from '@shared/flight-plan-types'
+import type {
+  BuildFlightPlanResult,
+  FlightPlanSelection,
+  NavAirportProcedures,
+  NavDataStatus
+} from '@shared/flight-plan-types'
 import { getAppClient } from '../client'
 import { useAppStore } from '../store/useAppStore'
 import { filterProceduresByRunway, parseApproachProcedureId, runwayMatches } from '../utils/navProcedures'
@@ -16,12 +21,25 @@ import {
 } from './ui/select'
 import { Textarea } from './ui/textarea'
 
+interface StoredFlightPlanDraft {
+  departureAirport: string
+  destinationAirport: string
+  enrouteText: string
+  departureRunway: string
+  departureProcedureId: string
+  arrivalRunway: string
+  arrivalProcedureId: string
+  approachProcedureId: string
+  arrivalTransitionId: string
+}
+
 interface FlightPlanDrawerProps {
   isOpen: boolean
   onClose: () => void
   onOpenSettings: () => void
   onPlanBuilt: (result: BuildFlightPlanResult) => void
   onClearPlan: () => void
+  onSelectionChange: (selection: FlightPlanSelection | null) => void
 }
 
 const EMPTY_PROCEDURES: NavAirportProcedures = {
@@ -34,26 +52,33 @@ const EMPTY_PROCEDURES: NavAirportProcedures = {
 }
 
 const NONE_SELECT_VALUE = '__none__'
+const FLIGHT_PLAN_DRAFT_STORAGE_KEY = 'nextefb.flight-plan-draft.v1'
 
 export function FlightPlanDrawer({
   isOpen,
   onClose,
   onOpenSettings,
   onPlanBuilt,
-  onClearPlan
+  onClearPlan,
+  onSelectionChange
 }: FlightPlanDrawerProps) {
   const { t } = useTranslation()
   const appClient = getAppClient()
   const settings = useAppStore((state) => state.settings)
-  const [departureAirport, setDepartureAirport] = useState('')
-  const [destinationAirport, setDestinationAirport] = useState('')
-  const [enrouteText, setEnrouteText] = useState('')
-  const [departureRunway, setDepartureRunway] = useState('')
-  const [departureProcedureId, setDepartureProcedureId] = useState('')
-  const [arrivalRunway, setArrivalRunway] = useState('')
-  const [arrivalProcedureId, setArrivalProcedureId] = useState('')
-  const [approachProcedureId, setApproachProcedureId] = useState('')
-  const [arrivalTransitionId, setArrivalTransitionId] = useState('')
+  const storedDraftRef = useRef<StoredFlightPlanDraft | null>(null)
+  if (storedDraftRef.current === null) {
+    storedDraftRef.current = readStoredFlightPlanDraft()
+  }
+
+  const [departureAirport, setDepartureAirport] = useState(storedDraftRef.current.departureAirport)
+  const [destinationAirport, setDestinationAirport] = useState(storedDraftRef.current.destinationAirport)
+  const [enrouteText, setEnrouteText] = useState(storedDraftRef.current.enrouteText)
+  const [departureRunway, setDepartureRunway] = useState(storedDraftRef.current.departureRunway)
+  const [departureProcedureId, setDepartureProcedureId] = useState(storedDraftRef.current.departureProcedureId)
+  const [arrivalRunway, setArrivalRunway] = useState(storedDraftRef.current.arrivalRunway)
+  const [arrivalProcedureId, setArrivalProcedureId] = useState(storedDraftRef.current.arrivalProcedureId)
+  const [approachProcedureId, setApproachProcedureId] = useState(storedDraftRef.current.approachProcedureId)
+  const [arrivalTransitionId, setArrivalTransitionId] = useState(storedDraftRef.current.arrivalTransitionId)
   const [depCandidates, setDepCandidates] = useState<string[]>([])
   const [destCandidates, setDestCandidates] = useState<string[]>([])
   const [depProcedures, setDepProcedures] = useState<NavAirportProcedures>(EMPTY_PROCEDURES)
@@ -65,9 +90,11 @@ export function FlightPlanDrawer({
   const prevNavDataReadyRef = useRef(false)
   const onPlanBuiltRef = useRef(onPlanBuilt)
   const onClearPlanRef = useRef(onClearPlan)
+  const onSelectionChangeRef = useRef(onSelectionChange)
 
   onPlanBuiltRef.current = onPlanBuilt
   onClearPlanRef.current = onClearPlan
+  onSelectionChangeRef.current = onSelectionChange
 
   const navDataReady = Boolean(navStatus?.exists && navStatus?.activePath)
 
@@ -77,6 +104,52 @@ export function FlightPlanDrawer({
     }
     prevNavDataReadyRef.current = navDataReady
   }, [navDataReady])
+
+  useEffect(() => {
+    onSelectionChangeRef.current({
+      departureAirport: departureAirport.trim().toUpperCase(),
+      destinationAirport: destinationAirport.trim().toUpperCase(),
+      departureRunway: departureRunway || null,
+      departureProcedureId: departureProcedureId || null,
+      arrivalRunway: arrivalRunway || null,
+      arrivalProcedureId: arrivalProcedureId || null,
+      approachProcedureId: approachProcedureId || null,
+      arrivalTransitionId: arrivalTransitionId || null
+    })
+  }, [
+    arrivalProcedureId,
+    arrivalRunway,
+    arrivalTransitionId,
+    departureAirport,
+    departureProcedureId,
+    departureRunway,
+    destinationAirport,
+    approachProcedureId
+  ])
+
+  useEffect(() => {
+    persistStoredFlightPlanDraft({
+      departureAirport,
+      destinationAirport,
+      enrouteText,
+      departureRunway,
+      departureProcedureId,
+      arrivalRunway,
+      arrivalProcedureId,
+      approachProcedureId,
+      arrivalTransitionId
+    })
+  }, [
+    arrivalProcedureId,
+    arrivalRunway,
+    arrivalTransitionId,
+    departureAirport,
+    departureProcedureId,
+    departureRunway,
+    destinationAirport,
+    enrouteText,
+    approachProcedureId
+  ])
 
   useEffect(() => {
     if (!isOpen) return
@@ -150,8 +223,6 @@ export function FlightPlanDrawer({
     void appClient.getNavAirportProcedures(ident).then((procedures) => {
       if (!active) return
       setDepProcedures(procedures)
-      setDepartureRunway('')
-      setDepartureProcedureId('')
     })
 
     return () => {
@@ -170,10 +241,6 @@ export function FlightPlanDrawer({
     void appClient.getNavAirportProcedures(ident).then((procedures) => {
       if (!active) return
       setDestProcedures(procedures)
-      setArrivalRunway('')
-      setArrivalProcedureId('')
-      setApproachProcedureId('')
-      setArrivalTransitionId('')
     })
 
     return () => {
@@ -224,6 +291,17 @@ export function FlightPlanDrawer({
   }, [departureProcedureId, departureProcedureOptions])
 
   useEffect(() => {
+    if (!depProcedures.runways.length) {
+      setDepartureRunway('')
+      return
+    }
+
+    if (!depProcedures.runways.some((runway) => runway.name === departureRunway)) {
+      setDepartureRunway('')
+    }
+  }, [departureRunway, depProcedures.runways])
+
+  useEffect(() => {
     if (!arrivalProcedureOptions.length) {
       setArrivalProcedureId('')
       return
@@ -233,6 +311,17 @@ export function FlightPlanDrawer({
       setArrivalProcedureId('')
     }
   }, [arrivalProcedureId, arrivalProcedureOptions])
+
+  useEffect(() => {
+    if (!destProcedures.runways.length) {
+      setArrivalRunway('')
+      return
+    }
+
+    if (!destProcedures.runways.some((runway) => runway.name === arrivalRunway)) {
+      setArrivalRunway('')
+    }
+  }, [arrivalRunway, destProcedures.runways])
 
   useEffect(() => {
     if (!approachProcedureOptions.length) {
@@ -657,4 +746,48 @@ function buildRouteSignature(input: {
     input.approachProcedureId,
     input.arrivalTransitionId
   ].join('|')
+}
+
+function readStoredFlightPlanDraft(): StoredFlightPlanDraft {
+  const fallback: StoredFlightPlanDraft = {
+    departureAirport: '',
+    destinationAirport: '',
+    enrouteText: '',
+    departureRunway: '',
+    departureProcedureId: '',
+    arrivalRunway: '',
+    arrivalProcedureId: '',
+    approachProcedureId: '',
+    arrivalTransitionId: ''
+  }
+
+  if (typeof window === 'undefined') {
+    return fallback
+  }
+
+  try {
+    const raw = window.localStorage.getItem(FLIGHT_PLAN_DRAFT_STORAGE_KEY)
+    if (!raw) return fallback
+
+    const parsed = JSON.parse(raw) as Partial<StoredFlightPlanDraft>
+    return {
+      departureAirport: typeof parsed.departureAirport === 'string' ? parsed.departureAirport : '',
+      destinationAirport: typeof parsed.destinationAirport === 'string' ? parsed.destinationAirport : '',
+      enrouteText: typeof parsed.enrouteText === 'string' ? parsed.enrouteText : '',
+      departureRunway: typeof parsed.departureRunway === 'string' ? parsed.departureRunway : '',
+      departureProcedureId: typeof parsed.departureProcedureId === 'string' ? parsed.departureProcedureId : '',
+      arrivalRunway: typeof parsed.arrivalRunway === 'string' ? parsed.arrivalRunway : '',
+      arrivalProcedureId: typeof parsed.arrivalProcedureId === 'string' ? parsed.arrivalProcedureId : '',
+      approachProcedureId: typeof parsed.approachProcedureId === 'string' ? parsed.approachProcedureId : '',
+      arrivalTransitionId: typeof parsed.arrivalTransitionId === 'string' ? parsed.arrivalTransitionId : ''
+    }
+  } catch {
+    return fallback
+  }
+}
+
+function persistStoredFlightPlanDraft(input: StoredFlightPlanDraft): void {
+  if (typeof window === 'undefined') return
+
+  window.localStorage.setItem(FLIGHT_PLAN_DRAFT_STORAGE_KEY, JSON.stringify(input))
 }

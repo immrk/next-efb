@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { useState } from 'react'
 import type { AppRoute } from '@shared/types'
+import type { FlightPlanSelection } from '@shared/flight-plan-types'
 import { AppSidebar } from './components/AppSidebar'
 import { useDesktopData } from './hooks/useDesktopData'
 import { ChartDetailPage } from './pages/ChartDetailPage'
@@ -16,6 +17,7 @@ export function App() {
   const [detailChartId, setDetailChartId] = useState<string | null>(null)
   const [chartDetailBackRoute, setChartDetailBackRoute] = useState<'map' | 'charts'>('charts')
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true)
+  const [flightPlanSelection, setFlightPlanSelection] = useState<FlightPlanSelection | null>(null)
   const isFullBleedRoute =
     route === 'map' || route === 'charts' || route === 'chartDetail' || route === 'settings'
 
@@ -40,8 +42,9 @@ export function App() {
 
         <section className={`route-view ${route === 'map' ? 'active' : ''}`}>
           <MapPage
+            flightPlanSelection={flightPlanSelection}
             onOpenChartLibrary={(chartId) => {
-              setSelectedChartId(chartId)
+              setSelectedChartId(chartId ?? null)
               setRoute('charts')
             }}
             onEditChart={(chartId) => {
@@ -51,6 +54,7 @@ export function App() {
               setRoute('chartDetail')
             }}
             onOpenSettings={() => setRoute('settings')}
+            onFlightPlanSelectionChange={setFlightPlanSelection}
           />
         </section>
 
