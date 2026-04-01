@@ -1,6 +1,9 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ChartRecord, ChartType } from '@shared/chart-types'
+import { Badge } from './ui/badge'
+import { Button } from './ui/button'
+import { Input } from './ui/input'
 
 const CHART_TYPE_ORDER: ChartType[] = ['airport', 'sid', 'star', 'approach', 'general']
 
@@ -102,15 +105,17 @@ export function ChartMountDrawer({
   const drawerContent = (
     <>
       <header className="chart-picker-head">
-        <input
+        <Input
           className="chart-picker-search"
           placeholder={t('charts.searchPlaceholder')}
           value={search}
           onChange={(event) => setSearch(event.target.value)}
         />
         {closable ? (
-          <button
+          <Button
             type="button"
+            variant="outline"
+            size="icon"
             className="chart-picker-close"
             onClick={onClose}
             aria-label={t('charts.closePicker')}
@@ -118,7 +123,7 @@ export function ChartMountDrawer({
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M6 6L18 18M18 6L6 18" />
             </svg>
-          </button>
+          </Button>
         ) : null}
       </header>
 
@@ -133,7 +138,9 @@ export function ChartMountDrawer({
                   </svg>
                 </span>
                 <span className="chart-airport-code">{group.airportCode}</span>
-                <span className="chart-group-count">{group.types.reduce((acc, item) => acc + item.charts.length, 0)}</span>
+                <Badge variant="outline" className="chart-group-count">
+                  {group.types.reduce((acc, item) => acc + item.charts.length, 0)}
+                </Badge>
               </summary>
 
               {group.types.map((typeGroup) => (
@@ -145,7 +152,9 @@ export function ChartMountDrawer({
                       </svg>
                     </span>
                     <span>{chartTypeLabel[typeGroup.type]}</span>
-                    <span className="chart-group-count">{typeGroup.charts.length}</span>
+                    <Badge variant="outline" className="chart-group-count">
+                      {typeGroup.charts.length}
+                    </Badge>
                   </summary>
 
                   <div className="chart-candidate-list">
@@ -157,8 +166,9 @@ export function ChartMountDrawer({
                           key={chart.id}
                           className={`chart-candidate-item ${isSelected ? 'selected' : ''}`}
                         >
-                          <button
+                          <Button
                             type="button"
+                            variant="ghost"
                             className="chart-candidate-main"
                             onClick={() => onSelect?.(chart.id)}
                           >
@@ -168,11 +178,13 @@ export function ChartMountDrawer({
                                 ? t('charts.georeferenced')
                                 : t('charts.notGeoreferenced')}
                             </span>
-                          </button>
+                          </Button>
                           <div className="chart-candidate-actions">
                             {onEdit ? (
-                              <button
+                              <Button
                                 type="button"
+                                variant="outline"
+                                size="icon"
                                 className="chart-action-button"
                                 onClick={() => onEdit(chart.id)}
                                 aria-label={t('charts.editAria', { title: chart.title })}
@@ -181,11 +193,13 @@ export function ChartMountDrawer({
                                   <path d="M4 16.5V20H7.5L17.81 9.69L14.31 6.19L4 16.5Z" />
                                   <path d="M13.5 7L17 10.5" />
                                 </svg>
-                              </button>
+                              </Button>
                             ) : null}
                             {showPinButton ? (
-                              <button
+                              <Button
                                 type="button"
+                                variant={isMounted ? 'default' : 'outline'}
+                                size="icon"
                                 className={`chart-pin-button ${isMounted ? 'mounted' : ''}`}
                                 disabled={!chart.isGeoreferenced}
                                 onClick={() => onPin?.(chart.id)}
@@ -194,7 +208,7 @@ export function ChartMountDrawer({
                                 <svg viewBox="0 0 24 24" aria-hidden="true">
                                   <path d="M14 4L20 10L17 11L14 8L11 11L13 18L11 20L8 14L4 18L3 17L7 13L1 10L3 8L10 10L13 7L10 4L11 3L14 4Z" />
                                 </svg>
-                              </button>
+                              </Button>
                             ) : null}
                           </div>
                         </article>
@@ -217,8 +231,10 @@ export function ChartMountDrawer({
       <section className="chart-picker-drawer chart-picker-drawer-docked">
         {drawerContent}
         {onImport ? (
-          <button
+          <Button
             type="button"
+            variant="outline"
+            size="icon"
             className="chart-drawer-import-fab"
             onClick={onImport}
             aria-label={t('charts.importAction')}
@@ -226,7 +242,7 @@ export function ChartMountDrawer({
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M12 5V19M5 12H19" />
             </svg>
-          </button>
+          </Button>
         ) : null}
       </section>
     )

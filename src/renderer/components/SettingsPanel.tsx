@@ -9,7 +9,13 @@ import { useAppStore } from '../store/useAppStore'
 import { toast } from './ui/use-toast'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
-import { Select } from './ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from './ui/select'
 
 export function SettingsPanel() {
   const appClient = getAppClient()
@@ -134,46 +140,58 @@ export function SettingsPanel() {
       <div className="settings-field">
         <label htmlFor="language-select">{t('settings.language')}</label>
         <Select
-          id="language-select"
           value={settings?.language ?? 'zh-CN'}
           disabled={!runtime.canWrite}
-          onChange={(event) => {
-            void updateLanguage(event.target.value as AppLanguage)
+          onValueChange={(value) => {
+            void updateLanguage(value as AppLanguage)
           }}
         >
-          <option value="zh-CN">{t('settings.languageZhCN')}</option>
-          <option value="en-US">English</option>
+          <SelectTrigger id="language-select">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="zh-CN">{t('settings.languageZhCN')}</SelectItem>
+            <SelectItem value="en-US">English</SelectItem>
+          </SelectContent>
         </Select>
       </div>
 
       <div className="settings-field">
         <label htmlFor="provider-select">{t('settings.provider')}</label>
         <Select
-          id="provider-select"
           value={settings?.providerMode ?? 'simconnect'}
           disabled={!runtime.canWrite}
-          onChange={(event) => {
-            void updateProviderMode(event.target.value as AircraftSource)
+          onValueChange={(value) => {
+            void updateProviderMode(value as AircraftSource)
           }}
         >
-          <option value="simconnect">{t('settings.providerSimConnect')}</option>
-          <option value="mock">{t('settings.providerMock')}</option>
+          <SelectTrigger id="provider-select">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="simconnect">{t('settings.providerSimConnect')}</SelectItem>
+            <SelectItem value="mock">{t('settings.providerMock')}</SelectItem>
+          </SelectContent>
         </Select>
       </div>
 
       <div className="settings-field">
         <label htmlFor="map-tile-provider-select">{t('settings.mapTileProvider')}</label>
         <Select
-          id="map-tile-provider-select"
           value={settings?.mapTileProvider ?? 'osm'}
           disabled={!runtime.canWrite}
-          onChange={(event) => {
-            void updateMapTileProvider(event.target.value as MapTileProvider)
+          onValueChange={(value) => {
+            void updateMapTileProvider(value as MapTileProvider)
           }}
         >
-          <option value="osm">{t('settings.mapTileProviderOsm')}</option>
-          <option value="cartoLight">{t('settings.mapTileProviderCartoLight')}</option>
-          <option value="osmfr">{t('settings.mapTileProviderOsmFr')}</option>
+          <SelectTrigger id="map-tile-provider-select">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="osm">{t('settings.mapTileProviderOsm')}</SelectItem>
+            <SelectItem value="cartoLight">{t('settings.mapTileProviderCartoLight')}</SelectItem>
+            <SelectItem value="osmfr">{t('settings.mapTileProviderOsmFr')}</SelectItem>
+          </SelectContent>
         </Select>
         <span className="settings-note-inline">{t('settings.mapTileProviderHint')}</span>
       </div>
@@ -258,15 +276,16 @@ export function SettingsPanel() {
           {remoteAccessStatus?.primaryAccessUrl ? (
             <div className="settings-remote-card">
               <div className="settings-remote-main">
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
                   className="settings-link-button"
                   onClick={() => {
                     void appClient.openExternal(remoteAccessStatus.primaryAccessUrl!)
                   }}
                 >
                   {remoteAccessStatus.primaryAccessUrl}
-                </button>
+                </Button>
                 <span>{t('settings.remoteAccessOpenHint')}</span>
               </div>
               {qrCodeUrl ? (

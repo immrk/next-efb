@@ -10,6 +10,16 @@ import { useChartDetailData } from '../hooks/useChartDetailData'
 import { getMapTileConfig } from '../utils/mapTileProviders'
 import { notifyChartChanged } from '../utils/chartSync'
 import { toast } from '../components/ui/use-toast'
+import { Badge } from '../components/ui/badge'
+import { Button } from '../components/ui/button'
+import { Input } from '../components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '../components/ui/select'
 
 interface ChartDetailPageProps {
   chartId: string
@@ -224,18 +234,19 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
   return (
     <section className="chart-editor-page">
       <header className="chart-editor-topbar">
-        <button type="button" className="icon-button" onClick={onBack} aria-label={t('common.back')}>
+        <Button type="button" variant="outline" size="icon" onClick={onBack} aria-label={t('common.back')}>
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M15 6L9 12L15 18" />
           </svg>
-        </button>
+        </Button>
 
         <div className="chart-editor-summary">
           <strong>{chart?.title ?? t('chartDetail.title')}</strong>
           <span>{`${chart?.airportCode ?? 'UNSPEC'} · ${chartTypeLabel[chart?.chartType ?? 'general']}`}</span>
-          <button
+          <Button
             type="button"
-            className="icon-button"
+            variant="outline"
+            size="icon"
             disabled={!runtime.canWrite}
             onClick={() => setIsMetaModalOpen(true)}
             aria-label={t('chartDetail.editMeta')}
@@ -244,31 +255,30 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
               <path d="M4 16.5V20H7.5L17.81 9.69L14.31 6.19L4 16.5Z" />
               <path d="M13.5 7L17 10.5" />
             </svg>
-          </button>
+          </Button>
         </div>
 
         <div className="chart-editor-actions">
           <div className="chart-editor-counts">
-            <span>{t('chartDetail.countMap', { count: draftMapPoints.length })}</span>
-            <span>{t('chartDetail.countChart', { count: draftChartPoints.length })}</span>
-            <span>{t('chartDetail.countSaved', { count: points.length })}</span>
+            <Badge variant="outline">{t('chartDetail.countMap', { count: draftMapPoints.length })}</Badge>
+            <Badge variant="outline">{t('chartDetail.countChart', { count: draftChartPoints.length })}</Badge>
+            <Badge variant="outline">{t('chartDetail.countSaved', { count: points.length })}</Badge>
           </div>
-          <button
+          <Button
             type="button"
-            className="secondary-button danger-button"
+            variant="destructive"
             disabled={!runtime.canWrite}
             onClick={() => setIsDeleteModalOpen(true)}
           >
             {t('chartDetail.delete')}
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
-            className="primary-button"
             onClick={saveReferencePoints}
             disabled={!runtime.canWrite || draftMapPoints.length !== 2 || draftChartPoints.length !== 2}
           >
             {t('chartDetail.saveReference')}
-          </button>
+          </Button>
         </div>
       </header>
 
@@ -277,9 +287,9 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
           <div className="chart-editor-pane-head">
             <h2>{t('chartDetail.mapPickerTitle')}</h2>
             <div className="button-row">
-              <button
+              <Button
                 type="button"
-                className="secondary-button"
+                variant="secondary"
                 onClick={() =>
                   setDraftMapPoints((current) =>
                     [
@@ -293,14 +303,14 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
                 }
               >
                 {t('chartDetail.captureFromAircraft')}
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
-                className="secondary-button"
+                variant="secondary"
                 onClick={() => setDraftMapPoints([])}
               >
                 {t('chartDetail.clearMapPoints')}
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -362,13 +372,13 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
         <section className="chart-editor-pane chart-editor-preview-pane">
           <div className="chart-editor-pane-head">
             <h2>{t('chartDetail.viewerTitle')}</h2>
-            <button
+            <Button
               type="button"
-              className="secondary-button"
+              variant="secondary"
               onClick={() => setDraftChartPoints([])}
             >
               {t('chartDetail.clearChartPoints')}
-            </button>
+            </Button>
           </div>
           <ChartImagePreview
             chartTitle={chart?.title ?? 'chart'}
@@ -406,50 +416,52 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
           >
             <header className="chart-meta-modal-head">
               <h3>{t('chartDetail.metaTitle')}</h3>
-              <button
+              <Button
                 type="button"
-                className="icon-button"
+                variant="outline"
+                size="icon"
                 onClick={() => setIsMetaModalOpen(false)}
                 aria-label={t('common.close')}
               >
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M6 6L18 18M18 6L6 18" />
                 </svg>
-              </button>
+              </Button>
             </header>
 
             <div className="chart-meta-modal-body">
               <div className="settings-field">
                 <label>{t('chartDetail.fieldTitle')}</label>
-                <input value={title} onChange={(e) => setTitle(e.target.value)} className="text-input" />
+                <Input value={title} onChange={(e) => setTitle(e.target.value)} />
               </div>
               <div className="settings-field">
                 <label>{t('chartDetail.fieldAirportCode')}</label>
-                <input
-                  value={airportCode}
-                  onChange={(e) => setAirportCode(e.target.value)}
-                  className="text-input"
-                />
+                <Input value={airportCode} onChange={(e) => setAirportCode(e.target.value)} />
               </div>
               <div className="settings-field">
                 <label>{t('chartDetail.fieldChartType')}</label>
-                <select value={chartType} onChange={(e) => setChartType(e.target.value as ChartType)}>
-                  <option value="general">{t('chartType.general')}</option>
-                  <option value="airport">{t('chartType.airport')}</option>
-                  <option value="sid">{t('chartType.sid')}</option>
-                  <option value="star">{t('chartType.star')}</option>
-                  <option value="approach">{t('chartType.approach')}</option>
-                </select>
+                <Select value={chartType} onValueChange={(value) => setChartType(value as ChartType)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="general">{t('chartType.general')}</SelectItem>
+                    <SelectItem value="airport">{t('chartType.airport')}</SelectItem>
+                    <SelectItem value="sid">{t('chartType.sid')}</SelectItem>
+                    <SelectItem value="star">{t('chartType.star')}</SelectItem>
+                    <SelectItem value="approach">{t('chartType.approach')}</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
             <footer className="chart-meta-modal-foot">
-              <button type="button" className="secondary-button" onClick={() => setIsMetaModalOpen(false)}>
+              <Button type="button" variant="secondary" onClick={() => setIsMetaModalOpen(false)}>
                 {t('common.cancel')}
-              </button>
-              <button type="button" className="primary-button" onClick={saveMetadata}>
+              </Button>
+              <Button type="button" onClick={saveMetadata}>
                 {t('chartDetail.saveMeta')}
-              </button>
+              </Button>
             </footer>
           </section>
         </div>
@@ -470,16 +482,17 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
           >
             <header className="chart-meta-modal-head">
               <h3>{t('chartDetail.deleteDialogTitle')}</h3>
-              <button
+              <Button
                 type="button"
-                className="icon-button"
+                variant="outline"
+                size="icon"
                 onClick={() => setIsDeleteModalOpen(false)}
                 aria-label={t('common.close')}
               >
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M6 6L18 18M18 6L6 18" />
                 </svg>
-              </button>
+              </Button>
             </header>
 
             <div className="chart-meta-modal-body">
@@ -488,26 +501,22 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
                 {t('chartDetail.deletePromptSuffix')}
               </p>
               <div className="settings-field">
-                <input
-                  value={deleteConfirmText}
-                  onChange={(event) => setDeleteConfirmText(event.target.value)}
-                  className="text-input"
-                />
+                <Input value={deleteConfirmText} onChange={(event) => setDeleteConfirmText(event.target.value)} />
               </div>
             </div>
 
             <footer className="chart-meta-modal-foot">
-              <button type="button" className="secondary-button" onClick={() => setIsDeleteModalOpen(false)}>
+              <Button type="button" variant="secondary" onClick={() => setIsDeleteModalOpen(false)}>
                 {t('common.cancel')}
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
-                className="secondary-button danger-button"
+                variant="destructive"
                 onClick={() => void deleteChart()}
                 disabled={deleteConfirmText.trim() !== (chart?.title ?? '')}
               >
                 {t('chartDetail.confirmDelete')}
-              </button>
+              </Button>
             </footer>
           </section>
         </div>

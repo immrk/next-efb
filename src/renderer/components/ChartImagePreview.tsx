@@ -13,6 +13,7 @@ import type { AircraftState } from '@shared/types'
 import { useChartRasterAsset } from '../hooks/useChartRasterAsset'
 import { projectAircraftToChart } from '../utils/chartMath'
 import { ChartAircraftArrow } from './AircraftArrow'
+import { Button } from './ui/button'
 
 interface ChartImagePreviewProps {
   chartTitle: string
@@ -262,23 +263,28 @@ export function ChartImagePreview({
   return (
     <div className="chart-preview-frame">
       <div className="chart-zoom-toolbar">
-        <button
+        <Button
           type="button"
+          variant="outline"
+          size="icon"
           className="chart-zoom-button"
           onClick={() => updateZoom(zoom - 0.1)}
         >
           -
-        </button>
+        </Button>
         <span className="chart-zoom-label">{Math.round(zoom * 100)}%</span>
-        <button
+        <Button
           type="button"
+          variant="outline"
+          size="icon"
           className="chart-zoom-button"
           onClick={() => updateZoom(zoom + 0.1)}
         >
           +
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          variant="secondary"
           className="chart-zoom-button"
           onClick={() => {
             setZoom(1)
@@ -286,7 +292,7 @@ export function ChartImagePreview({
           }}
         >
           {t('chartPreview.resetZoom')}
-        </button>
+        </Button>
       </div>
 
       <div

@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '../store/useAppStore'
+import { Badge } from './ui/badge'
 
 export function ConnectionBadge() {
   const { t } = useTranslation()
@@ -7,9 +8,9 @@ export function ConnectionBadge() {
   const connected = connection?.connected ?? false
 
   return (
-    <div className={`connection-badge ${connected ? 'connected' : 'disconnected'}`}>
+    <Badge variant={connected ? 'default' : 'destructive'} className="connection-badge">
       <span className="connection-dot" />
       <span>{connected ? t('status.connected') : t('status.disconnected')}</span>
-    </div>
+    </Badge>
   )
 }

@@ -11,6 +11,13 @@ import { getAppClient } from '../client'
 import { useAppStore } from '../store/useAppStore'
 import { useMapOverlayChart } from '../hooks/useMapOverlayChart'
 import { getMapTileConfig } from '../utils/mapTileProviders'
+import { Button } from './ui/button'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger
+} from './ui/select'
 
 const MAP_VIEW_STORAGE_KEY = 'nextefb.map-view.v1'
 const DEFAULT_MAP_ZOOM = 7
@@ -379,8 +386,10 @@ export function MapPanel({
           <span>{`${t('map.lon')} ${formatCoord(aircraftPositionUsable ? aircraft?.lon : undefined)}`}</span>
         </div>
         <div className="map-control-stack">
-          <button
+          <Button
             type="button"
+            variant="outline"
+            size="icon"
             className="map-route-fit-button"
             aria-label={t('map.fitRoute')}
             title={t('map.fitRoute')}
@@ -393,9 +402,11 @@ export function MapPanel({
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M4 4H9V6H6V9H4V4ZM15 4H20V9H18V6H15V4ZM4 15H6V18H9V20H4V15ZM18 15H20V20H15V18H18V15Z" />
             </svg>
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant={isFollowActive ? 'default' : 'outline'}
+            size="icon"
             className={`map-recenter-button ${isFollowActive ? 'is-active' : ''}`}
             aria-label={isFollowActive ? t('map.followAircraftStop') : t('map.followAircraftStart')}
             title={isFollowActive ? t('map.followAircraftStop') : t('map.followAircraftStart')}
@@ -406,21 +417,31 @@ export function MapPanel({
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M12 2.75A9.25 9.25 0 1 0 21.25 12A9.26 9.26 0 0 0 12 2.75Zm0 2A7.25 7.25 0 1 1 4.75 12A7.26 7.26 0 0 1 12 4.75Zm0 1.75A5.5 5.5 0 1 0 17.5 12A5.51 5.51 0 0 0 12 6.5Zm0 2A3.5 3.5 0 1 1 8.5 12A3.5 3.5 0 0 1 12 8.5Z" />
             </svg>
-          </button>
+          </Button>
         </div>
         <div className="map-floating-toolbar">
-          <label className="map-provider-chip" aria-label={t('settings.mapTileProvider')}>
-            <select
-              value={settings?.mapTileProvider ?? 'osm'}
-              onChange={(event) => {
-                void updateMapTileProvider(event.target.value as MapTileProvider)
-              }}
+          <Select
+            value={settings?.mapTileProvider ?? 'osm'}
+            onValueChange={(value) => {
+              void updateMapTileProvider(value as MapTileProvider)
+            }}
+          >
+            <SelectTrigger
+              className="map-provider-trigger map-provider-trigger-icon"
+              aria-label={t('settings.mapTileProvider')}
+              title={t('settings.mapTileProvider')}
             >
-              <option value="osm">{t('settings.mapTileProviderOsm')}</option>
-              <option value="cartoLight">{t('settings.mapTileProviderCartoLight')}</option>
-              <option value="osmfr">{t('settings.mapTileProviderOsmFr')}</option>
-            </select>
-          </label>
+              <svg viewBox="0 0 24 24" aria-hidden="true" className="map-provider-icon">
+                <path d="M3 6L9 3L15 6L21 3V18L15 21L9 18L3 21V6Z" />
+                <path d="M9 3V18M15 6V21" />
+              </svg>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="osm">{t('settings.mapTileProviderOsm')}</SelectItem>
+              <SelectItem value="cartoLight">{t('settings.mapTileProviderCartoLight')}</SelectItem>
+              <SelectItem value="osmfr">{t('settings.mapTileProviderOsmFr')}</SelectItem>
+            </SelectContent>
+          </Select>
           <ConnectionBadge />
         </div>
       </div>

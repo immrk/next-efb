@@ -6,6 +6,7 @@ import { getAppClient } from '../client'
 import { ChartMountDrawer } from '../components/ChartMountDrawer'
 import { FlightPlanDrawer } from '../components/FlightPlanDrawer'
 import { MapPanel } from '../components/MapPanel'
+import { Button } from '../components/ui/button'
 import { useChartLibraryData } from '../hooks/useChartLibraryData'
 
 interface MapPageProps {
@@ -18,10 +19,7 @@ export function MapPage({ onOpenChartLibrary, onEditChart, onOpenSettings }: Map
   const runtime = getAppClient().getRuntime()
   const { t } = useTranslation()
   const { charts } = useChartLibraryData()
-  const georeferencedCharts = useMemo(
-    () => charts.filter((chart) => chart.isGeoreferenced),
-    [charts]
-  )
+  const georeferencedCharts = useMemo(() => charts.filter((chart) => chart.isGeoreferenced), [charts])
   const [mountedChartIds, setMountedChartIds] = useState<string[]>([])
   const [activeChartId, setActiveChartId] = useState<string | null>(null)
   const [isChartDrawerOpen, setIsChartDrawerOpen] = useState(false)
@@ -84,8 +82,10 @@ export function MapPage({ onOpenChartLibrary, onEditChart, onOpenSettings }: Map
 
       <section className="chart-dock">
         <div className="chart-dock-main">
-          <button
+          <Button
             type="button"
+            variant="outline"
+            size="icon"
             className="chart-dock-add-button"
             onClick={() => setIsChartDrawerOpen(true)}
             aria-label={t('charts.add')}
@@ -93,9 +93,11 @@ export function MapPage({ onOpenChartLibrary, onEditChart, onOpenSettings }: Map
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M12 5V19M5 12H19" />
             </svg>
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="outline"
+            size="icon"
             className="chart-dock-add-button"
             onClick={() => setIsFlightPlanDrawerOpen(true)}
             aria-label={t('flightPlan.openDrawer')}
@@ -105,32 +107,32 @@ export function MapPage({ onOpenChartLibrary, onEditChart, onOpenSettings }: Map
               <path d="M3 7H7L10 13L14 9L17 13H21" />
               <path d="M7 7L9 5M17 13L19 11" />
             </svg>
-          </button>
+          </Button>
 
           {mountedCharts.length > 0 ? (
             <div className="chart-dock-bar">
               {mountedCharts.map((chart) => {
                 const isActive = chart.id === activeChartId
                 return (
-                  <article
-                    key={chart.id}
-                    className={`mounted-chart-card ${isActive ? 'active' : ''}`}
-                  >
-                    <button
+                  <article key={chart.id} className={`mounted-chart-card ${isActive ? 'active' : ''}`}>
+                    <Button
                       type="button"
+                      variant="ghost"
                       className="mounted-chart-main"
                       onClick={() => setActiveChartId(chart.id)}
                     >
-                      <strong>{`${chart.airportCode ?? '----'} · ${chart.title}`}</strong>
-                    </button>
-                    <button
+                      <strong>{`${chart.airportCode ?? '----'} 路 ${chart.title}`}</strong>
+                    </Button>
+                    <Button
                       type="button"
+                      variant="outline"
+                      size="icon"
                       className="mounted-chart-remove"
                       onClick={() => unmountChart(chart.id)}
                       aria-label={t('charts.unmountAria', { title: chart.title })}
                     >
                       x
-                    </button>
+                    </Button>
                   </article>
                 )
               })}

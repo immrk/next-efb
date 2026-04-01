@@ -16,6 +16,7 @@
     "package:win": "npm run build"
   },
   "dependencies": {
+    "@radix-ui/react-select": "^2.2.6",
     "@types/ws": "^8.18.1",
     "better-sqlite3": "^12.8.0",
     "i18next": "^25.0.0",

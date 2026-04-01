@@ -6,7 +6,13 @@ import { useAppStore } from '../store/useAppStore'
 import { toast } from './ui/use-toast'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
-import { Select } from './ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from './ui/select'
 import { Textarea } from './ui/textarea'
 
 interface FlightPlanDrawerProps {
@@ -25,6 +31,8 @@ const EMPTY_PROCEDURES: NavAirportProcedures = {
   transitions: [],
   approaches: []
 }
+
+const NONE_SELECT_VALUE = '__none__'
 
 export function FlightPlanDrawer({
   isOpen,
@@ -371,17 +379,18 @@ export function FlightPlanDrawer({
           <div className="settings-inline-row">
             <Button
               type="button"
-              variant="icon"
+              variant="outline"
+              size="icon"
               onClick={onOpenSettings}
               aria-label={t('flightPlan.openSettings')}
               title={t('flightPlan.openSettings')}
             >
               <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M12 8.5A3.5 3.5 0 1 0 12 15.5A3.5 3.5 0 1 0 12 8.5Z" />
-                <path d="M19.4 15A1 1 0 0 0 19.6 16.1L19.7 16.2A1 1 0 1 1 18.3 17.6L18.2 17.5A1 1 0 0 0 17.1 17.3A1 1 0 0 0 16.5 18.2V18.5A1 1 0 1 1 14.5 18.5V18.3A1 1 0 0 0 13.8 17.4A1 1 0 0 0 12.7 17.7L12.6 17.8A1 1 0 0 1 11.2 16.4L11.3 16.3A1 1 0 0 0 11.5 15.2A1 1 0 0 0 10.6 14.6H10.3A1 1 0 1 1 10.3 12.6H10.5A1 1 0 0 0 11.4 11.9A1 1 0 0 0 11.1 10.8L11 10.7A1 1 0 1 1 12.4 9.3L12.5 9.4A1 1 0 0 0 13.6 9.6A1 1 0 0 0 14.2 8.7V8.4A1 1 0 1 1 16.2 8.4V8.6A1 1 0 0 0 16.9 9.5A1 1 0 0 0 18 9.2L18.1 9.1A1 1 0 0 1 19.5 10.5L19.4 10.6A1 1 0 0 0 19.2 11.7A1 1 0 0 0 20.1 12.3H20.4A1 1 0 1 1 20.4 14.3H20.2A1 1 0 0 0 19.4 15Z" />
+                <circle cx="12" cy="12" r="3" />
+                <path d="M19 12a7 7 0 0 0-.05-.82l2.02-1.57-1.99-3.45-2.42.82a7 7 0 0 0-1.42-.82L14.7 4h-3.4l-.44 2.16a7 7 0 0 0-1.42.82l-2.42-.82-1.99 3.45 2.02 1.57A7 7 0 0 0 7 12a7 7 0 0 0 .05.82l-2.02 1.57 1.99 3.45 2.42-.82a7 7 0 0 0 1.42.82L11.3 20h3.4l.44-2.16a7 7 0 0 0 1.42-.82l2.42.82 1.99-3.45-2.02-1.57c.03-.27.05-.54.05-.82Z" />
               </svg>
             </Button>
-            <Button type="button" variant="icon" onClick={onClose} aria-label={t('flightPlan.close')}>
+            <Button type="button" variant="outline" size="icon" onClick={onClose} aria-label={t('flightPlan.close')}>
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M6 6L18 18M18 6L6 18" />
               </svg>
@@ -427,32 +436,42 @@ export function FlightPlanDrawer({
             <label className="settings-field">
               <span>{t('flightPlan.departureRunway')}</span>
               <Select
-                value={departureRunway}
-                onChange={(event) => setDepartureRunway(event.target.value)}
+                value={departureRunway || NONE_SELECT_VALUE}
+                onValueChange={(value) => setDepartureRunway(value === NONE_SELECT_VALUE ? '' : value)}
                 disabled={!navDataReady}
               >
-                <option value="">{t('flightPlan.notSpecified')}</option>
-                {depProcedures.runways.map((runway) => (
-                  <option key={runway.name} value={runway.name}>
-                    {runway.displayName}
-                  </option>
-                ))}
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NONE_SELECT_VALUE}>{t('flightPlan.notSpecified')}</SelectItem>
+                  {depProcedures.runways.map((runway) => (
+                    <SelectItem key={runway.name} value={runway.name}>
+                      {runway.displayName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
               </Select>
             </label>
 
             <label className="settings-field">
               <span>{t('flightPlan.departureProcedure')}</span>
               <Select
-                value={departureProcedureId}
-                onChange={(event) => setDepartureProcedureId(event.target.value)}
+                value={departureProcedureId || NONE_SELECT_VALUE}
+                onValueChange={(value) => setDepartureProcedureId(value === NONE_SELECT_VALUE ? '' : value)}
                 disabled={!navDataReady}
               >
-                <option value="">{t('flightPlan.notSpecified')}</option>
-                {departureProcedureOptions.map((procedure) => (
-                  <option key={procedure.id} value={procedure.id}>
-                    {procedure.name}
-                  </option>
-                ))}
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NONE_SELECT_VALUE}>{t('flightPlan.notSpecified')}</SelectItem>
+                  {departureProcedureOptions.map((procedure) => (
+                    <SelectItem key={procedure.id} value={procedure.id}>
+                      {procedure.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
               </Select>
             </label>
           </section>
@@ -500,64 +519,84 @@ export function FlightPlanDrawer({
             <label className="settings-field">
               <span>{t('flightPlan.arrivalRunway')}</span>
               <Select
-                value={arrivalRunway}
-                onChange={(event) => setArrivalRunway(event.target.value)}
+                value={arrivalRunway || NONE_SELECT_VALUE}
+                onValueChange={(value) => setArrivalRunway(value === NONE_SELECT_VALUE ? '' : value)}
                 disabled={!navDataReady}
               >
-                <option value="">{t('flightPlan.notSpecified')}</option>
-                {destProcedures.runways.map((runway) => (
-                  <option key={runway.name} value={runway.name}>
-                    {runway.displayName}
-                  </option>
-                ))}
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NONE_SELECT_VALUE}>{t('flightPlan.notSpecified')}</SelectItem>
+                  {destProcedures.runways.map((runway) => (
+                    <SelectItem key={runway.name} value={runway.name}>
+                      {runway.displayName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
               </Select>
             </label>
 
             <label className="settings-field">
               <span>{t('flightPlan.arrivalProcedure')}</span>
               <Select
-                value={arrivalProcedureId}
-                onChange={(event) => setArrivalProcedureId(event.target.value)}
+                value={arrivalProcedureId || NONE_SELECT_VALUE}
+                onValueChange={(value) => setArrivalProcedureId(value === NONE_SELECT_VALUE ? '' : value)}
                 disabled={!navDataReady}
               >
-                <option value="">{t('flightPlan.notSpecified')}</option>
-                {arrivalProcedureOptions.map((procedure) => (
-                  <option key={procedure.id} value={procedure.id}>
-                    {procedure.name}
-                  </option>
-                ))}
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NONE_SELECT_VALUE}>{t('flightPlan.notSpecified')}</SelectItem>
+                  {arrivalProcedureOptions.map((procedure) => (
+                    <SelectItem key={procedure.id} value={procedure.id}>
+                      {procedure.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
               </Select>
             </label>
 
             <label className="settings-field">
               <span>{t('flightPlan.approachProcedure')}</span>
               <Select
-                value={approachProcedureId}
-                onChange={(event) => setApproachProcedureId(event.target.value)}
+                value={approachProcedureId || NONE_SELECT_VALUE}
+                onValueChange={(value) => setApproachProcedureId(value === NONE_SELECT_VALUE ? '' : value)}
                 disabled={!navDataReady}
               >
-                <option value="">{t('flightPlan.notSpecified')}</option>
-                {approachProcedureOptions.map((procedure) => (
-                  <option key={procedure.id} value={procedure.id}>
-                    {procedure.name}
-                  </option>
-                ))}
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NONE_SELECT_VALUE}>{t('flightPlan.notSpecified')}</SelectItem>
+                  {approachProcedureOptions.map((procedure) => (
+                    <SelectItem key={procedure.id} value={procedure.id}>
+                      {procedure.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
               </Select>
             </label>
 
             <label className="settings-field">
               <span>{t('flightPlan.arrivalTransition')}</span>
               <Select
-                value={arrivalTransitionId}
-                onChange={(event) => setArrivalTransitionId(event.target.value)}
+                value={arrivalTransitionId || NONE_SELECT_VALUE}
+                onValueChange={(value) => setArrivalTransitionId(value === NONE_SELECT_VALUE ? '' : value)}
                 disabled={!navDataReady}
               >
-                <option value="">{t('flightPlan.notSpecified')}</option>
-                {transitionOptions.map((transition) => (
-                  <option key={transition.id} value={transition.id}>
-                    {transition.name}
-                  </option>
-                ))}
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NONE_SELECT_VALUE}>{t('flightPlan.notSpecified')}</SelectItem>
+                  {transitionOptions.map((transition) => (
+                    <SelectItem key={transition.id} value={transition.id}>
+                      {transition.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
               </Select>
             </label>
           </section>
