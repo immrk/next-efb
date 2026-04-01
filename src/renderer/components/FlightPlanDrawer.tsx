@@ -36,7 +36,6 @@ export function FlightPlanDrawer({
   const { t } = useTranslation()
   const appClient = getAppClient()
   const settings = useAppStore((state) => state.settings)
-  const [navStatus, setNavStatus] = useState<NavDataStatus | null>(null)
   const [departureAirport, setDepartureAirport] = useState('')
   const [destinationAirport, setDestinationAirport] = useState('')
   const [enrouteText, setEnrouteText] = useState('')
@@ -50,24 +49,50 @@ export function FlightPlanDrawer({
   const [destCandidates, setDestCandidates] = useState<string[]>([])
   const [depProcedures, setDepProcedures] = useState<NavAirportProcedures>(EMPTY_PROCEDURES)
   const [destProcedures, setDestProcedures] = useState<NavAirportProcedures>(EMPTY_PROCEDURES)
-  const [summary, setSummary] = useState('')
-  const [warnings, setWarnings] = useState<string[]>([])
-  const [errorMessage, setErrorMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [navStatus, setNavStatus] = useState<NavDataStatus | null>(null)
   const buildRequestIdRef = useRef(0)
+  const lastClearedSignatureRef = useRef('')
+  const prevNavDataReadyRef = useRef(false)
   const onPlanBuiltRef = useRef(onPlanBuilt)
   const onClearPlanRef = useRef(onClearPlan)
 
   onPlanBuiltRef.current = onPlanBuilt
   onClearPlanRef.current = onClearPlan
 
+  const navDataReady = Boolean(navStatus?.exists && navStatus?.activePath)
+
+  useEffect(() => {
+    if (navDataReady && !prevNavDataReadyRef.current) {
+      lastClearedSignatureRef.current = ''
+    }
+    prevNavDataReadyRef.current = navDataReady
+  }, [navDataReady])
+
   useEffect(() => {
     if (!isOpen) return
-    void appClient.getNavDataStatus().then(setNavStatus)
+
+    const refreshNavStatus = () => {
+      void appClient.getNavDataStatus().then(setNavStatus)
+    }
+
+    refreshNavStatus()
+    const offSettings = appClient.onSettingsChanged(() => {
+      refreshNavStatus()
+    })
+
+    return () => {
+      offSettings()
+    }
   }, [appClient, isOpen])
 
   useEffect(() => {
     if (!isOpen) return
+    if (!navDataReady) {
+      setDepCandidates([])
+      return
+    }
+
     const token = departureAirport.trim().toUpperCase()
     if (token.length < 2) {
       setDepCandidates([])
@@ -81,10 +106,15 @@ export function FlightPlanDrawer({
     }, 250)
 
     return () => window.clearTimeout(timer)
-  }, [appClient, departureAirport, isOpen])
+  }, [appClient, departureAirport, isOpen, navDataReady])
 
   useEffect(() => {
     if (!isOpen) return
+    if (!navDataReady) {
+      setDestCandidates([])
+      return
+    }
+
     const token = destinationAirport.trim().toUpperCase()
     if (token.length < 2) {
       setDestCandidates([])
@@ -98,14 +128,12 @@ export function FlightPlanDrawer({
     }, 250)
 
     return () => window.clearTimeout(timer)
-  }, [appClient, destinationAirport, isOpen])
+  }, [appClient, destinationAirport, isOpen, navDataReady])
 
   useEffect(() => {
     const ident = departureAirport.trim().toUpperCase()
-    if (!ident) {
+    if (!ident || !navDataReady) {
       setDepProcedures(EMPTY_PROCEDURES)
-      setDepartureRunway('')
-      setDepartureProcedureId('')
       return
     }
 
@@ -113,27 +141,19 @@ export function FlightPlanDrawer({
     void appClient.getNavAirportProcedures(ident).then((procedures) => {
       if (!active) return
       setDepProcedures(procedures)
-      setDepartureRunway((current) => {
-        if (current && procedures.runways.some((runway) => runway.name === current)) {
-          return current
-        }
-        return procedures.runways[0]?.name ?? ''
-      })
+      setDepartureRunway('')
+      setDepartureProcedureId('')
     })
 
     return () => {
       active = false
     }
-  }, [appClient, departureAirport, isOpen])
+  }, [appClient, departureAirport, isOpen, navDataReady])
 
   useEffect(() => {
     const ident = destinationAirport.trim().toUpperCase()
-    if (!ident) {
+    if (!ident || !navDataReady) {
       setDestProcedures(EMPTY_PROCEDURES)
-      setArrivalRunway('')
-      setArrivalProcedureId('')
-      setApproachProcedureId('')
-      setArrivalTransitionId('')
       return
     }
 
@@ -141,18 +161,16 @@ export function FlightPlanDrawer({
     void appClient.getNavAirportProcedures(ident).then((procedures) => {
       if (!active) return
       setDestProcedures(procedures)
-      setArrivalRunway((current) => {
-        if (current && procedures.runways.some((runway) => runway.name === current)) {
-          return current
-        }
-        return procedures.runways[0]?.name ?? ''
-      })
+      setArrivalRunway('')
+      setArrivalProcedureId('')
+      setApproachProcedureId('')
+      setArrivalTransitionId('')
     })
 
     return () => {
       active = false
     }
-  }, [appClient, destinationAirport, isOpen])
+  }, [appClient, destinationAirport, isOpen, navDataReady])
 
   const departureProcedureOptions = useMemo(
     () => filterProcedures(depProcedures.departures, departureRunway),
@@ -192,7 +210,7 @@ export function FlightPlanDrawer({
     }
 
     if (!departureProcedureOptions.some((procedure) => procedure.id === departureProcedureId)) {
-      setDepartureProcedureId(departureProcedureOptions[0]?.id ?? '')
+      setDepartureProcedureId('')
     }
   }, [departureProcedureId, departureProcedureOptions])
 
@@ -203,7 +221,7 @@ export function FlightPlanDrawer({
     }
 
     if (!arrivalProcedureOptions.some((procedure) => procedure.id === arrivalProcedureId)) {
-      setArrivalProcedureId(arrivalProcedureOptions[0]?.id ?? '')
+      setArrivalProcedureId('')
     }
   }, [arrivalProcedureId, arrivalProcedureOptions])
 
@@ -215,7 +233,7 @@ export function FlightPlanDrawer({
     }
 
     if (!approachProcedureOptions.some((procedure) => procedure.id === approachProcedureId)) {
-      setApproachProcedureId(approachProcedureOptions[0]?.id ?? '')
+      setApproachProcedureId('')
       setArrivalTransitionId('')
     }
   }, [approachProcedureId, approachProcedureOptions])
@@ -227,19 +245,12 @@ export function FlightPlanDrawer({
     }
 
     if (!transitionOptions.some((transition) => transition.id === arrivalTransitionId)) {
-      setArrivalTransitionId(transitionOptions[0]?.id ?? '')
+      setArrivalTransitionId('')
     }
   }, [arrivalTransitionId, transitionOptions])
 
-  const departureFlowLabel =
-    departureProcedureOptions.find((procedure) => procedure.id === departureProcedureId)?.name ?? ''
-  const arrivalFlowLabel = arrivalProcedureOptions.find((procedure) => procedure.id === arrivalProcedureId)?.name ?? ''
-  const approachFlowLabel = approachProcedureOptions.find((procedure) => procedure.id === approachProcedureId)?.name ?? ''
-  const transitionFlowLabel = transitionOptions.find((transition) => transition.id === arrivalTransitionId)?.name ?? ''
-
   const handleImportSimBrief = async () => {
     setIsLoading(true)
-    setErrorMessage('')
     try {
       const result = await appClient.importSimBrief({
         username: settings?.simbrief.username,
@@ -251,7 +262,6 @@ export function FlightPlanDrawer({
       toast.success(t('feedback.imported'))
     } catch (error) {
       const message = error instanceof Error ? error.message : 'SIMBRIEF_IMPORT_FAILED'
-      setErrorMessage(message)
       toast.error(message)
     } finally {
       setIsLoading(false)
@@ -263,12 +273,35 @@ export function FlightPlanDrawer({
 
     const departureIdent = departureAirport.trim().toUpperCase()
     const destinationIdent = destinationAirport.trim().toUpperCase()
+    const currentSignature = buildRouteSignature({
+      departureAirport: departureIdent,
+      destinationAirport: destinationIdent,
+      enrouteText,
+      departureRunway,
+      departureProcedureId,
+      arrivalRunway,
+      arrivalProcedureId,
+      approachProcedureId,
+      arrivalTransitionId
+    })
+
+    if (!navDataReady) {
+      if (currentSignature !== lastClearedSignatureRef.current) {
+        lastClearedSignatureRef.current = currentSignature
+        buildRequestIdRef.current += 1
+        onClearPlanRef.current()
+      }
+      setIsLoading(false)
+      return
+    }
+
+    if (currentSignature === lastClearedSignatureRef.current) {
+      return
+    }
 
     if (!departureIdent || !destinationIdent) {
+      lastClearedSignatureRef.current = currentSignature
       buildRequestIdRef.current += 1
-      setSummary('')
-      setWarnings([])
-      setErrorMessage('')
       onClearPlanRef.current()
       setIsLoading(false)
       return
@@ -277,7 +310,6 @@ export function FlightPlanDrawer({
     const timer = window.setTimeout(() => {
       const requestId = ++buildRequestIdRef.current
       setIsLoading(true)
-      setErrorMessage('')
 
       void appClient
         .buildFlightPlan({
@@ -295,8 +327,7 @@ export function FlightPlanDrawer({
           if (requestId !== buildRequestIdRef.current) {
             return
           }
-          setSummary(result.summary)
-          setWarnings(result.unresolvedTokens)
+          lastClearedSignatureRef.current = ''
           onPlanBuiltRef.current(result)
         })
         .catch((error) => {
@@ -304,7 +335,6 @@ export function FlightPlanDrawer({
             return
           }
           const message = error instanceof Error ? error.message : 'ROUTE_BUILD_FAILED'
-          setErrorMessage(message)
           toast.error(message)
         })
         .finally(() => {
@@ -326,7 +356,7 @@ export function FlightPlanDrawer({
     destinationAirport,
     enrouteText,
     isOpen,
-    t
+    navDataReady
   ])
 
   if (!isOpen) {
@@ -360,27 +390,17 @@ export function FlightPlanDrawer({
         </header>
 
         <div className="flight-plan-body">
-          <div className="settings-note-card flight-plan-status-card">
-            <strong>{t('flightPlan.navStatus')}</strong>
-            <span>{navStatus?.message ?? (navStatus?.exists ? t('flightPlan.navReady') : t('flightPlan.navMissing'))}</span>
-            {navStatus?.activePath ? <code className="settings-token">{navStatus.activePath}</code> : null}
-          </div>
-
-          <div className="flight-plan-flow">
-            <span className="flight-plan-flow-chip">{departureRunway || t('flightPlan.departureRunway')}</span>
-            <span className="flight-plan-flow-arrow">-&gt;</span>
-            <span className="flight-plan-flow-chip">{departureFlowLabel || t('flightPlan.departureProcedure')}</span>
-            <span className="flight-plan-flow-arrow">-&gt;</span>
-            <span className="flight-plan-flow-chip">{t('flightPlan.enroute')}</span>
-            <span className="flight-plan-flow-arrow">-&gt;</span>
-            <span className="flight-plan-flow-chip">{arrivalRunway || t('flightPlan.arrivalRunway')}</span>
-            <span className="flight-plan-flow-arrow">-&gt;</span>
-            <span className="flight-plan-flow-chip">{arrivalFlowLabel || t('flightPlan.arrivalProcedure')}</span>
-            <span className="flight-plan-flow-arrow">-&gt;</span>
-            <span className="flight-plan-flow-chip">{approachFlowLabel || t('flightPlan.approachProcedure')}</span>
-            <span className="flight-plan-flow-arrow">-&gt;</span>
-            <span className="flight-plan-flow-chip">{transitionFlowLabel || t('flightPlan.arrivalTransition')}</span>
-          </div>
+          {!navDataReady ? (
+            <div className="settings-note settings-note-card flight-plan-alert">
+              <strong>{t('flightPlan.navDataRequired')}</strong>
+              <span>{t('flightPlan.navDataRequiredHint')}</span>
+              <div className="settings-inline-row">
+                <Button type="button" variant="secondary" onClick={onOpenSettings}>
+                  {t('flightPlan.navDataOpenSettings')}
+                </Button>
+              </div>
+            </div>
+          ) : null}
 
           <section className="flight-plan-section">
             <div className="flight-plan-section-head">
@@ -395,6 +415,7 @@ export function FlightPlanDrawer({
                 onChange={(event) => setDepartureAirport(event.target.value.toUpperCase())}
                 list="departure-airports"
                 placeholder={t('flightPlan.airportPlaceholder')}
+                disabled={!navDataReady}
               />
               <datalist id="departure-airports">
                 {depCandidates.map((ident) => (
@@ -405,7 +426,11 @@ export function FlightPlanDrawer({
 
             <label className="settings-field">
               <span>{t('flightPlan.departureRunway')}</span>
-              <Select value={departureRunway} onChange={(event) => setDepartureRunway(event.target.value)}>
+              <Select
+                value={departureRunway}
+                onChange={(event) => setDepartureRunway(event.target.value)}
+                disabled={!navDataReady}
+              >
                 <option value="">{t('flightPlan.notSpecified')}</option>
                 {depProcedures.runways.map((runway) => (
                   <option key={runway.name} value={runway.name}>
@@ -417,7 +442,11 @@ export function FlightPlanDrawer({
 
             <label className="settings-field">
               <span>{t('flightPlan.departureProcedure')}</span>
-              <Select value={departureProcedureId} onChange={(event) => setDepartureProcedureId(event.target.value)}>
+              <Select
+                value={departureProcedureId}
+                onChange={(event) => setDepartureProcedureId(event.target.value)}
+                disabled={!navDataReady}
+              >
                 <option value="">{t('flightPlan.notSpecified')}</option>
                 {departureProcedureOptions.map((procedure) => (
                   <option key={procedure.id} value={procedure.id}>
@@ -441,6 +470,7 @@ export function FlightPlanDrawer({
                 value={enrouteText}
                 onChange={(event) => setEnrouteText(event.target.value.toUpperCase())}
                 placeholder={t('flightPlan.enroutePlaceholder')}
+                disabled={!navDataReady}
               />
             </label>
           </section>
@@ -458,6 +488,7 @@ export function FlightPlanDrawer({
                 onChange={(event) => setDestinationAirport(event.target.value.toUpperCase())}
                 list="destination-airports"
                 placeholder={t('flightPlan.airportPlaceholder')}
+                disabled={!navDataReady}
               />
               <datalist id="destination-airports">
                 {destCandidates.map((ident) => (
@@ -468,7 +499,11 @@ export function FlightPlanDrawer({
 
             <label className="settings-field">
               <span>{t('flightPlan.arrivalRunway')}</span>
-              <Select value={arrivalRunway} onChange={(event) => setArrivalRunway(event.target.value)}>
+              <Select
+                value={arrivalRunway}
+                onChange={(event) => setArrivalRunway(event.target.value)}
+                disabled={!navDataReady}
+              >
                 <option value="">{t('flightPlan.notSpecified')}</option>
                 {destProcedures.runways.map((runway) => (
                   <option key={runway.name} value={runway.name}>
@@ -480,7 +515,11 @@ export function FlightPlanDrawer({
 
             <label className="settings-field">
               <span>{t('flightPlan.arrivalProcedure')}</span>
-              <Select value={arrivalProcedureId} onChange={(event) => setArrivalProcedureId(event.target.value)}>
+              <Select
+                value={arrivalProcedureId}
+                onChange={(event) => setArrivalProcedureId(event.target.value)}
+                disabled={!navDataReady}
+              >
                 <option value="">{t('flightPlan.notSpecified')}</option>
                 {arrivalProcedureOptions.map((procedure) => (
                   <option key={procedure.id} value={procedure.id}>
@@ -492,7 +531,11 @@ export function FlightPlanDrawer({
 
             <label className="settings-field">
               <span>{t('flightPlan.approachProcedure')}</span>
-              <Select value={approachProcedureId} onChange={(event) => setApproachProcedureId(event.target.value)}>
+              <Select
+                value={approachProcedureId}
+                onChange={(event) => setApproachProcedureId(event.target.value)}
+                disabled={!navDataReady}
+              >
                 <option value="">{t('flightPlan.notSpecified')}</option>
                 {approachProcedureOptions.map((procedure) => (
                   <option key={procedure.id} value={procedure.id}>
@@ -504,7 +547,11 @@ export function FlightPlanDrawer({
 
             <label className="settings-field">
               <span>{t('flightPlan.arrivalTransition')}</span>
-              <Select value={arrivalTransitionId} onChange={(event) => setArrivalTransitionId(event.target.value)}>
+              <Select
+                value={arrivalTransitionId}
+                onChange={(event) => setArrivalTransitionId(event.target.value)}
+                disabled={!navDataReady}
+              >
                 <option value="">{t('flightPlan.notSpecified')}</option>
                 {transitionOptions.map((transition) => (
                   <option key={transition.id} value={transition.id}>
@@ -516,7 +563,7 @@ export function FlightPlanDrawer({
           </section>
 
           <div className="button-row">
-            <Button type="button" variant="secondary" disabled={isLoading} onClick={handleImportSimBrief}>
+            <Button type="button" variant="secondary" disabled={isLoading || !navDataReady} onClick={handleImportSimBrief}>
               {t('flightPlan.importSimbrief')}
             </Button>
             <Button
@@ -524,9 +571,17 @@ export function FlightPlanDrawer({
               variant="secondary"
               disabled={isLoading}
               onClick={() => {
-                setSummary('')
-                setWarnings([])
-                setErrorMessage('')
+                lastClearedSignatureRef.current = buildRouteSignature({
+                  departureAirport: departureAirport.trim().toUpperCase(),
+                  destinationAirport: destinationAirport.trim().toUpperCase(),
+                  enrouteText,
+                  departureRunway,
+                  departureProcedureId,
+                  arrivalRunway,
+                  arrivalProcedureId,
+                  approachProcedureId,
+                  arrivalTransitionId
+                })
                 buildRequestIdRef.current += 1
                 onClearPlanRef.current()
               }}
@@ -534,20 +589,6 @@ export function FlightPlanDrawer({
               {t('flightPlan.clear')}
             </Button>
           </div>
-
-          {summary ? <div className="settings-note-card flight-plan-summary-card">{summary}</div> : null}
-          {warnings.length > 0 ? (
-            <div className="settings-note-card">
-              <strong>{t('flightPlan.unresolved')}</strong>
-              <span>{warnings.join(', ')}</span>
-            </div>
-          ) : null}
-          {errorMessage ? (
-            <div className="settings-note-card danger-copy">
-              <strong>{t('flightPlan.error')}</strong>
-              <span>{errorMessage}</span>
-            </div>
-          ) : null}
         </div>
       </aside>
     </section>
@@ -568,4 +609,28 @@ function parseProcedureId(value: string): number | null {
   if (!value.startsWith('approach:')) return null
   const parsed = Number(value.slice('approach:'.length))
   return Number.isFinite(parsed) ? parsed : null
+}
+
+function buildRouteSignature(input: {
+  departureAirport: string
+  destinationAirport: string
+  enrouteText: string
+  departureRunway: string
+  departureProcedureId: string
+  arrivalRunway: string
+  arrivalProcedureId: string
+  approachProcedureId: string
+  arrivalTransitionId: string
+}): string {
+  return [
+    input.departureAirport,
+    input.destinationAirport,
+    input.enrouteText,
+    input.departureRunway,
+    input.departureProcedureId,
+    input.arrivalRunway,
+    input.arrivalProcedureId,
+    input.approachProcedureId,
+    input.arrivalTransitionId
+  ].join('|')
 }

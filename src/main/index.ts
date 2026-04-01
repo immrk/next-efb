@@ -40,7 +40,7 @@ async function loadRenderer(window: BrowserWindow): Promise<void> {
 }
 
 async function createWindow(): Promise<void> {
-  const settingsStore = new SettingsStore()
+  const settingsStore = new SettingsStore(resolveSystemLanguage(app.getLocale()))
   const flightStateStore = new FlightStateStore()
   const simConnectService = new SimConnectService(settingsStore.get())
   const storageService = new StorageService()
@@ -84,6 +84,10 @@ async function createWindow(): Promise<void> {
   simConnectService.start()
   await lanServer.start()
   await loadRenderer(mainWindow)
+}
+
+function resolveSystemLanguage(locale: string): 'zh-CN' | 'en-US' {
+  return locale.trim().toLowerCase().startsWith('zh') ? 'zh-CN' : 'en-US'
 }
 
 app.whenReady().then(async () => {

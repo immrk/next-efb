@@ -1,11 +1,11 @@
 import { randomBytes } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import type { AppSettings } from '@shared/types'
+import type { AppLanguage, AppSettings } from '@shared/types'
 import { ensureDataRootDir } from '../storage/AppDataPaths'
 
-const DEFAULT_SETTINGS: AppSettings = {
-  language: 'zh-CN',
+const DEFAULT_SETTINGS_BASE: AppSettings = {
+  language: 'en-US',
   followAircraft: true,
   refreshIntervalMs: 500,
   providerMode: 'simconnect',
@@ -29,12 +29,15 @@ const DEFAULT_SETTINGS: AppSettings = {
 
 export class SettingsStore {
   private readonly filePath: string
-  private settings: AppSettings = DEFAULT_SETTINGS
+  private readonly defaultLanguage: AppLanguage
+  private settings: AppSettings
 
-  constructor() {
+  constructor(defaultLanguage: AppLanguage) {
     const baseDir = ensureDataRootDir()
     mkdirSync(baseDir, { recursive: true })
     this.filePath = join(baseDir, 'settings.json')
+    this.defaultLanguage = defaultLanguage
+    this.settings = this.withDefaultLanguage(DEFAULT_SETTINGS_BASE)
     this.settings = this.load()
   }
 
@@ -65,32 +68,40 @@ export class SettingsStore {
 
   private load(): AppSettings {
     if (!existsSync(this.filePath)) {
-      writeFileSync(this.filePath, JSON.stringify(DEFAULT_SETTINGS, null, 2), 'utf-8')
-      return DEFAULT_SETTINGS
+      this.settings = this.withDefaultLanguage(DEFAULT_SETTINGS_BASE)
+      writeFileSync(this.filePath, JSON.stringify(this.settings, null, 2), 'utf-8')
+      return this.settings
     }
 
     try {
       const raw = readFileSync(this.filePath, 'utf-8')
       const parsed = JSON.parse(raw) as Partial<AppSettings>
       return {
-        ...DEFAULT_SETTINGS,
+        ...this.withDefaultLanguage(DEFAULT_SETTINGS_BASE),
         ...parsed,
         navData: {
-          ...DEFAULT_SETTINGS.navData,
+          ...DEFAULT_SETTINGS_BASE.navData,
           ...parsed.navData
         },
         simbrief: {
-          ...DEFAULT_SETTINGS.simbrief,
+          ...DEFAULT_SETTINGS_BASE.simbrief,
           ...parsed.simbrief
         },
         lanAccess: {
-          ...DEFAULT_SETTINGS.lanAccess,
+          ...DEFAULT_SETTINGS_BASE.lanAccess,
           ...parsed.lanAccess,
           allowWrite: true
         }
       } as AppSettings
     } catch {
-      return DEFAULT_SETTINGS
+      return this.withDefaultLanguage(DEFAULT_SETTINGS_BASE)
+    }
+  }
+
+  private withDefaultLanguage(settings: AppSettings): AppSettings {
+    return {
+      ...settings,
+      language: this.defaultLanguage
     }
   }
 }

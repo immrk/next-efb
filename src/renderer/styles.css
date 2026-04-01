@@ -469,11 +469,17 @@ body {
   outline: none;
 }
 
-.map-recenter-button {
+.map-control-stack {
   position: absolute;
   right: 18px;
   bottom: 106px;
   z-index: 1300;
+  display: grid;
+  gap: 8px;
+}
+
+.map-recenter-button,
+.map-route-fit-button {
   width: 42px;
   height: 42px;
   border: 1px solid var(--ui-border);
@@ -485,7 +491,14 @@ body {
   place-items: center;
 }
 
-.map-recenter-button svg {
+.map-recenter-button.is-active {
+  color: #52d5ff;
+  border-color: rgba(82, 213, 255, 0.45);
+  box-shadow: 0 0 0 1px rgba(82, 213, 255, 0.18);
+}
+
+.map-recenter-button svg,
+.map-route-fit-button svg {
   width: 18px;
   height: 18px;
   fill: currentColor;
@@ -1483,6 +1496,13 @@ body {
   margin-top: 2px;
 }
 
+.flight-plan-alert {
+  border-color: rgba(236, 179, 101, 0.35);
+  background:
+    radial-gradient(circle at top right, rgba(236, 179, 101, 0.12), transparent 28%),
+    rgba(255, 255, 255, 0.04);
+}
+
 .flight-plan-flow {
   display: flex;
   align-items: center;
@@ -1731,7 +1751,8 @@ body {
   background: rgba(255, 255, 255, 0.04);
 }
 
-.map-recenter-button:disabled {
+.map-recenter-button:disabled,
+.map-route-fit-button:disabled {
   opacity: 0.45;
   cursor: not-allowed;
 }
@@ -1847,7 +1868,7 @@ body {
     bottom: 94px;
   }
 
-  .map-recenter-button {
+  .map-control-stack {
     right: 10px;
     bottom: 96px;
   }

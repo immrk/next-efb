@@ -16,7 +16,7 @@ export const useAppStore = create<AppStoreState>((set) => ({
   aircraft: null,
   connection: null,
   settings: null,
-  language: 'zh-CN',
+  language: resolveSystemLanguage(),
   setAircraft: (aircraft) => set({ aircraft }),
   setConnection: (connection) => set({ connection }),
   setSettings: (settings) => set({ settings, language: settings.language }),
@@ -26,3 +26,11 @@ export const useAppStore = create<AppStoreState>((set) => ({
       settings: state.settings ? { ...state.settings, language } : state.settings
     }))
 }))
+
+function resolveSystemLanguage(): AppLanguage {
+  if (typeof navigator === 'undefined') {
+    return 'en-US'
+  }
+
+  return navigator.language.trim().toLowerCase().startsWith('zh') ? 'zh-CN' : 'en-US'
+}

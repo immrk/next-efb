@@ -268,8 +268,8 @@ function ensureDataRootDir() {
   node_fs.mkdirSync(dataRoot, { recursive: true });
   return dataRoot;
 }
-const DEFAULT_SETTINGS = {
-  language: "zh-CN",
+const DEFAULT_SETTINGS_BASE = {
+  language: "en-US",
   followAircraft: true,
   refreshIntervalMs: 500,
   providerMode: "simconnect",
@@ -291,11 +291,12 @@ const DEFAULT_SETTINGS = {
   }
 };
 class SettingsStore {
-  constructor() {
-    this.settings = DEFAULT_SETTINGS;
+  constructor(defaultLanguage) {
     const baseDir = ensureDataRootDir();
     node_fs.mkdirSync(baseDir, { recursive: true });
     this.filePath = node_path.join(baseDir, "settings.json");
+    this.defaultLanguage = defaultLanguage;
+    this.settings = this.withDefaultLanguage(DEFAULT_SETTINGS_BASE);
     this.settings = this.load();
   }
   get() {
@@ -323,32 +324,39 @@ class SettingsStore {
   }
   load() {
     if (!node_fs.existsSync(this.filePath)) {
-      node_fs.writeFileSync(this.filePath, JSON.stringify(DEFAULT_SETTINGS, null, 2), "utf-8");
-      return DEFAULT_SETTINGS;
+      this.settings = this.withDefaultLanguage(DEFAULT_SETTINGS_BASE);
+      node_fs.writeFileSync(this.filePath, JSON.stringify(this.settings, null, 2), "utf-8");
+      return this.settings;
     }
     try {
       const raw = node_fs.readFileSync(this.filePath, "utf-8");
       const parsed = JSON.parse(raw);
       return {
-        ...DEFAULT_SETTINGS,
+        ...this.withDefaultLanguage(DEFAULT_SETTINGS_BASE),
         ...parsed,
         navData: {
-          ...DEFAULT_SETTINGS.navData,
+          ...DEFAULT_SETTINGS_BASE.navData,
           ...parsed.navData
         },
         simbrief: {
-          ...DEFAULT_SETTINGS.simbrief,
+          ...DEFAULT_SETTINGS_BASE.simbrief,
           ...parsed.simbrief
         },
         lanAccess: {
-          ...DEFAULT_SETTINGS.lanAccess,
+          ...DEFAULT_SETTINGS_BASE.lanAccess,
           ...parsed.lanAccess,
           allowWrite: true
         }
       };
     } catch {
-      return DEFAULT_SETTINGS;
+      return this.withDefaultLanguage(DEFAULT_SETTINGS_BASE);
     }
+  }
+  withDefaultLanguage(settings) {
+    return {
+      ...settings,
+      language: this.defaultLanguage
+    };
   }
 }
 function createAuthToken() {
@@ -1959,7 +1967,7 @@ async function loadRenderer(window) {
   await window.loadFile(node_path.join(__dirname, "../../renderer/index.html"));
 }
 async function createWindow() {
-  const settingsStore = new SettingsStore();
+  const settingsStore = new SettingsStore(resolveSystemLanguage(electron.app.getLocale()));
   const flightStateStore = new FlightStateStore();
   const simConnectService = new SimConnectService(settingsStore.get());
   const storageService = new StorageService();
@@ -2000,6 +2008,9 @@ async function createWindow() {
   simConnectService.start();
   await lanServer.start();
   await loadRenderer(mainWindow);
+}
+function resolveSystemLanguage(locale) {
+  return locale.trim().toLowerCase().startsWith("zh") ? "zh-CN" : "en-US";
 }
 electron.app.whenReady().then(async () => {
   await createWindow();

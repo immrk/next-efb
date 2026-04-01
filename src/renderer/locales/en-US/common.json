@@ -95,6 +95,9 @@
   "flightPlan.openDrawer": "Open flight planning",
   "flightPlan.openSettings": "Open settings",
   "flightPlan.close": "Close flight planning",
+  "flightPlan.navDataRequired": "Navigation data required",
+  "flightPlan.navDataRequiredHint": "Install Little Navmap navigation data and configure its SQLite path in Settings before planning a route.",
+  "flightPlan.navDataOpenSettings": "Open settings",
   "flightPlan.navStatus": "Navigation Database",
   "flightPlan.navReady": "Navigation database ready",
   "flightPlan.navMissing": "Navigation database is missing, open settings to configure path.",
@@ -138,5 +141,9 @@
   "feedback.updated": "Updated",
   "feedback.imported": "Imported",
   "feedback.failed": "Operation failed",
-  "flightPlan.arrivalProcedure": "Arrival Procedure"
+  "flightPlan.arrivalProcedure": "Arrival Procedure",
+  "map.controls": "Map controls",
+  "map.fitRoute": "Fit current route",
+  "map.followAircraftStart": "Click to follow aircraft",
+  "map.followAircraftStop": "Stop following aircraft"
 }

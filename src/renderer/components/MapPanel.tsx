@@ -1,5 +1,5 @@
 import { DomUtil } from 'leaflet'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { CircleMarker, MapContainer, Marker, Polyline, TileLayer, Tooltip, useMap } from 'react-leaflet'
 import { useTranslation } from 'react-i18next'
 import type { GeoReferencePoint } from '@shared/chart-types'
@@ -118,24 +118,35 @@ function FollowAircraft({
   return null
 }
 
-function RecenterMap({
-  lat,
-  lon,
+function FitRouteView({
+  points,
   trigger
 }: {
-  lat: number
-  lon: number
+  points: FlightPlanPoint[]
   trigger: number
 }) {
   const map = useMap()
 
   useEffect(() => {
-    if (trigger === 0) return
-    map.flyTo([lat, lon], map.getZoom(), {
-      animate: true,
-      duration: 0.6
-    })
-  }, [lat, lon, map, trigger])
+    if (trigger === 0 || points.length === 0) return
+
+    if (points.length === 1) {
+      const [point] = points
+      map.flyTo([point.lat, point.lon], Math.max(map.getZoom(), 11), {
+        animate: true,
+        duration: 0.75
+      })
+      return
+    }
+
+    map.fitBounds(
+      points.map((point) => [point.lat, point.lon] as [number, number]),
+      {
+        padding: [48, 48],
+        animate: true
+      }
+    )
+  }, [map, points, trigger])
 
   return null
 }
@@ -237,6 +248,18 @@ function MountedChartOverlay({
   )
 }
 
+function dedupeRoutePoints(points: FlightPlanPoint[]): FlightPlanPoint[] {
+  const output: FlightPlanPoint[] = []
+  for (const point of points) {
+    const prev = output[output.length - 1]
+    if (prev && Math.abs(prev.lat - point.lat) < 1e-7 && Math.abs(prev.lon - point.lon) < 1e-7) {
+      continue
+    }
+    output.push(point)
+  }
+  return output
+}
+
 export function MapPanel({
   mountedChartIds,
   activeChartId,
@@ -258,8 +281,13 @@ export function MapPanel({
   const lat = aircraftPositionUsable ? (aircraft?.lat ?? initialMapView.lat) : initialMapView.lat
   const lon = aircraftPositionUsable ? (aircraft?.lon ?? initialMapView.lon) : initialMapView.lon
   const heading = aircraftPositionUsable ? (aircraft?.headingDeg ?? 0) : 0
-  const [recenterTrigger, setRecenterTrigger] = useState(0)
+  const [isFollowActive, setIsFollowActive] = useState(false)
+  const [routeViewTrigger, setRouteViewTrigger] = useState(0)
   const tileConfig = getMapTileConfig(settings?.mapTileProvider)
+  const routeViewPoints = useMemo(() => {
+    const points = routeSegments.length > 0 ? routeSegments.flatMap((segment) => segment.points) : routePoints
+    return dedupeRoutePoints(points)
+  }, [routePoints, routeSegments])
 
   const updateMapTileProvider = async (mapTileProvider: MapTileProvider): Promise<void> => {
     const nextSettings = await appClient.updateSettings({ mapTileProvider })
@@ -335,29 +363,44 @@ export function MapPanel({
               <Tooltip direction="top" offset={[0, -4]}>{`${index + 1}. ${point.ident}`}</Tooltip>
             </CircleMarker>
           ))}
-          <FollowAircraft
-            lat={lat}
-            lon={lon}
-            enabled={aircraftPositionUsable && (settings?.followAircraft ?? true)}
-          />
-          <RecenterMap lat={lat} lon={lon} trigger={aircraftPositionUsable ? recenterTrigger : 0} />
+          <FitRouteView points={routeViewPoints} trigger={routeViewTrigger} />
+          <FollowAircraft lat={lat} lon={lon} enabled={aircraftPositionUsable && isFollowActive} />
           <MapViewPersistence />
         </MapContainer>
         <div className="map-coordinates">
           <span>{`${t('map.lat')} ${formatCoord(aircraftPositionUsable ? aircraft?.lat : undefined)}`}</span>
           <span>{`${t('map.lon')} ${formatCoord(aircraftPositionUsable ? aircraft?.lon : undefined)}`}</span>
         </div>
-        <button
-          type="button"
-          className="map-recenter-button"
-          aria-label={t('map.recenter')}
-          disabled={!aircraftPositionUsable}
-          onClick={() => setRecenterTrigger((current) => current + 1)}
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M12 3L18 16H13V21H11V16H6L12 3Z" />
-          </svg>
-        </button>
+        <div className="map-control-stack">
+          <button
+            type="button"
+            className="map-route-fit-button"
+            aria-label={t('map.fitRoute')}
+            title={t('map.fitRoute')}
+            disabled={routeViewPoints.length === 0}
+            onClick={() => {
+              setIsFollowActive(false)
+              setRouteViewTrigger((current) => current + 1)
+            }}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 4H9V6H6V9H4V4ZM15 4H20V9H18V6H15V4ZM4 15H6V18H9V20H4V15ZM18 15H20V20H15V18H18V15Z" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            className={`map-recenter-button ${isFollowActive ? 'is-active' : ''}`}
+            aria-label={isFollowActive ? t('map.followAircraftStop') : t('map.followAircraftStart')}
+            title={isFollowActive ? t('map.followAircraftStop') : t('map.followAircraftStart')}
+            disabled={!aircraftPositionUsable}
+            aria-pressed={isFollowActive}
+            onClick={() => setIsFollowActive((current) => !current)}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 2.75A9.25 9.25 0 1 0 21.25 12A9.26 9.26 0 0 0 12 2.75Zm0 2A7.25 7.25 0 1 1 4.75 12A7.26 7.26 0 0 1 12 4.75Zm0 1.75A5.5 5.5 0 1 0 17.5 12A5.51 5.51 0 0 0 12 6.5Zm0 2A3.5 3.5 0 1 1 8.5 12A3.5 3.5 0 0 1 12 8.5Z" />
+            </svg>
+          </button>
+        </div>
         <div className="map-floating-toolbar">
           <label className="map-provider-chip" aria-label={t('settings.mapTileProvider')}>
             <select
