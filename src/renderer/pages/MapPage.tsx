@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ChartRecord } from '@shared/chart-types'
-import type { BuildFlightPlanResult, FlightPlanPoint, FlightPlanSegment, FlightPlanSelection } from '@shared/flight-plan-types'
+import type { BuildFlightPlanInput, BuildFlightPlanResult, FlightPlanPoint, FlightPlanSegment, FlightPlanSelection } from '@shared/flight-plan-types'
 import { getAppClient } from '../client'
 import { ChartMountDrawer } from '../components/ChartMountDrawer'
 import { FlightPlanDrawer } from '../components/FlightPlanDrawer'
@@ -14,14 +14,20 @@ import {
   type DockCard,
   type ProcedureMountCard
 } from '../utils/chartMountCards'
+import {
+  persistStoredChartDockState,
+  persistStoredFlightPlanResult,
+  readStoredChartDockState,
+  readStoredFlightPlanResult
+} from '../utils/flightPlanPersistence'
 import type { NavAirportProcedures } from '@shared/flight-plan-types'
 
 interface MapPageProps {
   onOpenChartLibrary: (chartId?: string | null) => void
   onEditChart: (chartId: string) => void
   onOpenSettings: () => void
-  flightPlanSelection: FlightPlanSelection | null
-  onFlightPlanSelectionChange: (selection: FlightPlanSelection | null) => void
+  flightPlanDraft: BuildFlightPlanInput
+  onFlightPlanDraftChange: (draft: BuildFlightPlanInput) => void
 }
 
 const EMPTY_PROCEDURES: NavAirportProcedures = {
@@ -37,23 +43,50 @@ export function MapPage({
   onOpenChartLibrary,
   onEditChart,
   onOpenSettings,
-  flightPlanSelection,
-  onFlightPlanSelectionChange
+  flightPlanDraft,
+  onFlightPlanDraftChange
 }: MapPageProps) {
   const appClient = getAppClient()
   const runtime = appClient.getRuntime()
   const { t } = useTranslation()
   const { charts } = useChartLibraryData()
-  const [mountedChartIds, setMountedChartIds] = useState<string[]>([])
-  const [activeChartId, setActiveChartId] = useState<string | null>(null)
+  const storedDockState = readStoredChartDockState()
+  const [mountedChartIds, setMountedChartIds] = useState<string[]>(storedDockState.mountedChartIds)
+  const [activeChartId, setActiveChartId] = useState<string | null>(storedDockState.activeChartId)
   const [isChartDrawerOpen, setIsChartDrawerOpen] = useState(false)
   const [isFlightPlanDrawerOpen, setIsFlightPlanDrawerOpen] = useState(false)
-  const [flightPlanPoints, setFlightPlanPoints] = useState<FlightPlanPoint[]>([])
-  const [flightPlanSegments, setFlightPlanSegments] = useState<FlightPlanSegment[]>([])
+  const [flightPlanPoints, setFlightPlanPoints] = useState<FlightPlanPoint[]>(() =>
+    readStoredFlightPlanResult()?.points ?? []
+  )
+  const [flightPlanSegments, setFlightPlanSegments] = useState<FlightPlanSegment[]>(() =>
+    readStoredFlightPlanResult()?.segments ?? []
+  )
   const [departureProcedures, setDepartureProcedures] = useState<NavAirportProcedures>(EMPTY_PROCEDURES)
   const [destinationProcedures, setDestinationProcedures] = useState<NavAirportProcedures>(EMPTY_PROCEDURES)
   const [pendingDisabledCard, setPendingDisabledCard] = useState<ProcedureMountCard | null>(null)
-  const [isOverlayDismissed, setIsOverlayDismissed] = useState(false)
+  const [isOverlayDismissed, setIsOverlayDismissed] = useState(storedDockState.overlayDismissed)
+  const [proceduresReadySelectionKey, setProceduresReadySelectionKey] = useState('')
+
+  const flightPlanSelection = useMemo<FlightPlanSelection>(
+    () => ({
+      departureAirport: flightPlanDraft.departureAirport.trim().toUpperCase(),
+      destinationAirport: flightPlanDraft.destinationAirport.trim().toUpperCase(),
+      departureRunway: flightPlanDraft.departureRunway,
+      departureProcedureId: flightPlanDraft.departureProcedureId,
+      arrivalRunway: flightPlanDraft.arrivalRunway,
+      arrivalProcedureId: flightPlanDraft.arrivalProcedureId,
+      approachProcedureId: flightPlanDraft.approachProcedureId,
+      arrivalTransitionId: flightPlanDraft.arrivalTransitionId
+    }),
+    [flightPlanDraft]
+  )
+  const selectionKey = useMemo(() => buildSelectionKey(flightPlanSelection), [flightPlanSelection])
+  const previousSelectionKeyRef = useRef(selectionKey)
+  const buildSignature = useMemo(
+    () => buildDraftSignature(flightPlanDraft),
+    [flightPlanDraft]
+  )
+  const lastBuiltSignatureRef = useRef('')
 
   const autoCards = useMemo(
     () =>
@@ -86,8 +119,19 @@ export function MapPage({
   const dockCards = useMemo<DockCard[]>(() => [...autoCards, ...manualCards], [autoCards, manualCards])
 
   useEffect(() => {
-    setIsOverlayDismissed(false)
-  }, [flightPlanSelection, charts])
+    if (previousSelectionKeyRef.current !== selectionKey) {
+      setIsOverlayDismissed(false)
+    }
+    previousSelectionKeyRef.current = selectionKey
+  }, [selectionKey])
+
+  useEffect(() => {
+    persistStoredChartDockState({
+      mountedChartIds,
+      activeChartId,
+      overlayDismissed: isOverlayDismissed
+    })
+  }, [activeChartId, isOverlayDismissed, mountedChartIds])
 
   const activeDockChartIds = useMemo(
     () =>
@@ -98,11 +142,20 @@ export function MapPage({
   )
 
   useEffect(() => {
+    if (charts.length === 0) {
+      return
+    }
+
     setMountedChartIds((current) => current.filter((chartId) => charts.some((chart) => chart.id === chartId)))
+    setActiveChartId((current) => (current && charts.some((chart) => chart.id === current) ? current : null))
   }, [charts])
 
   useEffect(() => {
     if (isOverlayDismissed) {
+      return
+    }
+
+    if (flightPlanSelection && proceduresReadySelectionKey !== selectionKey) {
       return
     }
 
@@ -121,7 +174,15 @@ export function MapPage({
       null
 
     setActiveChartId(nextActive)
-  }, [activeChartId, activeDockChartIds, dockCards, isOverlayDismissed])
+  }, [
+    activeChartId,
+    activeDockChartIds,
+    dockCards,
+    flightPlanSelection,
+    isOverlayDismissed,
+    proceduresReadySelectionKey,
+    selectionKey
+  ])
 
   useEffect(() => {
     const departureAirport = flightPlanSelection?.departureAirport.trim().toUpperCase()
@@ -130,6 +191,7 @@ export function MapPage({
     if (!departureAirport && !destinationAirport) {
       setDepartureProcedures(EMPTY_PROCEDURES)
       setDestinationProcedures(EMPTY_PROCEDURES)
+      setProceduresReadySelectionKey(selectionKey)
       return
     }
 
@@ -154,13 +216,68 @@ export function MapPage({
       } else {
         setDestinationProcedures(EMPTY_PROCEDURES)
       }
+
+      if (active) {
+        setProceduresReadySelectionKey(selectionKey)
+      }
     }, 200)
 
     return () => {
       active = false
       window.clearTimeout(timer)
     }
-  }, [flightPlanSelection])
+  }, [appClient, flightPlanSelection, selectionKey])
+
+  useEffect(() => {
+    const departureAirport = flightPlanDraft.departureAirport.trim().toUpperCase()
+    const destinationAirport = flightPlanDraft.destinationAirport.trim().toUpperCase()
+
+    if (!departureAirport || !destinationAirport) {
+      lastBuiltSignatureRef.current = buildSignature
+      setFlightPlanPoints([])
+      setFlightPlanSegments([])
+      persistStoredFlightPlanResult(null)
+      return
+    }
+
+    if (lastBuiltSignatureRef.current === buildSignature) {
+      return
+    }
+
+    let active = true
+    const timer = window.setTimeout(() => {
+      void appClient
+        .buildFlightPlan({
+          departureAirport,
+          destinationAirport,
+          enrouteText: flightPlanDraft.enrouteText,
+          departureRunway: flightPlanDraft.departureRunway,
+          departureProcedureId: flightPlanDraft.departureProcedureId,
+          arrivalRunway: flightPlanDraft.arrivalRunway,
+          arrivalProcedureId: flightPlanDraft.arrivalProcedureId,
+          approachProcedureId: flightPlanDraft.approachProcedureId,
+          arrivalTransitionId: flightPlanDraft.arrivalTransitionId
+        })
+        .then((result) => {
+          if (!active) return
+          lastBuiltSignatureRef.current = buildSignature
+          setFlightPlanPoints(result.points)
+          setFlightPlanSegments(result.segments)
+          persistStoredFlightPlanResult(result)
+        })
+        .catch(() => {
+          if (!active) return
+          setFlightPlanPoints([])
+          setFlightPlanSegments([])
+          persistStoredFlightPlanResult(null)
+        })
+    }, 350)
+
+    return () => {
+      active = false
+      window.clearTimeout(timer)
+    }
+  }, [appClient, buildSignature, flightPlanDraft])
 
   const mountChart = (chartId: string) => {
     const chart = charts.find((item) => item.id === chartId)
@@ -177,11 +294,6 @@ export function MapPage({
       setIsOverlayDismissed(true)
     }
     setMountedChartIds((current) => current.filter((id) => id !== chartId))
-  }
-
-  const handlePlanBuilt = (result: BuildFlightPlanResult) => {
-    setFlightPlanPoints(result.points)
-    setFlightPlanSegments(result.segments)
   }
 
   const handleDockCardClick = (card: DockCard) => {
@@ -359,14 +471,10 @@ export function MapPage({
 
       <FlightPlanDrawer
         isOpen={isFlightPlanDrawerOpen}
+        draft={flightPlanDraft}
         onClose={() => setIsFlightPlanDrawerOpen(false)}
         onOpenSettings={onOpenSettings}
-        onPlanBuilt={handlePlanBuilt}
-        onClearPlan={() => {
-          setFlightPlanPoints([])
-          setFlightPlanSegments([])
-        }}
-        onSelectionChange={onFlightPlanSelectionChange}
+        onDraftChange={onFlightPlanDraftChange}
       />
 
       {pendingDisabledCard ? (
@@ -426,4 +534,33 @@ export function MapPage({
       ) : null}
     </section>
   )
+}
+
+function buildDraftSignature(draft: BuildFlightPlanInput): string {
+  return [
+    draft.departureAirport.trim().toUpperCase(),
+    draft.destinationAirport.trim().toUpperCase(),
+    draft.enrouteText.trim().toUpperCase(),
+    draft.departureRunway ?? '',
+    draft.departureProcedureId ?? '',
+    draft.arrivalRunway ?? '',
+    draft.arrivalProcedureId ?? '',
+    draft.approachProcedureId ?? '',
+    draft.arrivalTransitionId ?? ''
+  ].join('|')
+}
+
+function buildSelectionKey(selection: FlightPlanSelection | null): string {
+  if (!selection) return 'none'
+
+  return [
+    selection.departureAirport,
+    selection.destinationAirport,
+    selection.departureRunway ?? '',
+    selection.departureProcedureId ?? '',
+    selection.arrivalRunway ?? '',
+    selection.arrivalProcedureId ?? '',
+    selection.approachProcedureId ?? '',
+    selection.arrivalTransitionId ?? ''
+  ].join('|')
 }

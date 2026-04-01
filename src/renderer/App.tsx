@@ -1,13 +1,14 @@
 import { useTranslation } from 'react-i18next'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { AppRoute } from '@shared/types'
-import type { FlightPlanSelection } from '@shared/flight-plan-types'
+import type { BuildFlightPlanInput } from '@shared/flight-plan-types'
 import { AppSidebar } from './components/AppSidebar'
 import { useDesktopData } from './hooks/useDesktopData'
 import { ChartDetailPage } from './pages/ChartDetailPage'
 import { ChartsPage } from './pages/ChartsPage'
 import { MapPage } from './pages/MapPage'
 import { SettingsPage } from './pages/SettingsPage'
+import { persistStoredFlightPlanDraft, readStoredFlightPlanDraft } from './utils/flightPlanPersistence'
 
 export function App() {
   const { t } = useTranslation()
@@ -17,7 +18,13 @@ export function App() {
   const [detailChartId, setDetailChartId] = useState<string | null>(null)
   const [chartDetailBackRoute, setChartDetailBackRoute] = useState<'map' | 'charts'>('charts')
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true)
-  const [flightPlanSelection, setFlightPlanSelection] = useState<FlightPlanSelection | null>(null)
+  const [flightPlanDraft, setFlightPlanDraft] = useState<BuildFlightPlanInput>(() =>
+    readStoredFlightPlanDraft()
+  )
+
+  useEffect(() => {
+    persistStoredFlightPlanDraft(flightPlanDraft)
+  }, [flightPlanDraft])
   const isFullBleedRoute =
     route === 'map' || route === 'charts' || route === 'chartDetail' || route === 'settings'
 
@@ -42,7 +49,7 @@ export function App() {
 
         <section className={`route-view ${route === 'map' ? 'active' : ''}`}>
           <MapPage
-            flightPlanSelection={flightPlanSelection}
+            flightPlanDraft={flightPlanDraft}
             onOpenChartLibrary={(chartId) => {
               setSelectedChartId(chartId ?? null)
               setRoute('charts')
@@ -54,7 +61,7 @@ export function App() {
               setRoute('chartDetail')
             }}
             onOpenSettings={() => setRoute('settings')}
-            onFlightPlanSelectionChange={setFlightPlanSelection}
+            onFlightPlanDraftChange={setFlightPlanDraft}
           />
         </section>
 
