@@ -1412,62 +1412,116 @@ class NavDataService {
     }
     const runways = db.prepare(
       `
-        SELECT runway_name, MAX(length) AS length, MAX(width) AS width, MAX(surface) AS surface, MAX(heading) AS heading
-        FROM (
-          SELECT runway_id, airport_id, surface, length, width, heading,
+        SELECT
+          re.runway_end_id,
+          re.name AS runway_name,
+          MAX(r.length) AS length,
+          MAX(r.width) AS width,
+          MAX(r.surface) AS surface,
+          MAX(re.heading) AS heading,
+          MAX(re.is_takeoff) AS is_takeoff,
+          MAX(re.is_landing) AS is_landing,
+          MAX(
             CASE
-              WHEN primary_name IS NOT NULL AND secondary_name IS NOT NULL THEN primary_name || '/' || secondary_name
-              WHEN primary_name IS NOT NULL THEN primary_name
-              WHEN secondary_name IS NOT NULL THEN secondary_name
-              ELSE printf('RWY-%d', runway_id)
-            END AS runway_name
-          FROM (
-            SELECT r.runway_id, r.airport_id, r.surface, r.length, r.width, r.heading,
-              (SELECT name FROM runway_end re WHERE re.runway_end_id = r.primary_end_id) AS primary_name,
-              (SELECT name FROM runway_end re WHERE re.runway_end_id = r.secondary_end_id) AS secondary_name
-            FROM runway r
-            WHERE r.airport_id = @airportId
-          )
-        )
-        GROUP BY runway_name
-        ORDER BY length DESC, runway_name
+              WHEN primary_re.name IS NOT NULL AND secondary_re.name IS NOT NULL THEN primary_re.name || '/' || secondary_re.name
+              WHEN primary_re.name IS NOT NULL THEN primary_re.name
+              WHEN secondary_re.name IS NOT NULL THEN secondary_re.name
+              ELSE NULL
+            END
+          ) AS paired_runway_name
+        FROM runway_end re
+        JOIN runway r
+          ON r.airport_id = @airportId
+         AND (r.primary_end_id = re.runway_end_id OR r.secondary_end_id = re.runway_end_id)
+        LEFT JOIN runway_end primary_re ON primary_re.runway_end_id = r.primary_end_id
+        LEFT JOIN runway_end secondary_re ON secondary_re.runway_end_id = r.secondary_end_id
+        GROUP BY re.runway_end_id, re.name
+        ORDER BY paired_runway_name, re.name
         `
     ).all({ airportId: airport.airport_id });
-    const departures = db.prepare(
+    const procedures = db.prepare(
       `
-        SELECT start_id, runway_name
-        FROM start
-        WHERE airport_id = ?
-        ORDER BY runway_name
-        `
-    ).all(airport.airport_id);
-    const approaches = db.prepare(
-      `
-        SELECT approach_id, runway_name, type, arinc_name
+        SELECT approach_id, runway_end_id, runway_name, type, suffix, arinc_name, fix_ident, altitude
         FROM approach
         WHERE airport_ident = ?
-        ORDER BY runway_name, type, arinc_name
+        ORDER BY runway_name, type, suffix, arinc_name, fix_ident, approach_id
+        `
+    ).all(ident);
+    const transitions = db.prepare(
+      `
+        SELECT
+          t.transition_id,
+          t.approach_id,
+          t.type,
+          t.fix_ident,
+          t.dme_ident,
+          t.dme_distance,
+          t.dme_radial,
+          a.runway_name AS approach_runway_name,
+          a.type AS approach_type,
+          a.suffix AS approach_suffix,
+          a.arinc_name AS approach_arinc_name
+        FROM transition t
+        JOIN approach a ON a.approach_id = t.approach_id
+        WHERE a.airport_ident = ?
+        ORDER BY a.runway_name, a.type, a.suffix, a.arinc_name, t.fix_ident, t.transition_id
         `
     ).all(ident);
     db.close();
-    const runwayOptions = runways.map((row) => ({
-      name: row.runway_name,
-      lengthM: asFiniteOrNull(row.length),
-      widthM: asFiniteOrNull(row.width),
-      surface: row.surface,
-      headingDeg: asFiniteOrNull(row.heading)
-    }));
-    const depOptions = departures.map((row) => ({
-      id: `start:${row.start_id}`,
-      name: row.runway_name ? `RWY ${row.runway_name} Departure` : `Departure ${row.start_id}`,
+    const runwayOptions = runways.map((row) => {
+      const displayName = row.paired_runway_name && row.paired_runway_name !== row.runway_name ? `${row.runway_name} · ${row.paired_runway_name}` : row.runway_name;
+      return {
+        name: row.runway_name,
+        displayName,
+        lengthM: asFiniteOrNull(row.length),
+        widthM: asFiniteOrNull(row.width),
+        surface: row.surface,
+        headingDeg: asFiniteOrNull(row.heading)
+      };
+    });
+    const departureOptions = procedures.filter((row) => isGpsProcedure(row) && matchesSuffix(row.suffix, ["D", ""])).map((row) => ({
+      id: `approach:${row.approach_id}`,
+      name: row.fix_ident?.trim() ? row.fix_ident.trim() : `Procedure ${row.approach_id}`,
       procedureType: "departure",
       runwayName: row.runway_name
     }));
-    const apprOptions = approaches.map((row) => ({
+    const arrivalOptions = procedures.filter((row) => isGpsProcedure(row) && matchesSuffix(row.suffix, ["A", ""])).map((row) => ({
       id: `approach:${row.approach_id}`,
-      name: [row.type, row.runway_name ? `RWY ${row.runway_name}` : null, row.arinc_name].filter(Boolean).join(" "),
+      name: row.fix_ident?.trim() ? row.fix_ident.trim() : `Procedure ${row.approach_id}`,
+      procedureType: "arrival",
+      runwayName: row.runway_name
+    }));
+    const approachOptions = procedures.filter((row) => !isGpsProcedure(row)).map((row) => ({
+      id: `approach:${row.approach_id}`,
+      name: formatApproachName(row),
       procedureType: "approach",
       runwayName: row.runway_name
+    }));
+    const transitionOptions = transitions.map((row) => ({
+      id: `transition:${row.transition_id}`,
+      name: buildTransitionLabel({
+        transition_id: row.transition_id,
+        approach_id: row.approach_id,
+        type: row.type,
+        fix_ident: row.fix_ident,
+        dme_ident: row.dme_ident,
+        dme_distance: row.dme_distance,
+        dme_radial: row.dme_radial,
+        approach_runway_name: row.approach_runway_name,
+        approach_type: row.approach_type,
+        approach_suffix: row.approach_suffix,
+        approach_arinc_name: row.approach_arinc_name
+      }),
+      approachId: row.approach_id,
+      approachName: formatApproachName({
+        approach_id: row.approach_id,
+        runway_name: row.approach_runway_name,
+        type: row.approach_type,
+        suffix: row.approach_suffix,
+        arinc_name: row.approach_arinc_name,
+        fix_ident: row.fix_ident
+      }),
+      runwayName: row.approach_runway_name
     }));
     return {
       airport: {
@@ -1479,9 +1533,10 @@ class NavDataService {
         lon: airport.lonx
       },
       runways: runwayOptions,
-      departures: depOptions,
-      arrivals: [],
-      approaches: apprOptions
+      departures: departureOptions,
+      arrivals: arrivalOptions,
+      transitions: transitionOptions,
+      approaches: approachOptions
     };
   }
   buildFlightPlan(settings, input) {
@@ -1489,27 +1544,31 @@ class NavDataService {
     if (!db) {
       return {
         points: [],
+        segments: [],
         unresolvedTokens: [],
         summary: "Navigation database is not available."
       };
     }
     const departureIdent = input.departureAirport.trim().toUpperCase();
     const destinationIdent = input.destinationAirport.trim().toUpperCase();
+    const departureRunwayName = normalizeNullablePath(input.departureRunway);
+    const departureProcedureId = normalizeNullablePath(input.departureProcedureId);
+    const arrivalRunwayName = normalizeNullablePath(input.arrivalRunway);
+    const arrivalProcedureId = normalizeNullablePath(input.arrivalProcedureId);
+    const approachProcedureId = normalizeNullablePath(input.approachProcedureId);
+    const arrivalTransitionId = normalizeNullablePath(input.arrivalTransitionId);
     const unresolvedTokens = [];
-    const points = [];
+    const mainPoints = [];
+    const missedPoints = [];
     const departure = this.getAirportByIdent(db, departureIdent);
     const destination = this.getAirportByIdent(db, destinationIdent);
-    if (departure) {
-      points.push({
-        ident: departure.ident,
-        lat: departure.laty,
-        lon: departure.lonx,
-        source: "airport"
-      });
+    const departureStartPoint = departureRunwayName && departure?.airport_id ? this.resolveRunwayEndPoint(db, departure.airport_id, departureRunwayName) ?? this.resolveAirportPoint(departure) : this.resolveAirportPoint(departure);
+    if (departureStartPoint) {
+      mainPoints.push(departureStartPoint);
     }
-    const departureProcedure = this.resolveStartProcedurePoint(db, input.departureProcedureId);
-    if (departureProcedure) {
-      points.push(departureProcedure);
+    const departureProcedurePoint = this.resolveProcedurePoint(db, departureProcedureId);
+    if (departureProcedurePoint) {
+      mainPoints.push(departureProcedurePoint);
     }
     const tokens = normalizeRouteTokens(input.enrouteText);
     for (const token of tokens) {
@@ -1518,7 +1577,7 @@ class NavDataService {
       }
       const fix = this.resolveFix(db, token);
       if (fix) {
-        points.push({
+        mainPoints.push({
           ident: fix.ident,
           lat: fix.laty,
           lon: fix.lonx,
@@ -1528,22 +1587,138 @@ class NavDataService {
         unresolvedTokens.push(token);
       }
     }
-    const approachLegs = this.resolveApproachLegPoints(db, input.approachProcedureId);
-    points.push(...approachLegs);
-    if (destination) {
-      points.push({
-        ident: destination.ident,
-        lat: destination.laty,
-        lon: destination.lonx,
-        source: "airport"
-      });
+    const arrivalProcedurePoint = this.resolveProcedurePoint(db, arrivalProcedureId);
+    if (arrivalProcedurePoint) {
+      mainPoints.push(arrivalProcedurePoint);
+    }
+    const transitionPoint = this.resolveTransitionPoint(db, arrivalTransitionId);
+    if (transitionPoint) {
+      mainPoints.push(transitionPoint);
+    }
+    const approachLegs = this.resolveApproachLegPoints(db, approachProcedureId);
+    mainPoints.push(...approachLegs.main);
+    const destinationPoint = arrivalRunwayName && destination?.airport_id ? this.resolveRunwayEndPoint(db, destination.airport_id, arrivalRunwayName) ?? this.resolveAirportPoint(destination) : this.resolveAirportPoint(destination);
+    if (destinationPoint) {
+      mainPoints.push(destinationPoint);
+    }
+    const missedStartPoint = arrivalRunwayName && destination?.airport_id ? this.resolveRunwayEndPoint(db, destination.airport_id, arrivalRunwayName) ?? destinationPoint : destinationPoint;
+    if (missedStartPoint && approachLegs.missed.length > 0) {
+      missedPoints.push(missedStartPoint, ...approachLegs.missed);
     }
     db.close();
-    const uniquePoints = dedupeConsecutivePoints(points);
+    const mainSegment = dedupeConsecutivePoints(mainPoints);
+    const missedSegment = dedupeConsecutivePoints(missedPoints);
+    const segments = [mainSegment.length > 0 ? { points: mainSegment } : null, missedSegment.length > 0 ? { points: missedSegment, dashed: true } : null].filter(
+      (segment) => Boolean(segment)
+    );
+    const uniquePoints = dedupeConsecutivePoints([...mainSegment, ...missedSegment]);
+    const procedureSummary = [
+      departureRunwayName ? `DEP RWY ${departureRunwayName}` : "DEP AUTO",
+      departureProcedureId ? `DEP PROC ${departureProcedureId.replace(/^approach:/, "")}` : null,
+      arrivalRunwayName ? `ARR RWY ${arrivalRunwayName}` : "ARR AUTO",
+      arrivalProcedureId ? `ARR PROC ${arrivalProcedureId.replace(/^approach:/, "")}` : null,
+      approachProcedureId ? `APR PROC ${approachProcedureId.replace(/^approach:/, "")}` : null,
+      arrivalTransitionId ? `TRANS ${arrivalTransitionId.replace(/^transition:/, "")}` : null
+    ].filter(Boolean).join(" | ");
     return {
       points: uniquePoints,
+      segments,
       unresolvedTokens,
-      summary: `${departureIdent || "----"} -> ${destinationIdent || "----"} | ${uniquePoints.length} points`
+      summary: `${departureIdent || "----"} -> ${destinationIdent || "----"} | ${uniquePoints.length} points | ${procedureSummary}`
+    };
+  }
+  resolveProcedurePoint(db, procedureId) {
+    if (!procedureId?.startsWith("approach:")) {
+      return null;
+    }
+    const parsedProcedureId = Number(procedureId.slice("approach:".length));
+    if (!Number.isFinite(parsedProcedureId)) {
+      return null;
+    }
+    const row = db.prepare(
+      `
+        SELECT approach_id, fix_ident
+        FROM approach
+        WHERE approach_id = ?
+        LIMIT 1
+        `
+    ).get(parsedProcedureId);
+    if (!row) {
+      return null;
+    }
+    const fix = row.fix_ident?.trim() ? this.resolveFix(db, row.fix_ident) : null;
+    if (!fix) {
+      return null;
+    }
+    return {
+      ident: fix.ident,
+      lat: fix.laty,
+      lon: fix.lonx,
+      source: fix.source
+    };
+  }
+  resolveTransitionPoint(db, transitionId) {
+    if (!transitionId?.startsWith("transition:")) {
+      return null;
+    }
+    const parsedTransitionId = Number(transitionId.slice("transition:".length));
+    if (!Number.isFinite(parsedTransitionId)) {
+      return null;
+    }
+    const row = db.prepare(
+      `
+        SELECT t.fix_ident, t.dme_ident, t.type, a.runway_name AS runway_name,
+          a.type AS approach_type, a.suffix AS approach_suffix, a.arinc_name AS approach_arinc_name
+        FROM transition t
+        JOIN approach a ON a.approach_id = t.approach_id
+        WHERE t.transition_id = ?
+        LIMIT 1
+        `
+    ).get(parsedTransitionId);
+    if (!row) {
+      return null;
+    }
+    const token = row.fix_ident?.trim() || row.dme_ident?.trim();
+    if (!token) {
+      return null;
+    }
+    const fix = this.resolveFix(db, token);
+    if (!fix) {
+      return null;
+    }
+    return {
+      ident: fix.ident,
+      lat: fix.laty,
+      lon: fix.lonx,
+      source: fix.source
+    };
+  }
+  resolveApproachLegPoints(db, approachProcedureId) {
+    if (!approachProcedureId?.startsWith("approach:")) {
+      return { main: [], missed: [] };
+    }
+    const approachId = Number(approachProcedureId.slice("approach:".length));
+    if (!Number.isFinite(approachId)) {
+      return { main: [], missed: [] };
+    }
+    const legs = db.prepare(
+      `
+        SELECT fix_ident, fix_laty, fix_lonx, is_missed
+        FROM approach_leg
+        WHERE approach_id = ? AND fix_laty IS NOT NULL AND fix_lonx IS NOT NULL
+        ORDER BY approach_leg_id
+        `
+    ).all(approachId);
+    const mapped = legs.map((leg) => ({
+      ident: leg.fix_ident?.trim() || "APPR",
+      lat: leg.fix_laty,
+      lon: leg.fix_lonx,
+      source: "procedure",
+      isMissed: Boolean(leg.is_missed)
+    }));
+    return {
+      main: mapped.filter((leg) => !leg.isMissed).map(stripMissedFlag),
+      missed: mapped.filter((leg) => leg.isMissed).map(stripMissedFlag)
     };
   }
   async importFromSimBrief(input) {
@@ -1626,48 +1801,40 @@ class NavDataService {
     if (ndb) return ndb;
     return null;
   }
-  resolveStartProcedurePoint(db, departureProcedureId) {
-    if (!departureProcedureId?.startsWith("start:")) {
-      return null;
-    }
-    const startId = Number(departureProcedureId.slice("start:".length));
-    if (!Number.isFinite(startId)) {
-      return null;
-    }
-    const row = db.prepare("SELECT runway_name, laty, lonx FROM start WHERE start_id = ? LIMIT 1").get(startId);
-    if (!row) {
-      return null;
-    }
+  resolveAirportPoint(airport) {
+    if (!airport) return null;
     return {
-      ident: row.runway_name ? `RWY${row.runway_name}` : "DEP",
-      lat: row.laty,
-      lon: row.lonx,
-      source: "procedure"
+      ident: airport.ident,
+      lat: airport.laty,
+      lon: airport.lonx,
+      source: "airport"
     };
   }
-  resolveApproachLegPoints(db, approachProcedureId) {
-    if (!approachProcedureId?.startsWith("approach:")) {
-      return [];
-    }
-    const approachId = Number(approachProcedureId.slice("approach:".length));
-    if (!Number.isFinite(approachId)) {
-      return [];
-    }
-    const legs = db.prepare(
+  resolveRunwayEndPoint(db, airportId, runwayName) {
+    const row = db.prepare(
       `
-        SELECT fix_ident, fix_laty, fix_lonx
-        FROM approach_leg
-        WHERE approach_id = ? AND fix_laty IS NOT NULL AND fix_lonx IS NOT NULL
-        ORDER BY approach_leg_id
+        SELECT re.name AS runway_name, re.laty, re.lonx
+        FROM runway_end re
+        JOIN runway r
+          ON r.airport_id = ?
+         AND (r.primary_end_id = re.runway_end_id OR r.secondary_end_id = re.runway_end_id)
+        WHERE re.name = ?
+        ORDER BY r.runway_id
+        LIMIT 1
         `
-    ).all(approachId);
-    return legs.map((leg) => ({
-      ident: leg.fix_ident?.trim() || "APPR",
-      lat: leg.fix_laty,
-      lon: leg.fix_lonx,
-      source: "procedure"
-    }));
+    ).get(airportId, runwayName);
+    if (!row) return null;
+    return {
+      ident: row.runway_name ? `RWY ${row.runway_name}` : "RWY",
+      lat: row.laty,
+      lon: row.lonx,
+      source: "airport"
+    };
   }
+}
+function stripMissedFlag(point) {
+  const { isMissed: _isMissed, ...rest } = point;
+  return rest;
 }
 function normalizeNullablePath(pathValue) {
   if (!pathValue) return null;
@@ -1702,14 +1869,46 @@ function readStringPath(data, path) {
   }
   return typeof current === "string" ? current : null;
 }
+function isGpsProcedure(row) {
+  return row.type.trim().toUpperCase() === "GPS";
+}
+function matchesSuffix(suffix, accepted) {
+  const normalized = normalizeText(suffix);
+  return accepted.some((item) => normalizeText(item) === normalized);
+}
+function formatProcedureName(row) {
+  const parts = [normalizeText(row.type)];
+  const suffix = normalizeText(row.suffix);
+  if (suffix) parts.push(suffix);
+  const runway = normalizeText(row.runway_name);
+  if (runway) parts.push(runway);
+  return parts.filter(Boolean).join(" ");
+}
+function formatApproachName(row) {
+  return formatProcedureName(row);
+}
+function buildTransitionLabel(row) {
+  const fix = normalizeText(row.fix_ident) || `TRANS ${row.transition_id}`;
+  const approach = formatProcedureName({
+    type: row.approach_type,
+    suffix: row.approach_suffix,
+    runway_name: row.approach_runway_name
+  });
+  const dme = normalizeText(row.dme_ident);
+  return [fix, approach, dme ? `DME ${dme}` : null].filter(Boolean).join(" ? ");
+}
 function emptyProcedures() {
   return {
     airport: null,
     runways: [],
     departures: [],
     arrivals: [],
+    transitions: [],
     approaches: []
   };
+}
+function normalizeText(value) {
+  return value?.trim() ?? "";
 }
 let mainWindow = null;
 const DEV_LOAD_RETRY_MS = 1200;

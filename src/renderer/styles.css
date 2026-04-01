@@ -1443,7 +1443,7 @@ body {
   top: 0;
   right: 0;
   bottom: 56px;
-  width: min(460px, calc(100% - 24px));
+  width: min(520px, calc(100% - 24px));
   border-left: 1px solid var(--ui-border);
   background:
     radial-gradient(circle at top left, rgba(252, 188, 84, 0.16), transparent 30%),
@@ -1467,12 +1467,91 @@ body {
   overflow: auto;
   padding: 12px;
   display: grid;
-  gap: 10px;
+  gap: 12px;
 }
 
 .flight-plan-textarea {
   min-height: 96px;
   resize: vertical;
+}
+
+.flight-plan-status-card {
+  gap: 8px;
+}
+
+.flight-plan-status-card code {
+  margin-top: 2px;
+}
+
+.flight-plan-flow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid rgba(139, 196, 255, 0.14);
+  border-radius: 16px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.015)),
+    rgba(7, 16, 28, 0.5);
+}
+
+.flight-plan-flow-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(139, 196, 255, 0.18);
+  background: rgba(255, 255, 255, 0.04);
+  color: #d7e9fb;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+
+.flight-plan-flow-arrow {
+  color: rgba(148, 163, 184, 0.86);
+  font-size: 12px;
+}
+
+.flight-plan-section {
+  padding: 14px;
+  border: 1px solid rgba(139, 196, 255, 0.14);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at top right, rgba(56, 132, 224, 0.08), transparent 24%),
+    rgba(255, 255, 255, 0.03);
+  display: grid;
+}
+
+.flight-plan-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 2px;
+}
+
+.flight-plan-section-head strong {
+  font-size: 15px;
+}
+
+.flight-plan-section-head span {
+  color: rgba(244, 247, 251, 0.62);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.flight-plan-section .settings-field {
+  margin-top: 14px;
+}
+
+.flight-plan-section .settings-field:first-of-type {
+  margin-top: 12px;
+}
+
+.flight-plan-summary-card {
+  border-color: rgba(120, 183, 255, 0.24);
 }
 
 .map-reference-pin {

@@ -18,6 +18,7 @@ export interface NavAirportOption {
 
 export interface NavRunwayOption {
   name: string
+  displayName: string
   lengthM: number | null
   widthM: number | null
   surface: string | null
@@ -31,11 +32,20 @@ export interface NavProcedureOption {
   runwayName: string | null
 }
 
+export interface NavTransitionOption {
+  id: string
+  name: string
+  approachId: number
+  approachName: string
+  runwayName: string | null
+}
+
 export interface NavAirportProcedures {
   airport: NavAirportOption | null
   runways: NavRunwayOption[]
   departures: NavProcedureOption[]
   arrivals: NavProcedureOption[]
+  transitions: NavTransitionOption[]
   approaches: NavProcedureOption[]
 }
 
@@ -46,19 +56,26 @@ export interface FlightPlanPoint {
   source: 'airport' | 'waypoint' | 'vor' | 'ndb' | 'procedure' | 'manual'
 }
 
+export interface FlightPlanSegment {
+  points: FlightPlanPoint[]
+  dashed?: boolean
+}
+
 export interface BuildFlightPlanInput {
   departureAirport: string
   destinationAirport: string
   enrouteText: string
   departureRunway: string | null
-  arrivalRunway: string | null
   departureProcedureId: string | null
+  arrivalRunway: string | null
   arrivalProcedureId: string | null
   approachProcedureId: string | null
+  arrivalTransitionId: string | null
 }
 
 export interface BuildFlightPlanResult {
   points: FlightPlanPoint[]
+  segments: FlightPlanSegment[]
   unresolvedTokens: string[]
   summary: string
 }

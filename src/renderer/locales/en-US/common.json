@@ -102,9 +102,17 @@
   "flightPlan.destinationAirport": "Destination Airport",
   "flightPlan.airportPlaceholder": "For example: ZBAA",
   "flightPlan.departureRunway": "Departure Runway",
+  "flightPlan.departureStart": "Departure Start Point",
   "flightPlan.arrivalRunway": "Arrival Runway",
+  "flightPlan.arrivalTransition": "Transition Point",
   "flightPlan.departureProcedure": "Departure Procedure",
   "flightPlan.approachProcedure": "Approach Procedure",
+  "flightPlan.departureSection": "Departure",
+  "flightPlan.departureSectionHint": "Pick a runway first, then the departure procedure tied to that runway.",
+  "flightPlan.routeSection": "Enroute",
+  "flightPlan.routeSectionHint": "Paste the airway string or waypoint list between departure and arrival.",
+  "flightPlan.arrivalSection": "Arrival",
+  "flightPlan.arrivalSectionHint": "Choose the arrival runway, then the arrival procedure, the approach, and finally a transition.",
   "flightPlan.notSpecified": "Auto / Not specified",
   "flightPlan.enroute": "Enroute",
   "flightPlan.enroutePlaceholder": "For example: DCT GITUM W6 BGO ...",
@@ -129,5 +137,6 @@
   "feedback.deleted": "Deleted",
   "feedback.updated": "Updated",
   "feedback.imported": "Imported",
-  "feedback.failed": "Operation failed"
+  "feedback.failed": "Operation failed",
+  "flightPlan.arrivalProcedure": "Arrival Procedure"
 }

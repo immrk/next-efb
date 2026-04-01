@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ChartRecord } from '@shared/chart-types'
-import type { BuildFlightPlanResult, FlightPlanPoint } from '@shared/flight-plan-types'
+import type { BuildFlightPlanResult, FlightPlanPoint, FlightPlanSegment } from '@shared/flight-plan-types'
 import { getAppClient } from '../client'
 import { ChartMountDrawer } from '../components/ChartMountDrawer'
 import { FlightPlanDrawer } from '../components/FlightPlanDrawer'
@@ -27,6 +27,7 @@ export function MapPage({ onOpenChartLibrary, onEditChart, onOpenSettings }: Map
   const [isChartDrawerOpen, setIsChartDrawerOpen] = useState(false)
   const [isFlightPlanDrawerOpen, setIsFlightPlanDrawerOpen] = useState(false)
   const [flightPlanPoints, setFlightPlanPoints] = useState<FlightPlanPoint[]>([])
+  const [flightPlanSegments, setFlightPlanSegments] = useState<FlightPlanSegment[]>([])
 
   const mountedCharts = useMemo(
     () =>
@@ -69,6 +70,7 @@ export function MapPage({ onOpenChartLibrary, onEditChart, onOpenSettings }: Map
 
   const handlePlanBuilt = (result: BuildFlightPlanResult) => {
     setFlightPlanPoints(result.points)
+    setFlightPlanSegments(result.segments)
   }
 
   return (
@@ -77,6 +79,7 @@ export function MapPage({ onOpenChartLibrary, onEditChart, onOpenSettings }: Map
         mountedChartIds={mountedChartIds}
         activeChartId={activeChartId}
         routePoints={flightPlanPoints}
+        routeSegments={flightPlanSegments}
       />
 
       <section className="chart-dock">
@@ -155,7 +158,10 @@ export function MapPage({ onOpenChartLibrary, onEditChart, onOpenSettings }: Map
         onClose={() => setIsFlightPlanDrawerOpen(false)}
         onOpenSettings={onOpenSettings}
         onPlanBuilt={handlePlanBuilt}
-        onClearPlan={() => setFlightPlanPoints([])}
+        onClearPlan={() => {
+          setFlightPlanPoints([])
+          setFlightPlanSegments([])
+        }}
       />
     </section>
   )

@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { CircleMarker, MapContainer, Marker, Polyline, TileLayer, Tooltip, useMap } from 'react-leaflet'
 import { useTranslation } from 'react-i18next'
 import type { GeoReferencePoint } from '@shared/chart-types'
-import type { FlightPlanPoint } from '@shared/flight-plan-types'
+import type { FlightPlanPoint, FlightPlanSegment } from '@shared/flight-plan-types'
 import type { MapTileProvider } from '@shared/types'
 import { createAircraftLeafletIcon } from './AircraftArrow'
 import { ConnectionBadge } from './ConnectionBadge'
@@ -240,11 +240,13 @@ function MountedChartOverlay({
 export function MapPanel({
   mountedChartIds,
   activeChartId,
-  routePoints
+  routePoints,
+  routeSegments
 }: {
   mountedChartIds: string[]
   activeChartId: string | null
   routePoints: FlightPlanPoint[]
+  routeSegments: FlightPlanSegment[]
 }) {
   const { t } = useTranslation()
   const appClient = getAppClient()
@@ -294,12 +296,30 @@ export function MapPanel({
               stackIndex={index}
             />
           ))}
-          {routePoints.length > 1 ? (
-            <Polyline
-              positions={routePoints.map((point) => [point.lat, point.lon])}
-              pathOptions={{ color: '#ffcf5a', weight: 3, opacity: 0.9 }}
-            />
-          ) : null}
+          {routeSegments.length > 0
+            ? routeSegments.map((segment, index) =>
+                segment.points.length > 1 ? (
+                  <Polyline
+                    key={`segment:${index}`}
+                    positions={segment.points.map((point) => [point.lat, point.lon])}
+                    pathOptions={{
+                      color: '#ffcf5a',
+                      weight: 3,
+                      opacity: segment.dashed ? 0.75 : 0.92,
+                      dashArray: segment.dashed ? '10 10' : undefined,
+                      lineCap: 'round',
+                      lineJoin: 'round'
+                    }}
+                  />
+                ) : null
+              )
+            : routePoints.length > 1 ? (
+                <Polyline
+                  positions={routePoints.map((point) => [point.lat, point.lon])}
+                  pathOptions={{ color: '#ffcf5a', weight: 3, opacity: 0.9 }}
+                />
+              )
+            : null}
           {routePoints.map((point, index) => (
             <CircleMarker
               key={`${point.ident}:${index}`}
