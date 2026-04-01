@@ -252,6 +252,7 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
     () => filterProceduresByRunway(navProcedures.approaches, boundApproachRunway),
     [boundApproachRunway, navProcedures.approaches]
   )
+  const normalizedAirportCode = airportCode.trim().toUpperCase()
 
   const selectedApproachProcedure = useMemo(
     () => navProcedures.approaches.find((procedure) => procedure.id === boundApproachProcedureId) ?? null,
@@ -263,6 +264,14 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
       return
     }
 
+    if (navProceduresLoading) {
+      return
+    }
+
+    if (normalizedAirportCode && navProcedures.airport?.ident !== normalizedAirportCode) {
+      return
+    }
+
     if (!boundApproachProcedureId) {
       return
     }
@@ -270,7 +279,14 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
     if (!filteredApproachProcedures.some((procedure) => procedure.id === boundApproachProcedureId)) {
       setBoundApproachProcedureId('')
     }
-  }, [boundApproachProcedureId, filteredApproachProcedures, titleMode])
+  }, [
+    boundApproachProcedureId,
+    filteredApproachProcedures,
+    navProcedures.airport?.ident,
+    navProceduresLoading,
+    normalizedAirportCode,
+    titleMode
+  ])
 
   const canUseProcedureMode =
     chartType === 'approach' && Boolean(airportCode.trim()) && (navDataReady || Boolean(boundApproachProcedureId))
@@ -485,6 +501,7 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
                 attribution={tileConfig.attribution}
                 url={tileConfig.url}
                 subdomains={tileConfig.subdomains}
+                referrerPolicy="strict-origin-when-cross-origin"
               />
               <ClickCaptureLayer
                 onAddPoint={(point) => {

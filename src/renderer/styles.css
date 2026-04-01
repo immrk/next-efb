@@ -32,6 +32,11 @@
 html {
   height: 100%;
   height: -webkit-fill-available;
+  background:
+    radial-gradient(circle at top left, rgba(52, 152, 219, 0.35), transparent 35%),
+    radial-gradient(circle at bottom right, rgba(46, 204, 113, 0.18), transparent 30%),
+    linear-gradient(135deg, #08131f 0%, #112338 45%, #0f1c2c 100%);
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
@@ -43,6 +48,7 @@ body {
   min-height: 100vh;
   overflow: hidden;
   overscroll-behavior: none;
+  background: transparent;
 }
 
 #root {
@@ -66,7 +72,11 @@ body {
 }
 
 .app-shell-fullbleed {
-  padding: 0;
+  padding:
+    env(safe-area-inset-top)
+    env(safe-area-inset-right)
+    env(safe-area-inset-bottom)
+    env(safe-area-inset-left);
   overflow: hidden;
 }
 
@@ -396,11 +406,20 @@ body {
   color: #f4f7fb;
   background: rgba(10, 21, 35, 0.92);
   outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
+  touch-action: manipulation;
+  pointer-events: auto;
 }
 
 .input,
 .textarea {
   padding: 0.75rem 0.875rem;
+  font-size: 16px;
+  line-height: 1.4;
 }
 
 .textarea {
@@ -428,6 +447,7 @@ body {
   padding: 0.75rem 0.875rem;
   cursor: pointer;
   appearance: none;
+  font-size: 16px;
 }
 
 .select-trigger[data-placeholder] {
@@ -817,9 +837,15 @@ body {
 }
 
 .map-workspace {
+  --chart-dock-height: calc(68px + env(safe-area-inset-bottom));
   position: relative;
   height: 100%;
   overflow: hidden;
+}
+
+.map-workspace-panel {
+  height: calc(100% - var(--chart-dock-height));
+  min-height: 0;
 }
 
 .chart-dock {
@@ -833,6 +859,7 @@ body {
     linear-gradient(180deg, rgba(14, 18, 27, 0.97), rgba(9, 12, 18, 0.97)),
     rgba(12, 15, 22, 0.92);
   backdrop-filter: blur(12px);
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 .chart-dock-main {
@@ -1457,6 +1484,40 @@ body {
   grid-template-columns: minmax(0, 1fr) 180px;
   gap: 16px;
   align-items: center;
+}
+
+.map-route-launcher {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  z-index: 1300;
+  pointer-events: auto;
+}
+
+.map-route-launcher-button {
+  min-height: 46px;
+  padding: 0 16px;
+  border: 1px solid rgba(139, 196, 255, 0.22);
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(15, 26, 38, 0.92), rgba(26, 48, 70, 0.92));
+  color: #f4f7fb;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  box-shadow: 0 14px 28px rgba(5, 10, 18, 0.32);
+}
+
+.map-route-launcher-button svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .settings-link-button {
@@ -2289,7 +2350,11 @@ body {
   }
 
   .app-shell-fullbleed {
-    padding: 0;
+    padding:
+      env(safe-area-inset-top)
+      env(safe-area-inset-right)
+      env(safe-area-inset-bottom)
+      env(safe-area-inset-left);
   }
 
   .hero {
@@ -2322,6 +2387,16 @@ body {
     left: 10px;
     justify-content: flex-end;
     flex-wrap: wrap;
+  }
+
+  .map-route-launcher {
+    top: 10px;
+    left: 10px;
+  }
+
+  .map-route-launcher-button {
+    min-height: 42px;
+    padding: 0 14px;
   }
 
   .map-provider-chip {

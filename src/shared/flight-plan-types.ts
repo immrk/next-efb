@@ -103,5 +103,11 @@ export interface SimBriefImportResult {
   destinationAirport: string
   alternateAirport: string | null
   routeText: string
+  departureRunway: string | null
+  arrivalRunway: string | null
+  departureProcedureName: string | null
+  arrivalProcedureName: string | null
+  approachProcedureName: string | null
+  arrivalTransitionName: string | null
   source: 'simbrief'
 }

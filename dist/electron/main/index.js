@@ -1522,13 +1522,13 @@ class NavDataService {
     });
     const departureOptions = procedures.filter((row) => isGpsProcedure(row) && matchesSuffix(row.suffix, ["D", ""])).map((row) => ({
       id: `approach:${row.approach_id}`,
-      name: row.fix_ident?.trim() ? row.fix_ident.trim() : `Procedure ${row.approach_id}`,
+      name: formatGpsProcedureName(row),
       procedureType: "departure",
       runwayName: row.runway_name
     }));
     const arrivalOptions = procedures.filter((row) => isGpsProcedure(row) && matchesSuffix(row.suffix, ["A", ""])).map((row) => ({
       id: `approach:${row.approach_id}`,
-      name: row.fix_ident?.trim() ? row.fix_ident.trim() : `Procedure ${row.approach_id}`,
+      name: formatGpsProcedureName(row),
       procedureType: "arrival",
       runwayName: row.runway_name
     }));
@@ -1778,10 +1778,74 @@ class NavDataService {
       throw new Error(`SIMBRIEF_HTTP_${response.status}`);
     }
     const payload = await response.json();
-    const departureAirport = readStringPath(payload, ["origin", "icao_code"]) ?? readStringPath(payload, ["params", "orig"]);
-    const destinationAirport = readStringPath(payload, ["destination", "icao_code"]) ?? readStringPath(payload, ["params", "dest"]);
+    const departureAirport = readFirstStringPath(payload, [
+      ["origin", "icao_code"],
+      ["origin", "icao"],
+      ["params", "orig"]
+    ]);
+    const destinationAirport = readFirstStringPath(payload, [
+      ["destination", "icao_code"],
+      ["destination", "icao"],
+      ["params", "dest"]
+    ]);
     const alternateAirport = readStringPath(payload, ["alternate", "icao_code"]) ?? null;
-    const routeText = readStringPath(payload, ["general", "route"]) ?? readStringPath(payload, ["navlog", "route"]) ?? readStringPath(payload, ["params", "route"]) ?? "";
+    const routeText = readFirstStringPath(payload, [
+      ["general", "route"],
+      ["navlog", "route"],
+      ["params", "route"]
+    ]) ?? "";
+    const normalizedRouteText = routeText.trim().toUpperCase();
+    const routeProcedures = extractProceduresFromRoute(normalizedRouteText);
+    const departureRunway = normalizeRunwayName(
+      readFirstStringPath(payload, [
+        ["origin", "plan_rwy"],
+        ["origin", "runway"],
+        ["general", "initial_altitude_runway"],
+        ["params", "origrwy"]
+      ])
+    );
+    const arrivalRunway = normalizeRunwayName(
+      readFirstStringPath(payload, [
+        ["destination", "plan_rwy"],
+        ["destination", "runway"],
+        ["params", "destrwy"],
+        ["params", "arrrwy"]
+      ])
+    );
+    const departureProcedureName = normalizeProcedureToken(
+      readFirstStringPath(payload, [
+        ["general", "sid_ident"],
+        ["origin", "sid"],
+        ["origin", "sid_ident"],
+        ["navlog", "sid"],
+        ["params", "sid"]
+      ]) ?? routeProcedures.departureProcedureName
+    );
+    const arrivalProcedureName = normalizeProcedureToken(
+      readFirstStringPath(payload, [
+        ["general", "star_ident"],
+        ["destination", "star"],
+        ["destination", "star_ident"],
+        ["navlog", "star"],
+        ["params", "star"]
+      ]) ?? routeProcedures.arrivalProcedureName
+    );
+    const approachProcedureName = normalizeProcedureToken(
+      readFirstStringPath(payload, [
+        ["destination", "approach"],
+        ["destination", "approach_name"],
+        ["general", "approach"],
+        ["params", "approach"]
+      ])
+    );
+    const arrivalTransitionName = normalizeProcedureToken(
+      readFirstStringPath(payload, [
+        ["general", "star_trans"],
+        ["destination", "transition"],
+        ["destination", "transition_name"],
+        ["params", "transition"]
+      ])
+    );
     if (!departureAirport || !destinationAirport) {
       throw new Error("SIMBRIEF_PARSE_FAILED");
     }
@@ -1789,7 +1853,13 @@ class NavDataService {
       departureAirport: departureAirport.trim().toUpperCase(),
       destinationAirport: destinationAirport.trim().toUpperCase(),
       alternateAirport: alternateAirport ? alternateAirport.trim().toUpperCase() : null,
-      routeText: routeText.trim(),
+      routeText: normalizedRouteText,
+      departureRunway,
+      arrivalRunway,
+      departureProcedureName,
+      arrivalProcedureName,
+      approachProcedureName,
+      arrivalTransitionName,
       source: "simbrief"
     };
   }
@@ -1934,6 +2004,15 @@ function readStringPath(data, path) {
   }
   return typeof current === "string" ? current : null;
 }
+function readFirstStringPath(data, paths) {
+  for (const path of paths) {
+    const value = readStringPath(data, path);
+    if (value?.trim()) {
+      return value;
+    }
+  }
+  return null;
+}
 function isGpsProcedure(row) {
   return row.type.trim().toUpperCase() === "GPS";
 }
@@ -1951,6 +2030,17 @@ function formatProcedureName(row) {
 }
 function formatApproachName(row) {
   return formatProcedureName(row);
+}
+function formatGpsProcedureName(row) {
+  const fixIdent = normalizeText(row.fix_ident);
+  if (fixIdent) {
+    return fixIdent;
+  }
+  const arincName = normalizeText(row.arinc_name);
+  if (arincName) {
+    return arincName;
+  }
+  return `Procedure ${row.approach_id}`;
 }
 function buildTransitionLabel(row) {
   const fix = normalizeText(row.fix_ident) || `TRANS ${row.transition_id}`;
@@ -1974,6 +2064,35 @@ function emptyProcedures() {
 }
 function normalizeText(value) {
   return value?.trim() ?? "";
+}
+function normalizeRunwayName(value) {
+  const normalized = value?.trim().toUpperCase() ?? "";
+  if (!normalized) return null;
+  const stripped = normalized.replace(/^RWY\s*/u, "").replace(/^RUNWAY\s*/u, "").trim();
+  return stripped || null;
+}
+function normalizeProcedureToken(value) {
+  const normalized = value?.trim().toUpperCase() ?? "";
+  return normalized || null;
+}
+function extractProceduresFromRoute(routeText) {
+  const tokens = routeText.split(/\s+/u).map((token) => token.trim().toUpperCase()).filter(Boolean).filter((token) => token !== "DCT" && token !== "DIRECT");
+  const procedureTokens = tokens.filter(isProcedureToken);
+  return {
+    departureProcedureName: procedureTokens[0] ?? null,
+    arrivalProcedureName: procedureTokens.length > 1 ? procedureTokens[procedureTokens.length - 1] : null
+  };
+}
+function isProcedureToken(token) {
+  if (token.length < 4) return false;
+  if (!/[0-9]/u.test(token)) return false;
+  if (isAirwayToken(token)) return false;
+  if (/^\d{4}[NS]\d{5}[EW]$/u.test(token)) return false;
+  if (/^[A-Z]{1,2}\d{1,3}$/u.test(token)) return false;
+  return /^[A-Z0-9]+$/u.test(token);
+}
+function isAirwayToken(token) {
+  return /^(?:[A-Z]{1,3}\d+[A-Z]?|N\d+|Q\d+|T\d+|V\d+|J\d+|Y\d+|UL\d+|UM\d+|UY\d+|UT\d+)$/u.test(token);
 }
 let mainWindow = null;
 const DEV_LOAD_RETRY_MS = 1200;

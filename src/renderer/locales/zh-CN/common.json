@@ -117,6 +117,7 @@
   "chartPreview.resetZoom": "1:1",
   "flightPlan.title": "航路规划",
   "flightPlan.openDrawer": "打开航路规划",
+  "flightPlan.launchEditor": "编辑航路",
   "flightPlan.openSettings": "打开设置",
   "flightPlan.close": "关闭航路规划",
   "flightPlan.departureAirport": "出发机场",

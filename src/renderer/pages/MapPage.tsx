@@ -349,6 +349,23 @@ export function MapPage({
         routeSegments={flightPlanSegments}
       />
 
+      <div className="map-route-launcher">
+        <Button
+          type="button"
+          variant="outline"
+          className="map-route-launcher-button"
+          onClick={() => setIsFlightPlanDrawerOpen(true)}
+          aria-label={t('flightPlan.launchEditor')}
+          title={t('flightPlan.launchEditor')}
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M3 7H7L10 13L14 9L17 13H21" />
+            <path d="M7 7L9 5M17 13L19 11" />
+          </svg>
+          <span>{t('flightPlan.launchEditor')}</span>
+        </Button>
+      </div>
+
       <section className="chart-dock">
         <div className="chart-dock-main">
           <Button
@@ -361,20 +378,6 @@ export function MapPage({
           >
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M12 5V19M5 12H19" />
-            </svg>
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            className="chart-dock-add-button"
-            onClick={() => setIsFlightPlanDrawerOpen(true)}
-            aria-label={t('flightPlan.openDrawer')}
-            title={t('flightPlan.openDrawer')}
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M3 7H7L10 13L14 9L17 13H21" />
-              <path d="M7 7L9 5M17 13L19 11" />
             </svg>
           </Button>
 

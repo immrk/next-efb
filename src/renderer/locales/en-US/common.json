@@ -113,6 +113,7 @@
   "chartPreview.resetZoom": "1:1",
   "flightPlan.title": "Flight Planning",
   "flightPlan.openDrawer": "Open flight planning",
+  "flightPlan.launchEditor": "Edit route",
   "flightPlan.openSettings": "Open settings",
   "flightPlan.close": "Close flight planning",
   "flightPlan.navDataRequired": "Navigation data required",

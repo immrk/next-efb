@@ -61,6 +61,20 @@ export function ChartImagePreview({
     originPanX: 0,
     originPanY: 0
   })
+  const pointersRef = useRef(new Map<number, { x: number; y: number }>())
+  const pinchRef = useRef<{
+    active: boolean
+    startDistance: number
+    startZoom: number
+    worldX: number
+    worldY: number
+  }>({
+    active: false,
+    startDistance: 0,
+    startZoom: 1,
+    worldX: 0,
+    worldY: 0
+  })
   const pinDragRef = useRef<{
     active: boolean
     index: number
@@ -140,6 +154,34 @@ export function ChartImagePreview({
   const handlePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (pinDragRef.current.active) return
     if (event.button !== 0 && event.pointerType !== 'touch') return
+    pointersRef.current.set(event.pointerId, {
+      x: event.clientX,
+      y: event.clientY
+    })
+    event.currentTarget.setPointerCapture(event.pointerId)
+
+    if (pointersRef.current.size === 2) {
+      const [first, second] = Array.from(pointersRef.current.values())
+      const centerX = (first.x + second.x) / 2
+      const centerY = (first.y + second.y) / 2
+      const rect = viewportRef.current?.getBoundingClientRect()
+      const pointerX = rect ? centerX - rect.left : centerX
+      const pointerY = rect ? centerY - rect.top : centerY
+      const distance = Math.hypot(second.x - first.x, second.y - first.y)
+
+      pinchRef.current = {
+        active: distance > 0,
+        startDistance: distance,
+        startZoom: zoom,
+        worldX: (pointerX - pan.x) / zoom,
+        worldY: (pointerY - pan.y) / zoom
+      }
+      dragRef.current.active = false
+      dragRef.current.moved = false
+      setIsDragging(false)
+      return
+    }
+
     dragRef.current = {
       active: true,
       moved: false,
@@ -149,10 +191,42 @@ export function ChartImagePreview({
       originPanY: pan.y
     }
     setIsDragging(true)
-    event.currentTarget.setPointerCapture(event.pointerId)
   }
 
   const handlePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (pointersRef.current.has(event.pointerId)) {
+      pointersRef.current.set(event.pointerId, {
+        x: event.clientX,
+        y: event.clientY
+      })
+    }
+
+    if (pinchRef.current.active && pointersRef.current.size >= 2) {
+      const [first, second] = Array.from(pointersRef.current.values())
+      const rect = viewportRef.current?.getBoundingClientRect()
+      if (!rect) return
+
+      const centerX = (first.x + second.x) / 2
+      const centerY = (first.y + second.y) / 2
+      const pointerX = centerX - rect.left
+      const pointerY = centerY - rect.top
+      const distance = Math.hypot(second.x - first.x, second.y - first.y)
+
+      if (distance <= 0 || pinchRef.current.startDistance <= 0) {
+        return
+      }
+
+      const nextZoom = clampZoomValue(
+        pinchRef.current.startZoom * (distance / pinchRef.current.startDistance)
+      )
+      setZoom(nextZoom)
+      setPan({
+        x: pointerX - pinchRef.current.worldX * nextZoom,
+        y: pointerY - pinchRef.current.worldY * nextZoom
+      })
+      return
+    }
+
     if (!dragRef.current.active) return
     const deltaX = event.clientX - dragRef.current.startX
     const deltaY = event.clientY - dragRef.current.startY
@@ -165,7 +239,29 @@ export function ChartImagePreview({
     })
   }
 
-  const finishDrag = () => {
+  const finishDrag = (event?: ReactPointerEvent<HTMLDivElement>) => {
+    if (event) {
+      pointersRef.current.delete(event.pointerId)
+    }
+
+    if (pointersRef.current.size < 2) {
+      pinchRef.current.active = false
+    }
+
+    if (pointersRef.current.size === 1) {
+      const [remainingPointer] = Array.from(pointersRef.current.values())
+      dragRef.current = {
+        active: true,
+        moved: false,
+        startX: remainingPointer.x,
+        startY: remainingPointer.y,
+        originPanX: pan.x,
+        originPanY: pan.y
+      }
+      setIsDragging(true)
+      return
+    }
+
     dragRef.current.active = false
     setIsDragging(false)
   }

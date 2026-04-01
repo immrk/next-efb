@@ -307,7 +307,7 @@ export function MapPanel({
           center={[initialMapView.lat, initialMapView.lon]}
           zoom={initialMapView.zoom}
           className="leaflet-map"
-          zoomControl
+          zoomControl={false}
           attributionControl
         >
           <TileLayer
@@ -315,6 +315,7 @@ export function MapPanel({
             url={tileConfig.url}
             subdomains={tileConfig.subdomains}
             updateWhenIdle={false}
+            referrerPolicy="strict-origin-when-cross-origin"
           />
           {aircraftPositionUsable ? (
             <Marker
