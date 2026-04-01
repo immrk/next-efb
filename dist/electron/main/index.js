@@ -1184,7 +1184,9 @@ class LanServer {
       return;
     }
     response.writeHead(200, {
-      "Content-Type": getContentType(targetPath)
+      "Content-Type": getContentType(targetPath),
+      "Cache-Control": "no-store, max-age=0, must-revalidate",
+      Pragma: "no-cache"
     });
     response.end(node_fs.readFileSync(targetPath));
   }

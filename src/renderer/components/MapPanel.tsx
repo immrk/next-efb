@@ -13,8 +13,11 @@ import { useMapOverlayChart } from '../hooks/useMapOverlayChart'
 import { getMapTileConfig } from '../utils/mapTileProviders'
 
 const MAP_VIEW_STORAGE_KEY = 'nextefb.map-view.v1'
-const DEFAULT_MAP_CENTER = { lat: 31.2304, lon: 121.4737 }
 const DEFAULT_MAP_ZOOM = 7
+const DEFAULT_MAP_CENTERS: Record<'zh-CN' | 'en-US', { lat: number; lon: number }> = {
+  'zh-CN': { lat: 31.2304, lon: 121.4737 },
+  'en-US': { lat: 40.7128, lon: -74.006 }
+}
 
 interface StoredMapView {
   lat: number
@@ -34,24 +37,26 @@ function isAircraftPositionUsable(aircraft: {
   return !(aircraft.lat === 0 && aircraft.lon === 0 && aircraft.altitudeFt === 0)
 }
 
-function readStoredMapView(): StoredMapView {
+function readStoredMapView(language: 'zh-CN' | 'en-US'): StoredMapView {
+  const defaultCenter = DEFAULT_MAP_CENTERS[language]
+
   if (typeof window === 'undefined') {
-    return { ...DEFAULT_MAP_CENTER, zoom: DEFAULT_MAP_ZOOM }
+    return { ...defaultCenter, zoom: DEFAULT_MAP_ZOOM }
   }
 
   try {
     const raw = window.localStorage.getItem(MAP_VIEW_STORAGE_KEY)
-    if (!raw) return { ...DEFAULT_MAP_CENTER, zoom: DEFAULT_MAP_ZOOM }
+    if (!raw) return { ...defaultCenter, zoom: DEFAULT_MAP_ZOOM }
     const parsed = JSON.parse(raw) as Partial<StoredMapView>
     if (
       typeof parsed.lat !== 'number' ||
       typeof parsed.lon !== 'number' ||
       typeof parsed.zoom !== 'number'
     ) {
-      return { ...DEFAULT_MAP_CENTER, zoom: DEFAULT_MAP_ZOOM }
+      return { ...defaultCenter, zoom: DEFAULT_MAP_ZOOM }
     }
     if (!Number.isFinite(parsed.lat) || !Number.isFinite(parsed.lon) || !Number.isFinite(parsed.zoom)) {
-      return { ...DEFAULT_MAP_CENTER, zoom: DEFAULT_MAP_ZOOM }
+      return { ...defaultCenter, zoom: DEFAULT_MAP_ZOOM }
     }
     return {
       lat: Math.max(-90, Math.min(90, parsed.lat)),
@@ -59,7 +64,7 @@ function readStoredMapView(): StoredMapView {
       zoom: Math.max(1, Math.min(19, parsed.zoom))
     }
   } catch {
-    return { ...DEFAULT_MAP_CENTER, zoom: DEFAULT_MAP_ZOOM }
+    return { ...defaultCenter, zoom: DEFAULT_MAP_ZOOM }
   }
 }
 
@@ -274,9 +279,10 @@ export function MapPanel({
   const { t } = useTranslation()
   const appClient = getAppClient()
   const aircraft = useAppStore((state) => state.aircraft)
+  const language = useAppStore((state) => state.language)
   const settings = useAppStore((state) => state.settings)
   const setSettings = useAppStore((state) => state.setSettings)
-  const [initialMapView] = useState<StoredMapView>(() => readStoredMapView())
+  const [initialMapView] = useState<StoredMapView>(() => readStoredMapView(language))
   const aircraftPositionUsable = aircraft ? isAircraftPositionUsable(aircraft) : false
   const lat = aircraftPositionUsable ? (aircraft?.lat ?? initialMapView.lat) : initialMapView.lat
   const lon = aircraftPositionUsable ? (aircraft?.lon ?? initialMapView.lon) : initialMapView.lon

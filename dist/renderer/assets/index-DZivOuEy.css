@@ -1130,11 +1130,17 @@ body {
   outline: none;
 }
 
-.map-recenter-button {
+.map-control-stack {
   position: absolute;
   right: 18px;
   bottom: 106px;
   z-index: 1300;
+  display: grid;
+  gap: 8px;
+}
+
+.map-recenter-button,
+.map-route-fit-button {
   width: 42px;
   height: 42px;
   border: 1px solid var(--ui-border);
@@ -1146,7 +1152,14 @@ body {
   place-items: center;
 }
 
-.map-recenter-button svg {
+.map-recenter-button.is-active {
+  color: #52d5ff;
+  border-color: rgba(82, 213, 255, 0.45);
+  box-shadow: 0 0 0 1px rgba(82, 213, 255, 0.18);
+}
+
+.map-recenter-button svg,
+.map-route-fit-button svg {
   width: 18px;
   height: 18px;
   fill: currentColor;
@@ -1825,7 +1838,7 @@ body {
 
 .settings-page-full {
   height: 100%;
-  overflow: hidden;
+  overflow: auto;
   display: grid;
   background: #0c121c;
   min-height: 0;
@@ -1845,7 +1858,7 @@ body {
   display: grid;
   align-content: start;
   gap: 10px;
-  overflow: hidden;
+  overflow: auto;
 }
 
 .settings-panel-compact .settings-field {
@@ -2092,17 +2105,204 @@ body {
   border: 0;
 }
 
-.map-reference-dot {
+.flight-plan-drawer-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 2100;
+  pointer-events: none;
+}
+
+.flight-plan-drawer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 56px;
+  width: min(520px, calc(100% - 24px));
+  border-left: 1px solid var(--ui-border);
+  background:
+    radial-gradient(circle at top left, rgba(252, 188, 84, 0.16), transparent 30%),
+    linear-gradient(180deg, rgba(16, 19, 26, 0.98), rgba(9, 12, 18, 0.98));
+  box-shadow: -16px 0 40px rgba(0, 0, 0, 0.48);
   display: grid;
-  place-items: center;
+  grid-template-rows: auto 1fr;
+  pointer-events: auto;
+}
+
+.flight-plan-head {
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--ui-border);
+}
+
+.flight-plan-body {
+  overflow: auto;
+  padding: 12px;
+  display: grid;
+  gap: 12px;
+}
+
+.flight-plan-textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+
+.flight-plan-status-card {
+  gap: 8px;
+}
+
+.flight-plan-status-card code {
+  margin-top: 2px;
+}
+
+.flight-plan-alert {
+  border-color: rgba(236, 179, 101, 0.35);
+  background:
+    radial-gradient(circle at top right, rgba(236, 179, 101, 0.12), transparent 28%),
+    rgba(255, 255, 255, 0.04);
+}
+
+.flight-plan-flow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid rgba(139, 196, 255, 0.14);
+  border-radius: 16px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.015)),
+    rgba(7, 16, 28, 0.5);
+}
+
+.flight-plan-flow-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(139, 196, 255, 0.18);
+  background: rgba(255, 255, 255, 0.04);
+  color: #d7e9fb;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+
+.flight-plan-flow-arrow {
+  color: rgba(148, 163, 184, 0.86);
+  font-size: 12px;
+}
+
+.flight-plan-section {
+  padding: 14px;
+  border: 1px solid rgba(139, 196, 255, 0.14);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at top right, rgba(56, 132, 224, 0.08), transparent 24%),
+    rgba(255, 255, 255, 0.03);
+  display: grid;
+}
+
+.flight-plan-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 2px;
+}
+
+.flight-plan-section-head strong {
+  font-size: 15px;
+}
+
+.flight-plan-section-head span {
+  color: rgba(244, 247, 251, 0.62);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.flight-plan-section .settings-field {
+  margin-top: 14px;
+}
+
+.flight-plan-section .settings-field:first-of-type {
+  margin-top: 12px;
+}
+
+.flight-plan-summary-card {
+  border-color: rgba(120, 183, 255, 0.24);
+}
+
+.map-reference-pin {
+  position: relative;
+  display: block;
+  width: 28px;
+  height: 38px;
+  pointer-events: none;
+}
+
+.chart-reference-pin {
+  position: absolute;
+  width: 28px;
+  height: 38px;
+  transform: translate(-50%, -100%);
+  pointer-events: none;
+  z-index: 8;
+}
+
+.chart-reference-pin.draggable {
+  pointer-events: auto;
+  cursor: grab;
+}
+
+.chart-reference-pin.draggable.dragging {
+  cursor: grabbing;
+}
+
+.map-reference-pin::before,
+.chart-reference-pin::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 1px;
   width: 24px;
   height: 24px;
-  border-radius: 999px;
-  background: #8bc4ff;
-  color: #08131f;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: linear-gradient(160deg, #dbf1ff, #7cc0f4 62%, #5fa7de);
+  box-shadow:
+    0 0 0 2px rgba(8, 19, 31, 0.5),
+    0 5px 10px rgba(0, 0, 0, 0.35);
+}
+
+.map-reference-pin::after,
+.chart-reference-pin::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 22px;
+  width: 0;
+  height: 0;
+  transform: translateX(-50%);
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-top: 16px solid #74b8ea;
+  filter: drop-shadow(0 1px 0 rgba(8, 19, 31, 0.6));
+}
+
+.map-reference-pin span,
+.chart-reference-pin span {
+  position: absolute;
+  left: 50%;
+  top: 6px;
+  transform: translate(-50%, 0);
+  z-index: 1;
   font-size: 12px;
   font-weight: 700;
-  box-shadow: 0 0 0 2px rgba(8, 19, 31, 0.4);
+  color: #0b1a29;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
 }
 
 .chart-viewer-shell {
@@ -2168,8 +2368,12 @@ body {
   inset: 0;
   overflow: hidden;
   padding: 0;
-  cursor: grab;
+  cursor: default;
   touch-action: none;
+}
+
+.chart-preview-viewport.selectable {
+  cursor: crosshair;
 }
 
 .chart-preview-viewport.dragging {
@@ -2208,30 +2412,17 @@ body {
   background: rgba(255, 255, 255, 0.04);
 }
 
-.chart-reference-dot,
-.chart-aircraft-dot {
-  position: absolute;
-  transform: translate(-50%, -50%);
+.map-recenter-button:disabled,
+.map-route-fit-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
-.chart-reference-dot {
-  display: grid;
-  place-items: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 999px;
-  background: #8bc4ff;
-  color: #08131f;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.chart-aircraft-dot {
-  width: 16px;
-  height: 16px;
-  border: 3px solid #ff6d5b;
-  border-radius: 999px;
-  background: rgba(255, 109, 91, 0.2);
+.chart-editor-map-stage .leaflet-container,
+.chart-editor-map-stage .leaflet-grab,
+.chart-editor-map-stage .leaflet-dragging .leaflet-grab,
+.chart-editor-map-stage .leaflet-marker-pane {
+  cursor: crosshair !important;
 }
 
 .button-row {
@@ -2338,7 +2529,7 @@ body {
     bottom: 94px;
   }
 
-  .map-recenter-button {
+  .map-control-stack {
     right: 10px;
     bottom: 96px;
   }
@@ -2347,6 +2538,11 @@ body {
     width: calc(100% - 12px);
     bottom: 56px;
     border-radius: 0 10px 10px 0;
+  }
+
+  .flight-plan-drawer {
+    width: calc(100% - 10px);
+    bottom: 56px;
   }
 
   .charts-workspace {

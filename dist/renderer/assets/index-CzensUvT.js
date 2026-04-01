@@ -12498,7 +12498,7 @@ function requireClient() {
   return client.exports;
 }
 var clientExports = requireClient();
-const ReactDOM = /* @__PURE__ */ getDefaultExportFromCjs(clientExports);
+const ReactDOM$1 = /* @__PURE__ */ getDefaultExportFromCjs(clientExports);
 const warn$1 = (i18n, code, msg, rest) => {
   const args = [msg, {
     code,
@@ -12756,7 +12756,7 @@ function SidebarIcon({ kind }) {
   }
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { viewBox: "0 0 24 24", "aria-hidden": "true", children: [
     /* @__PURE__ */ jsxRuntimeExports.jsx("circle", { cx: "12", cy: "12", r: "3" }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M12 2V5M12 19V22M2 12H5M19 12H22M4.9 4.9L7 7M17 17L19.1 19.1M19.1 4.9L17 7M7 17L4.9 19.1" })
+    /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M19.4 15A1 1 0 0 0 19.6 16.1L19.7 16.2A1 1 0 1 1 18.3 17.6L18.2 17.5A1 1 0 0 0 17.1 17.3A1 1 0 0 0 16.5 18.2V18.5A1 1 0 1 1 14.5 18.5V18.3A1 1 0 0 0 13.8 17.4A1 1 0 0 0 12.7 17.7L12.6 17.8A1 1 0 1 1 11.2 16.4L11.3 16.3A1 1 0 0 0 11.5 15.2A1 1 0 0 0 10.6 14.6H10.3A1 1 0 1 1 10.3 12.6H10.5A1 1 0 0 0 11.4 11.9A1 1 0 0 0 11.1 10.8L11 10.7A1 1 0 1 1 12.4 9.3L12.5 9.4A1 1 0 0 0 13.6 9.6A1 1 0 0 0 14.2 8.7V8.4A1 1 0 1 1 16.2 8.4V8.6A1 1 0 0 0 16.9 9.5A1 1 0 0 0 18 9.2L18.1 9.1A1 1 0 0 1 19.5 10.5L19.4 10.6A1 1 0 0 0 19.2 11.7A1 1 0 0 0 20.1 12.3H20.4A1 1 0 1 1 20.4 14.3H20.2A1 1 0 0 0 19.4 15Z" })
   ] });
 }
 function AppSidebar({ route, collapsed, onToggleCollapse, onNavigate }) {
@@ -12814,6 +12814,24 @@ class ElectronAppClient {
   }
   getSettings() {
     return window.msfsApi.getSettings();
+  }
+  getNavDataStatus() {
+    return window.msfsApi.getNavDataStatus();
+  }
+  pickNavSqliteFile() {
+    return window.msfsApi.pickNavSqliteFile();
+  }
+  searchNavAirports(query) {
+    return window.msfsApi.searchNavAirports(query);
+  }
+  getNavAirportProcedures(airportIdent) {
+    return window.msfsApi.getNavAirportProcedures(airportIdent);
+  }
+  buildFlightPlan(input) {
+    return window.msfsApi.buildFlightPlan(input);
+  }
+  importSimBrief(input) {
+    return window.msfsApi.importSimBrief(input);
   }
   getRemoteAccessStatus() {
     return window.msfsApi.getRemoteAccessStatus();
@@ -12891,6 +12909,31 @@ class WebLanAppClient {
   }
   getSettings() {
     return this.fetchJson("/api/settings");
+  }
+  getNavDataStatus() {
+    return this.fetchJson("/api/nav/status");
+  }
+  async pickNavSqliteFile() {
+    return null;
+  }
+  searchNavAirports(query) {
+    const url = `/api/nav/airports?query=${encodeURIComponent(query)}`;
+    return this.fetchJson(url);
+  }
+  getNavAirportProcedures(airportIdent) {
+    return this.fetchJson(`/api/nav/airport/${encodeURIComponent(airportIdent)}/procedures`);
+  }
+  buildFlightPlan(input) {
+    return this.fetchJson("/api/nav/plan", {
+      method: "POST",
+      body: JSON.stringify(input)
+    });
+  }
+  importSimBrief(input) {
+    return this.fetchJson("/api/simbrief/import", {
+      method: "POST",
+      body: JSON.stringify(input)
+    });
   }
   async getRemoteAccessStatus() {
     return {
@@ -15376,54 +15419,58 @@ instance.hasLoadedNamespace;
 instance.loadNamespaces;
 instance.loadLanguages;
 const zhCN = {
-  "app.subtitle": "私有航图流程与地图绑定操作面板。",
+  "app.subtitle": "私人航图工作流与地理配准工具",
   "nav.map": "地图",
   "nav.charts": "航图",
   "nav.settings": "设置",
   "pages.settings.title": "设置",
-  "pages.settings.subtitle": "管理语言与数据源。",
+  "pages.settings.subtitle": "管理语言与数据源",
   "sidebar.collapse": "收起",
   "sidebar.expand": "展开侧边栏",
   "common.back": "返回",
   "common.cancel": "取消",
   "common.close": "关闭",
-  "map.aircraftMarker": "飞机位置",
+  "map.aircraftMarker": "飞机标记",
   "map.lat": "纬度",
   "map.lon": "经度",
-  "map.recenter": "回到飞机位置",
+  "map.recenter": "重新定位",
+  "map.controls": "地图控件",
+  "map.fitRoute": "适应航路",
+  "map.followAircraftStart": "开始跟随飞机",
+  "map.followAircraftStop": "停止跟随飞机",
   "status.title": "飞行状态",
   "status.subtitle": "实时飞机遥测",
-  "status.connected": "游戏已经连接",
+  "status.connected": "已连接游戏",
   "status.disconnected": "游戏未连接",
   "status.altitude": "高度",
   "status.heading": "航向",
   "status.speed": "地速",
   "status.source": "来源",
   "settings.title": "设置",
-  "settings.subtitle": "界面偏好",
+  "settings.subtitle": "管理语言与数据源",
   "settings.language": "语言",
   "settings.languageZhCN": "简体中文",
-  "settings.provider": "数据源",
+  "settings.provider": "数据来源",
   "settings.providerSimConnect": "SimConnect 实时数据",
   "settings.providerMock": "Mock 模拟数据",
-  "settings.providerNotice": "默认使用 SimConnect，若当前无法连接 MSFS 可切换为 Mock 模式。",
-  "settings.mapTileProvider": "地图底图源",
+  "settings.providerNotice": "默认使用 SimConnect。当前无法连接 MSFS 时可切换为 Mock 模式。",
+  "settings.mapTileProvider": "地图底图",
   "settings.mapTileProviderCartoLight": "CARTO Positron",
   "settings.mapTileProviderOsmFr": "OpenStreetMap France",
-  "settings.mapTileProviderOsm": "OpenStreetMap Standard",
-  "settings.mapTileProviderHint": "默认优先使用 OpenStreetMap Standard。如当前网络下某个底图源不稳定，可在这里切换到其他免费栅格底图。",
+  "settings.mapTileProviderOsm": "OpenStreetMap 标准",
+  "settings.mapTileProviderHint": "默认优先使用 OpenStreetMap Standard。如果某个底图源在你的网络下不稳定，可以在这里切换。",
   "settings.remoteAccess": "局域网远程访问",
   "settings.remoteAccessEnabled": "局域网访问已启动",
   "settings.remoteAccessDisabled": "局域网访问未启动",
   "settings.remoteAccessEnabledToggle": "启用局域网远程访问",
-  "settings.remoteAccessAuthToggle": "启用 token 鉴权",
+  "settings.remoteAccessAuthToggle": "启用 Token 鉴权",
   "settings.remoteAccessApplyPort": "应用端口",
   "settings.remoteAccessPort": "当前端口：{{port}}",
-  "settings.remoteAccessToggleHint": "将下方链接分享给同一局域网内的设备即可访问。",
-  "settings.remoteAccessAuthDisabledHint": "当前未启用 token 鉴权，同一局域网内设备可直接打开该地址。",
-  "settings.remoteAccessOpenHint": "点击该地址可用默认浏览器打开，或直接扫描右侧二维码访问。",
+  "settings.remoteAccessToggleHint": "把下面的链接分享给同一局域网内的设备即可访问。",
+  "settings.remoteAccessAuthDisabledHint": "当前未启用 Token 鉴权，同一局域网内设备可直接打开地址。",
+  "settings.remoteAccessOpenHint": "点击可在默认浏览器中打开此地址，或直接扫描右侧二维码。",
   "settings.remoteAccessQr": "局域网访问二维码",
-  "settings.remoteAccessReadonlyHint": "当前浏览器已经通过局域网入口连接，并支持航图管理操作。",
+  "settings.remoteAccessReadonlyHint": "当前浏览器会话已通过局域网入口连接，并支持航图管理操作。",
   "settings.remoteReadonlyMode": "局域网网页端现在也支持导入、编辑和删除航图，与桌面端保持一致。",
   "charts.emptyTitle": "暂无航图",
   "charts.emptyDescription": "请先导入航图。",
@@ -15432,7 +15479,7 @@ const zhCN = {
   "charts.add": "添加航图",
   "charts.unmountAria": "卸载 {{title}}",
   "charts.searchPlaceholder": "按标题、机场、类型搜索",
-  "charts.closePicker": "关闭航图抽屉",
+  "charts.closePicker": "关闭航图选择器",
   "charts.georeferenced": "已完成地理配准",
   "charts.notGeoreferenced": "未完成地理配准",
   "charts.editAria": "编辑 {{title}}",
@@ -15444,12 +15491,12 @@ const zhCN = {
   "chartType.star": "STAR",
   "chartType.approach": "进近",
   "chartDetail.title": "航图详情",
-  "chartDetail.saveReference": "保存绑定",
-  "chartDetail.mapPickerTitle": "地图点位采集",
-  "chartDetail.captureFromAircraft": "采集飞机当前位置",
-  "chartDetail.clearMapPoints": "清空地图点位",
+  "chartDetail.saveReference": "保存配准",
+  "chartDetail.mapPickerTitle": "地图取点",
+  "chartDetail.captureFromAircraft": "获取飞机当前位置",
+  "chartDetail.clearMapPoints": "清除地图点位",
   "chartDetail.viewerTitle": "航图预览",
-  "chartDetail.clearChartPoints": "清空航图点位",
+  "chartDetail.clearChartPoints": "清除航图点位",
   "chartDetail.metaTitle": "基础信息",
   "chartDetail.fieldTitle": "标题",
   "chartDetail.fieldAirportCode": "机场代码",
@@ -15458,16 +15505,64 @@ const zhCN = {
   "chartDetail.editMeta": "编辑航图信息",
   "chartDetail.countMap": "地图 {{count}}/2",
   "chartDetail.countChart": "航图 {{count}}/2",
-  "chartDetail.countSaved": "已存 {{count}}/2",
+  "chartDetail.countSaved": "已保存 {{count}}/2",
   "chartDetail.delete": "删除",
   "chartDetail.deleteDialogTitle": "删除航图",
-  "chartDetail.deletePromptPrefix": "请输入",
+  "chartDetail.deletePromptPrefix": "输入",
   "chartDetail.deletePromptSuffix": "以确认永久删除。",
   "chartDetail.confirmDelete": "确认删除",
-  "chartPreview.noAssetTitle": "未加载航图资源",
+  "chartPreview.noAssetTitle": "航图资源未加载",
   "chartPreview.noAssetDescription": "航图记录存在，但资源加载失败。",
   "chartPreview.notReadyTitle": "航图内容尚未就绪",
-  "chartPreview.resetZoom": "1:1"
+  "chartPreview.resetZoom": "1:1",
+  "flightPlan.title": "航路规划",
+  "flightPlan.openDrawer": "打开航路规划",
+  "flightPlan.openSettings": "打开设置",
+  "flightPlan.close": "关闭航路规划",
+  "flightPlan.departureAirport": "出发机场",
+  "flightPlan.destinationAirport": "目的机场",
+  "flightPlan.airportPlaceholder": "例如：ZBAA",
+  "flightPlan.departureRunway": "离场跑道",
+  "flightPlan.arrivalRunway": "进场跑道",
+  "flightPlan.departureProcedure": "离场程序",
+  "flightPlan.arrivalProcedure": "进场程序",
+  "flightPlan.approachProcedure": "进近程序",
+  "flightPlan.arrivalTransition": "过渡点",
+  "flightPlan.notSpecified": "自动 / 不指定",
+  "flightPlan.enroute": "中间航路",
+  "flightPlan.enroutePlaceholder": "例如：DCT GITUM W6 BGO ...",
+  "flightPlan.importSimbrief": "从 SimBrief 导入",
+  "flightPlan.clear": "清空航路",
+  "flightPlan.build": "生成并绘制",
+  "flightPlan.unresolved": "未解析航点",
+  "flightPlan.error": "操作失败",
+  "flightPlan.departureStart": "出发起点",
+  "flightPlan.departureSection": "出发",
+  "flightPlan.departureSectionHint": "先选择跑道，再选择与该跑道关联的离场程序。",
+  "flightPlan.routeSection": "中间航路",
+  "flightPlan.routeSectionHint": "填写出发与到达之间的航路点或航路字符串。",
+  "flightPlan.arrivalSection": "到达",
+  "flightPlan.arrivalSectionHint": "先选择进场跑道，再选择进场程序、进近程序和过渡点。",
+  "settings.navDataTitle": "Little Navmap 导航数据",
+  "settings.navDataDefaultPath": "自动检测到的默认路径：{{path}}",
+  "settings.navDataActivePath": "当前路径：{{path}}",
+  "settings.navDataMissing": "未找到",
+  "settings.navDataPathPlaceholder": "little_navmap_navigraph.sqlite 文件路径",
+  "settings.navDataBrowse": "浏览",
+  "settings.navDataSave": "保存路径",
+  "settings.navDataClear": "清除手动路径",
+  "settings.simbriefTitle": "SimBrief",
+  "settings.simbriefUsername": "SimBrief 用户名",
+  "settings.simbriefUserId": "SimBrief 用户 ID",
+  "settings.simbriefSave": "保存 SimBrief 设置",
+  "feedback.saved": "已保存",
+  "feedback.deleted": "已删除",
+  "feedback.updated": "已更新",
+  "feedback.imported": "已导入",
+  "feedback.failed": "操作失败",
+  "flightPlan.navDataRequired": "需要导航数据",
+  "flightPlan.navDataRequiredHint": "请先安装 Little Navmap 导航数据，并在设置中配置 SQLite 路径，然后再进行航路规划。",
+  "flightPlan.navDataOpenSettings": "打开设置"
 };
 const enUS = {
   "app.subtitle": "Private chart workflow for map and georeference operations.",
@@ -15561,19 +15656,79 @@ const enUS = {
   "chartPreview.noAssetTitle": "Chart asset not loaded",
   "chartPreview.noAssetDescription": "The chart record exists, but its asset could not be loaded.",
   "chartPreview.notReadyTitle": "Chart content not ready",
-  "chartPreview.resetZoom": "1:1"
+  "chartPreview.resetZoom": "1:1",
+  "flightPlan.title": "Flight Planning",
+  "flightPlan.openDrawer": "Open flight planning",
+  "flightPlan.openSettings": "Open settings",
+  "flightPlan.close": "Close flight planning",
+  "flightPlan.navDataRequired": "Navigation data required",
+  "flightPlan.navDataRequiredHint": "Install Little Navmap navigation data and configure its SQLite path in Settings before planning a route.",
+  "flightPlan.navDataOpenSettings": "Open settings",
+  "flightPlan.navStatus": "Navigation Database",
+  "flightPlan.navReady": "Navigation database ready",
+  "flightPlan.navMissing": "Navigation database is missing, open settings to configure path.",
+  "flightPlan.departureAirport": "Departure Airport",
+  "flightPlan.destinationAirport": "Destination Airport",
+  "flightPlan.airportPlaceholder": "For example: ZBAA",
+  "flightPlan.departureRunway": "Departure Runway",
+  "flightPlan.departureStart": "Departure Start Point",
+  "flightPlan.arrivalRunway": "Arrival Runway",
+  "flightPlan.arrivalTransition": "Transition Point",
+  "flightPlan.departureProcedure": "Departure Procedure",
+  "flightPlan.approachProcedure": "Approach Procedure",
+  "flightPlan.departureSection": "Departure",
+  "flightPlan.departureSectionHint": "Pick a runway first, then the departure procedure tied to that runway.",
+  "flightPlan.routeSection": "Enroute",
+  "flightPlan.routeSectionHint": "Paste the airway string or waypoint list between departure and arrival.",
+  "flightPlan.arrivalSection": "Arrival",
+  "flightPlan.arrivalSectionHint": "Choose the arrival runway, then the arrival procedure, the approach, and finally a transition.",
+  "flightPlan.notSpecified": "Auto / Not specified",
+  "flightPlan.enroute": "Enroute",
+  "flightPlan.enroutePlaceholder": "For example: DCT GITUM W6 BGO ...",
+  "flightPlan.importSimbrief": "Import from SimBrief",
+  "flightPlan.clear": "Clear Route",
+  "flightPlan.build": "Build and Draw",
+  "flightPlan.unresolved": "Unresolved waypoints",
+  "flightPlan.error": "Operation failed",
+  "settings.navDataTitle": "Little Navmap Navigation Data",
+  "settings.navDataDefaultPath": "Auto-detected default path: {{path}}",
+  "settings.navDataActivePath": "Current path: {{path}}",
+  "settings.navDataMissing": "Not found",
+  "settings.navDataPathPlaceholder": "Path to little_navmap_navigraph.sqlite",
+  "settings.navDataBrowse": "Browse",
+  "settings.navDataSave": "Save Path",
+  "settings.navDataClear": "Clear Manual Path",
+  "settings.simbriefTitle": "SimBrief",
+  "settings.simbriefUsername": "SimBrief username",
+  "settings.simbriefUserId": "SimBrief user id",
+  "settings.simbriefSave": "Save SimBrief Settings",
+  "feedback.saved": "Saved",
+  "feedback.deleted": "Deleted",
+  "feedback.updated": "Updated",
+  "feedback.imported": "Imported",
+  "feedback.failed": "Operation failed",
+  "flightPlan.arrivalProcedure": "Arrival Procedure",
+  "map.controls": "Map controls",
+  "map.fitRoute": "Fit current route",
+  "map.followAircraftStart": "Click to follow aircraft",
+  "map.followAircraftStop": "Stop following aircraft"
 };
+const systemLanguage = resolveSystemLanguage$1();
 void instance.use(initReactI18next).init({
   resources: {
     "zh-CN": { translation: zhCN },
     "en-US": { translation: enUS }
   },
-  lng: "zh-CN",
+  lng: systemLanguage,
   fallbackLng: "en-US",
   interpolation: {
     escapeValue: false
   }
 });
+function resolveSystemLanguage$1() {
+  const locale = typeof navigator !== "undefined" ? navigator.language : "";
+  return locale.trim().toLowerCase().startsWith("zh") ? "zh-CN" : "en-US";
+}
 const createStoreImpl = (createState) => {
   let state;
   const listeners = /* @__PURE__ */ new Set();
@@ -15617,7 +15772,7 @@ const useAppStore = create((set) => ({
   aircraft: null,
   connection: null,
   settings: null,
-  language: "zh-CN",
+  language: resolveSystemLanguage(),
   setAircraft: (aircraft) => set({ aircraft }),
   setConnection: (connection) => set({ connection }),
   setSettings: (settings) => set({ settings, language: settings.language }),
@@ -15626,6 +15781,12 @@ const useAppStore = create((set) => ({
     settings: state.settings ? { ...state.settings, language } : state.settings
   }))
 }));
+function resolveSystemLanguage() {
+  if (typeof navigator === "undefined") {
+    return "en-US";
+  }
+  return navigator.language.trim().toLowerCase().startsWith("zh") ? "zh-CN" : "en-US";
+}
 function useDesktopData() {
   const appClient2 = getAppClient();
   const setAircraft = useAppStore((state) => state.setAircraft);
@@ -20995,7 +21156,7 @@ function requireLeafletSrc() {
           return (this.options.stroke ? this.options.weight / 2 : 0) + (this._renderer.options.tolerance || 0);
         }
       });
-      var CircleMarker = Path.extend({
+      var CircleMarker2 = Path.extend({
         // @section
         // @aka CircleMarker options
         options: {
@@ -21064,9 +21225,9 @@ function requireLeafletSrc() {
         }
       });
       function circleMarker(latlng, options) {
-        return new CircleMarker(latlng, options);
+        return new CircleMarker2(latlng, options);
       }
-      var Circle = CircleMarker.extend({
+      var Circle = CircleMarker2.extend({
         initialize: function(latlng, options, legacyOptions) {
           if (typeof options === "number") {
             options = extend({}, legacyOptions, { radius: options });
@@ -21120,7 +21281,7 @@ function requireLeafletSrc() {
       function circle(latlng, options, legacyOptions) {
         return new Circle(latlng, options, legacyOptions);
       }
-      var Polyline = Path.extend({
+      var Polyline2 = Path.extend({
         // @section
         // @aka Polyline options
         options: {
@@ -21319,10 +21480,10 @@ function requireLeafletSrc() {
         }
       });
       function polyline(latlngs, options) {
-        return new Polyline(latlngs, options);
+        return new Polyline2(latlngs, options);
       }
-      Polyline._flat = _flat;
-      var Polygon = Polyline.extend({
+      Polyline2._flat = _flat;
+      var Polygon = Polyline2.extend({
         options: {
           fill: true
         },
@@ -21338,14 +21499,14 @@ function requireLeafletSrc() {
           return polygonCenter(this._defaultShape(), this._map.options.crs);
         },
         _convertLatLngs: function(latlngs) {
-          var result = Polyline.prototype._convertLatLngs.call(this, latlngs), len = result.length;
+          var result = Polyline2.prototype._convertLatLngs.call(this, latlngs), len = result.length;
           if (len >= 2 && result[0] instanceof LatLng && result[0].equals(result[len - 1])) {
             result.pop();
           }
           return result;
         },
         _setLatLngs: function(latlngs) {
-          Polyline.prototype._setLatLngs.call(this, latlngs);
+          Polyline2.prototype._setLatLngs.call(this, latlngs);
           if (isFlat(this._latlngs)) {
             this._latlngs = [this._latlngs];
           }
@@ -21390,7 +21551,7 @@ function requireLeafletSrc() {
               }
             }
           }
-          return inside || Polyline.prototype._containsPoint.call(this, p, true);
+          return inside || Polyline2.prototype._containsPoint.call(this, p, true);
         }
       });
       function polygon(latlngs, options) {
@@ -21527,7 +21688,7 @@ function requireLeafletSrc() {
           case "LineString":
           case "MultiLineString":
             latlngs = coordsToLatLngs(coords, geometry.type === "LineString" ? 0 : 1, _coordsToLatLng);
-            return new Polyline(latlngs, options);
+            return new Polyline2(latlngs, options);
           case "Polygon":
           case "MultiPolygon":
             latlngs = coordsToLatLngs(coords, geometry.type === "Polygon" ? 1 : 2, _coordsToLatLng);
@@ -21607,8 +21768,8 @@ function requireLeafletSrc() {
       };
       Marker2.include(PointToGeoJSON);
       Circle.include(PointToGeoJSON);
-      CircleMarker.include(PointToGeoJSON);
-      Polyline.include({
+      CircleMarker2.include(PointToGeoJSON);
+      Polyline2.include({
         toGeoJSON: function(precision) {
           var multi = !isFlat(this._latlngs);
           var coords = latLngsToCoords(this._latlngs, multi ? 1 : 0, false, precision);
@@ -22558,7 +22719,7 @@ function requireLeafletSrc() {
           }
         }
       });
-      var Tooltip = DivOverlay.extend({
+      var Tooltip2 = DivOverlay.extend({
         // @section
         // @aka Tooltip options
         options: {
@@ -22671,7 +22832,7 @@ function requireLeafletSrc() {
         }
       });
       var tooltip = function(options, source) {
-        return new Tooltip(options, source);
+        return new Tooltip2(options, source);
       };
       Map2.include({
         // @method openTooltip(tooltip: Tooltip): this
@@ -22680,7 +22841,7 @@ function requireLeafletSrc() {
         // @method openTooltip(content: String|HTMLElement, latlng: LatLng, options?: Tooltip options): this
         // Creates a tooltip with the specified content and options and open it.
         openTooltip: function(tooltip2, latlng, options) {
-          this._initOverlay(Tooltip, tooltip2, latlng, options).openOn(this);
+          this._initOverlay(Tooltip2, tooltip2, latlng, options).openOn(this);
           return this;
         },
         // @method closeTooltip(tooltip: Tooltip): this
@@ -22699,7 +22860,7 @@ function requireLeafletSrc() {
           if (this._tooltip && this.isTooltipOpen()) {
             this.unbindTooltip();
           }
-          this._tooltip = this._initOverlay(Tooltip, this._tooltip, content, options);
+          this._tooltip = this._initOverlay(Tooltip2, this._tooltip, content, options);
           this._initTooltipInteractions();
           if (this._tooltip.options.permanent && this._map && this._map.hasLayer(this)) {
             this.openTooltip();
@@ -25127,7 +25288,7 @@ function requireLeafletSrc() {
       exports$12.CRS = CRS;
       exports$12.Canvas = Canvas;
       exports$12.Circle = Circle;
-      exports$12.CircleMarker = CircleMarker;
+      exports$12.CircleMarker = CircleMarker2;
       exports$12.Class = Class;
       exports$12.Control = Control;
       exports$12.DivIcon = DivIcon;
@@ -25154,7 +25315,7 @@ function requireLeafletSrc() {
       exports$12.Point = Point;
       exports$12.PolyUtil = PolyUtil;
       exports$12.Polygon = Polygon;
-      exports$12.Polyline = Polyline;
+      exports$12.Polyline = Polyline2;
       exports$12.Popup = Popup;
       exports$12.PosAnimation = PosAnimation;
       exports$12.Projection = index;
@@ -25163,7 +25324,7 @@ function requireLeafletSrc() {
       exports$12.SVG = SVG;
       exports$12.SVGOverlay = SVGOverlay;
       exports$12.TileLayer = TileLayer2;
-      exports$12.Tooltip = Tooltip;
+      exports$12.Tooltip = Tooltip2;
       exports$12.Transformation = Transformation;
       exports$12.Util = Util2;
       exports$12.VideoOverlay = VideoOverlay;
@@ -25228,7 +25389,16 @@ function useAttribution(map, attribution) {
     attribution
   ]);
 }
-requireReactDom();
+function updateCircle(layer, props, prevProps) {
+  if (props.center !== prevProps.center) {
+    layer.setLatLng(props.center);
+  }
+  if (props.radius != null && props.radius !== prevProps.radius) {
+    layer.setRadius(props.radius);
+  }
+}
+var reactDomExports = requireReactDom();
+const ReactDOM = /* @__PURE__ */ getDefaultExportFromCjs(reactDomExports);
 const CONTEXT_VERSION = 1;
 function createLeafletContext(map) {
   return Object.freeze({
@@ -25260,6 +25430,25 @@ function createContainerComponent(useElement) {
     }, children);
   }
   return /* @__PURE__ */ reactExports.forwardRef(ContainerComponent);
+}
+function createDivOverlayComponent(useElement) {
+  function OverlayComponent(props, forwardedRef) {
+    const [isOpen, setOpen] = reactExports.useState(false);
+    const { instance: instance2 } = useElement(props, setOpen).current;
+    reactExports.useImperativeHandle(forwardedRef, () => instance2);
+    reactExports.useEffect(function updateOverlay() {
+      if (isOpen) {
+        instance2.update();
+      }
+    }, [
+      instance2,
+      isOpen,
+      props.children
+    ]);
+    const contentNode = instance2._contentNode;
+    return contentNode ? /* @__PURE__ */ reactDomExports.createPortal(props.children, contentNode) : null;
+  }
+  return /* @__PURE__ */ reactExports.forwardRef(OverlayComponent);
 }
 function createLeafComponent(useElement) {
   function LeafComponent(props, forwardedRef) {
@@ -25293,6 +25482,16 @@ function withPane(props, context) {
     ...props,
     pane
   } : props;
+}
+function createDivOverlayHook(useElement, useLifecycle) {
+  return function useDivOverlay(props, setOpen) {
+    const context = useLeafletContext();
+    const elementRef = useElement(withPane(props, context), context);
+    useAttribution(context.map, props.attribution);
+    useEventHandlers(elementRef.current, props.eventHandlers);
+    useLifecycle(elementRef.current, context, props, setOpen);
+    return elementRef;
+  };
 }
 function createElementObject(instance2, context, container) {
   return Object.freeze({
@@ -25350,10 +25549,43 @@ function createLayerHook(useElement) {
     return elementRef;
   };
 }
+function usePathOptions(element, props) {
+  const optionsRef = reactExports.useRef(void 0);
+  reactExports.useEffect(function updatePathOptions() {
+    if (props.pathOptions !== optionsRef.current) {
+      const options = props.pathOptions ?? {};
+      element.instance.setStyle(options);
+      optionsRef.current = options;
+    }
+  }, [
+    element,
+    props
+  ]);
+}
+function createPathHook(useElement) {
+  return function usePath(props) {
+    const context = useLeafletContext();
+    const elementRef = useElement(withPane(props, context), context);
+    useEventHandlers(elementRef.current, props.eventHandlers);
+    useLayerLifecycle(elementRef.current, context);
+    usePathOptions(elementRef.current, props);
+    return elementRef;
+  };
+}
 function createLayerComponent(createElement, updateElement) {
   const useElement = createElementHook(createElement, updateElement);
   const useLayer = createLayerHook(useElement);
   return createContainerComponent(useLayer);
+}
+function createOverlayComponent(createElement, useLifecycle) {
+  const useElement = createElementHook(createElement);
+  const useOverlay = createDivOverlayHook(useElement, useLifecycle);
+  return createDivOverlayComponent(useOverlay);
+}
+function createPathComponent(createElement, updateElement) {
+  const useElement = createElementHook(createElement, updateElement);
+  const usePath = createPathHook(useElement);
+  return createContainerComponent(usePath);
 }
 function createTileLayerComponent(createElement, updateElement) {
   const useElement = createElementHook(createElement, updateElement);
@@ -25385,6 +25617,12 @@ function useMapEvents(handlers) {
   ]);
   return map;
 }
+const CircleMarker = createPathComponent(function createCircleMarker({ center, children: _c, ...options }, ctx) {
+  const marker = new leafletSrcExports.CircleMarker(center, options);
+  return createElementObject(marker, extendContext(ctx, {
+    overlayContainer: marker
+  }));
+}, updateCircle);
 function MapContainerComponent({ bounds, boundsOptions, center, children, className, id, placeholder, style, whenReady, zoom, ...options }, forwardedRef) {
   const [props] = reactExports.useState({
     className,
@@ -25453,6 +25691,16 @@ const Marker = createLayerComponent(function createMarker({ position, ...options
     }
   }
 });
+const Polyline = createPathComponent(function createPolyline({ positions, ...options }, ctx) {
+  const polyline = new leafletSrcExports.Polyline(positions, options);
+  return createElementObject(polyline, extendContext(ctx, {
+    overlayContainer: polyline
+  }));
+}, function updatePolyline(layer, props, prevProps) {
+  if (props.positions !== prevProps.positions) {
+    layer.setLatLngs(props.positions);
+  }
+});
 const TileLayer = createTileLayerComponent(function createTileLayer({ url, ...options }, context) {
   const layer = new leafletSrcExports.TileLayer(url, withPane(options, context));
   return createElementObject(layer, context);
@@ -25462,6 +25710,51 @@ const TileLayer = createTileLayerComponent(function createTileLayer({ url, ...op
   if (url != null && url !== prevProps.url) {
     layer.setUrl(url);
   }
+});
+const Tooltip = createOverlayComponent(function createTooltip(props, context) {
+  const tooltip = new leafletSrcExports.Tooltip(props, context.overlayContainer);
+  return createElementObject(tooltip, context);
+}, function useTooltipLifecycle(element, context, { position }, setOpen) {
+  reactExports.useEffect(function addTooltip() {
+    const container = context.overlayContainer;
+    if (container == null) {
+      return;
+    }
+    const { instance: instance2 } = element;
+    const onTooltipOpen = (event) => {
+      if (event.tooltip === instance2) {
+        if (position != null) {
+          instance2.setLatLng(position);
+        }
+        instance2.update();
+        setOpen(true);
+      }
+    };
+    const onTooltipClose = (event) => {
+      if (event.tooltip === instance2) {
+        setOpen(false);
+      }
+    };
+    container.on({
+      tooltipopen: onTooltipOpen,
+      tooltipclose: onTooltipClose
+    });
+    container.bindTooltip(instance2);
+    return function removeTooltip() {
+      container.off({
+        tooltipopen: onTooltipOpen,
+        tooltipclose: onTooltipClose
+      });
+      if (container._map != null) {
+        container.unbindTooltip();
+      }
+    };
+  }, [
+    element,
+    context,
+    setOpen,
+    position
+  ]);
 });
 var __webpack_require__ = {};
 (() => {
@@ -46767,6 +47060,10 @@ function mapToLocal(lat, lon, refLat) {
 }
 function projectAircraftToChart(aircraft, points) {
   if (!aircraft || points.length !== 2) return null;
+  if (!aircraft.connected) return null;
+  if (!Number.isFinite(aircraft.lat) || !Number.isFinite(aircraft.lon)) return null;
+  if (Math.abs(aircraft.lat) > 90 || Math.abs(aircraft.lon) > 180) return null;
+  if (aircraft.lat === 0 && aircraft.lon === 0 && aircraft.altitudeFt === 0) return null;
   const [p1, p2] = points;
   const mapA = mapToLocal(p1.mapLat, p1.mapLon, p1.mapLat);
   const mapB = mapToLocal(p2.mapLat, p2.mapLon, p1.mapLat);
@@ -46820,13 +47117,18 @@ function ChartAircraftArrow({ x, y, headingDeg }) {
     }
   );
 }
+function clampZoomValue(value) {
+  return Math.min(5, Math.max(0.4, value));
+}
 function ChartImagePreview({
   chartTitle,
   asset,
   points,
   aircraft,
   draftChartPoints = [],
-  onChartClick
+  autoFocusKey = 0,
+  onChartClick,
+  onDraftChartPointMove
 }) {
   const { t } = useTranslation();
   const [zoom, setZoom] = reactExports.useState(1);
@@ -46842,6 +47144,12 @@ function ChartImagePreview({
     originPanX: 0,
     originPanY: 0
   });
+  const pinDragRef = reactExports.useRef({
+    active: false,
+    index: -1
+  });
+  const suppressClickRef = reactExports.useRef(false);
+  const [draggingPinIndex, setDraggingPinIndex] = reactExports.useState(null);
   const { rasterUrl, width: rasterWidth, height: rasterHeight, error: rasterError } = useChartRasterAsset(asset);
   const projected = reactExports.useMemo(() => projectAircraftToChart(aircraft, points), [aircraft, points]);
   const naturalWidth = rasterWidth ?? 0;
@@ -46853,9 +47161,31 @@ function ChartImagePreview({
       top: `${projected.y / naturalHeight * 100}%`
     };
   }, [naturalHeight, naturalWidth, projected]);
-  const clampZoom = (value) => Math.min(5, Math.max(0.4, value));
+  const chartPins = reactExports.useMemo(
+    () => draftChartPoints.map((point, index) => ({
+      index,
+      key: `${point.x}-${point.y}`,
+      label: String(index + 1),
+      left: pan.x + point.x * zoom,
+      top: pan.y + point.y * zoom
+    })),
+    [draftChartPoints, pan.x, pan.y, zoom]
+  );
+  const canDragPins = draftChartPoints.length === 2 && Boolean(onDraftChartPointMove);
+  const clientToChartPoint = (clientX, clientY) => {
+    if (!viewportRef.current || !naturalWidth || !naturalHeight) return null;
+    const viewportRect = viewportRef.current.getBoundingClientRect();
+    const pointerX = clientX - viewportRect.left;
+    const pointerY = clientY - viewportRect.top;
+    const x = (pointerX - pan.x) / zoom;
+    const y = (pointerY - pan.y) / zoom;
+    return {
+      x: Math.max(0, Math.min(naturalWidth, x)),
+      y: Math.max(0, Math.min(naturalHeight, y))
+    };
+  };
   const updateZoom = (nextZoom, clientX, clientY) => {
-    const clamped = clampZoom(nextZoom);
+    const clamped = clampZoomValue(nextZoom);
     if (!viewportRef.current || clientX === void 0 || clientY === void 0) {
       setZoom(clamped);
       return;
@@ -46877,6 +47207,7 @@ function ChartImagePreview({
     updateZoom(zoom * ratio, event.clientX, event.clientY);
   };
   const handlePointerDown = (event) => {
+    if (pinDragRef.current.active) return;
     if (event.button !== 0 && event.pointerType !== "touch") return;
     dragRef.current = {
       active: true,
@@ -46906,20 +47237,65 @@ function ChartImagePreview({
     setIsDragging(false);
   };
   const handleChartClick = (event) => {
+    if (suppressClickRef.current) {
+      suppressClickRef.current = false;
+      return;
+    }
     if (!onChartClick) return;
-    if (!naturalWidth || !naturalHeight) return;
     if (dragRef.current.moved) return;
-    const viewportRect = viewportRef.current?.getBoundingClientRect();
-    if (!viewportRect) return;
-    const pointerX = event.clientX - viewportRect.left;
-    const pointerY = event.clientY - viewportRect.top;
-    const x = (pointerX - pan.x) / zoom;
-    const y = (pointerY - pan.y) / zoom;
-    onChartClick({
-      x: Math.max(0, Math.min(naturalWidth, x)),
-      y: Math.max(0, Math.min(naturalHeight, y))
-    });
+    const point = clientToChartPoint(event.clientX, event.clientY);
+    if (!point) return;
+    onChartClick(point);
   };
+  reactExports.useEffect(() => {
+    if (autoFocusKey <= 0) return;
+    if (draftChartPoints.length !== 2) return;
+    if (!viewportRef.current || !naturalWidth || !naturalHeight) return;
+    const [p1, p2] = draftChartPoints;
+    if (!p1 || !p2) return;
+    const viewportRect = viewportRef.current.getBoundingClientRect();
+    if (viewportRect.width <= 0 || viewportRect.height <= 0) return;
+    const minX = Math.max(0, Math.min(p1.x, p2.x));
+    const minY = Math.max(0, Math.min(p1.y, p2.y));
+    const maxX = Math.min(naturalWidth, Math.max(p1.x, p2.x));
+    const maxY = Math.min(naturalHeight, Math.max(p1.y, p2.y));
+    const boxWidth = Math.max(maxX - minX, 24);
+    const boxHeight = Math.max(maxY - minY, 24);
+    const padding = 72;
+    const availableWidth = Math.max(1, viewportRect.width - padding * 2);
+    const availableHeight = Math.max(1, viewportRect.height - padding * 2);
+    const targetZoom = clampZoomValue(Math.min(availableWidth / boxWidth, availableHeight / boxHeight));
+    const centerX = (minX + maxX) / 2;
+    const centerY = (minY + maxY) / 2;
+    setZoom(targetZoom);
+    setPan({
+      x: viewportRect.width / 2 - centerX * targetZoom,
+      y: viewportRect.height / 2 - centerY * targetZoom
+    });
+  }, [autoFocusKey, draftChartPoints, naturalHeight, naturalWidth]);
+  reactExports.useEffect(() => {
+    if (!canDragPins || !onDraftChartPointMove) return;
+    const handlePointerMove2 = (event) => {
+      if (!pinDragRef.current.active) return;
+      const point = clientToChartPoint(event.clientX, event.clientY);
+      if (!point) return;
+      onDraftChartPointMove(pinDragRef.current.index, point);
+    };
+    const handlePointerUp = () => {
+      if (!pinDragRef.current.active) return;
+      pinDragRef.current.active = false;
+      pinDragRef.current.index = -1;
+      setDraggingPinIndex(null);
+    };
+    window.addEventListener("pointermove", handlePointerMove2);
+    window.addEventListener("pointerup", handlePointerUp);
+    window.addEventListener("pointercancel", handlePointerUp);
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMove2);
+      window.removeEventListener("pointerup", handlePointerUp);
+      window.removeEventListener("pointercancel", handlePointerUp);
+    };
+  }, [canDragPins, onDraftChartPointMove, pan.x, pan.y, zoom, naturalWidth, naturalHeight]);
   if (!asset) {
     return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "empty-state", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: t("chartPreview.noAssetTitle") }),
@@ -46969,61 +47345,74 @@ function ChartImagePreview({
         }
       )
     ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx(
+    /* @__PURE__ */ jsxRuntimeExports.jsxs(
       "div",
       {
         ref: viewportRef,
-        className: `chart-preview-viewport ${isDragging ? "dragging" : ""}`,
+        className: `chart-preview-viewport ${onChartClick ? "selectable" : ""} ${isDragging ? "dragging" : ""}`,
         onWheel: handleWheel,
         onPointerDown: handlePointerDown,
         onPointerMove: handlePointerMove,
         onPointerUp: finishDrag,
         onPointerCancel: finishDrag,
-        children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
-          "div",
-          {
-            className: "chart-surface chart-pan-stage",
-            style: {
-              width: naturalWidth,
-              height: naturalHeight,
-              transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`
+        onClick: handleChartClick,
+        children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            "div",
+            {
+              className: "chart-surface chart-pan-stage",
+              style: {
+                width: naturalWidth,
+                height: naturalHeight,
+                transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`
+              },
+              onDragStart: (event) => event.preventDefault(),
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "img",
+                  {
+                    ref: imageRef,
+                    src: rasterUrl,
+                    alt: chartTitle,
+                    className: "chart-image chart-image-zoomed",
+                    draggable: false
+                  }
+                ),
+                projectedPercent ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  ChartAircraftArrow,
+                  {
+                    x: projectedPercent.left,
+                    y: projectedPercent.top,
+                    headingDeg: aircraft?.headingDeg ?? 0
+                  }
+                ) : null
+              ]
+            }
+          ),
+          chartPins.map((pin) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "div",
+            {
+              className: `chart-reference-pin ${canDragPins ? "draggable" : ""} ${draggingPinIndex === pin.index ? "dragging" : ""}`,
+              style: {
+                left: pin.left,
+                top: pin.top
+              },
+              onPointerDown: (event) => {
+                if (!canDragPins) return;
+                event.preventDefault();
+                event.stopPropagation();
+                suppressClickRef.current = true;
+                pinDragRef.current = {
+                  active: true,
+                  index: pin.index
+                };
+                setDraggingPinIndex(pin.index);
+              },
+              children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: pin.label })
             },
-            onClick: handleChartClick,
-            onDragStart: (event) => event.preventDefault(),
-            children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx(
-                "img",
-                {
-                  ref: imageRef,
-                  src: rasterUrl,
-                  alt: chartTitle,
-                  className: "chart-image chart-image-zoomed",
-                  draggable: false
-                }
-              ),
-              projectedPercent ? /* @__PURE__ */ jsxRuntimeExports.jsx(
-                ChartAircraftArrow,
-                {
-                  x: projectedPercent.left,
-                  y: projectedPercent.top,
-                  headingDeg: aircraft?.headingDeg ?? 0
-                }
-              ) : null,
-              draftChartPoints.map((point, index) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-                "div",
-                {
-                  className: "chart-reference-dot",
-                  style: {
-                    left: naturalWidth ? `${point.x / naturalWidth * 100}%` : point.x,
-                    top: naturalHeight ? `${point.y / naturalHeight * 100}%` : point.y
-                  },
-                  children: index + 1
-                },
-                `${point.x}-${point.y}`
-              ))
-            ]
-          }
-        )
+            pin.key
+          ))
+        ]
       }
     )
   ] });
@@ -47103,13 +47492,1099 @@ function getMapTileConfig(provider) {
     subdomains: config.subdomains ?? ["a", "b", "c"]
   };
 }
+function __insertCSS(code) {
+  if (typeof document == "undefined") return;
+  let head = document.head || document.getElementsByTagName("head")[0];
+  let style = document.createElement("style");
+  style.type = "text/css";
+  head.appendChild(style);
+  style.styleSheet ? style.styleSheet.cssText = code : style.appendChild(document.createTextNode(code));
+}
+const getAsset = (type) => {
+  switch (type) {
+    case "success":
+      return SuccessIcon;
+    case "info":
+      return InfoIcon;
+    case "warning":
+      return WarningIcon;
+    case "error":
+      return ErrorIcon;
+    default:
+      return null;
+  }
+};
+const bars = Array(12).fill(0);
+const Loader = ({ visible, className }) => {
+  return /* @__PURE__ */ React.createElement("div", {
+    className: [
+      "sonner-loading-wrapper",
+      className
+    ].filter(Boolean).join(" "),
+    "data-visible": visible
+  }, /* @__PURE__ */ React.createElement("div", {
+    className: "sonner-spinner"
+  }, bars.map((_, i) => /* @__PURE__ */ React.createElement("div", {
+    className: "sonner-loading-bar",
+    key: `spinner-bar-${i}`
+  }))));
+};
+const SuccessIcon = /* @__PURE__ */ React.createElement("svg", {
+  xmlns: "http://www.w3.org/2000/svg",
+  viewBox: "0 0 20 20",
+  fill: "currentColor",
+  height: "20",
+  width: "20"
+}, /* @__PURE__ */ React.createElement("path", {
+  fillRule: "evenodd",
+  d: "M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z",
+  clipRule: "evenodd"
+}));
+const WarningIcon = /* @__PURE__ */ React.createElement("svg", {
+  xmlns: "http://www.w3.org/2000/svg",
+  viewBox: "0 0 24 24",
+  fill: "currentColor",
+  height: "20",
+  width: "20"
+}, /* @__PURE__ */ React.createElement("path", {
+  fillRule: "evenodd",
+  d: "M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003zM12 8.25a.75.75 0 01.75.75v3.75a.75.75 0 01-1.5 0V9a.75.75 0 01.75-.75zm0 8.25a.75.75 0 100-1.5.75.75 0 000 1.5z",
+  clipRule: "evenodd"
+}));
+const InfoIcon = /* @__PURE__ */ React.createElement("svg", {
+  xmlns: "http://www.w3.org/2000/svg",
+  viewBox: "0 0 20 20",
+  fill: "currentColor",
+  height: "20",
+  width: "20"
+}, /* @__PURE__ */ React.createElement("path", {
+  fillRule: "evenodd",
+  d: "M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z",
+  clipRule: "evenodd"
+}));
+const ErrorIcon = /* @__PURE__ */ React.createElement("svg", {
+  xmlns: "http://www.w3.org/2000/svg",
+  viewBox: "0 0 20 20",
+  fill: "currentColor",
+  height: "20",
+  width: "20"
+}, /* @__PURE__ */ React.createElement("path", {
+  fillRule: "evenodd",
+  d: "M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0110 5zm0 10a1 1 0 100-2 1 1 0 000 2z",
+  clipRule: "evenodd"
+}));
+const CloseIcon = /* @__PURE__ */ React.createElement("svg", {
+  xmlns: "http://www.w3.org/2000/svg",
+  width: "12",
+  height: "12",
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "1.5",
+  strokeLinecap: "round",
+  strokeLinejoin: "round"
+}, /* @__PURE__ */ React.createElement("line", {
+  x1: "18",
+  y1: "6",
+  x2: "6",
+  y2: "18"
+}), /* @__PURE__ */ React.createElement("line", {
+  x1: "6",
+  y1: "6",
+  x2: "18",
+  y2: "18"
+}));
+const useIsDocumentHidden = () => {
+  const [isDocumentHidden, setIsDocumentHidden] = React.useState(document.hidden);
+  React.useEffect(() => {
+    const callback = () => {
+      setIsDocumentHidden(document.hidden);
+    };
+    document.addEventListener("visibilitychange", callback);
+    return () => window.removeEventListener("visibilitychange", callback);
+  }, []);
+  return isDocumentHidden;
+};
+let toastsCounter = 1;
+class Observer {
+  constructor() {
+    this.subscribe = (subscriber) => {
+      this.subscribers.push(subscriber);
+      return () => {
+        const index = this.subscribers.indexOf(subscriber);
+        this.subscribers.splice(index, 1);
+      };
+    };
+    this.publish = (data) => {
+      this.subscribers.forEach((subscriber) => subscriber(data));
+    };
+    this.addToast = (data) => {
+      this.publish(data);
+      this.toasts = [
+        ...this.toasts,
+        data
+      ];
+    };
+    this.create = (data) => {
+      var _data_id;
+      const { message, ...rest } = data;
+      const id = typeof (data == null ? void 0 : data.id) === "number" || ((_data_id = data.id) == null ? void 0 : _data_id.length) > 0 ? data.id : toastsCounter++;
+      const alreadyExists = this.toasts.find((toast2) => {
+        return toast2.id === id;
+      });
+      const dismissible = data.dismissible === void 0 ? true : data.dismissible;
+      if (this.dismissedToasts.has(id)) {
+        this.dismissedToasts.delete(id);
+      }
+      if (alreadyExists) {
+        this.toasts = this.toasts.map((toast2) => {
+          if (toast2.id === id) {
+            this.publish({
+              ...toast2,
+              ...data,
+              id,
+              title: message
+            });
+            return {
+              ...toast2,
+              ...data,
+              id,
+              dismissible,
+              title: message
+            };
+          }
+          return toast2;
+        });
+      } else {
+        this.addToast({
+          title: message,
+          ...rest,
+          dismissible,
+          id
+        });
+      }
+      return id;
+    };
+    this.dismiss = (id) => {
+      if (id) {
+        this.dismissedToasts.add(id);
+        requestAnimationFrame(() => this.subscribers.forEach((subscriber) => subscriber({
+          id,
+          dismiss: true
+        })));
+      } else {
+        this.toasts.forEach((toast2) => {
+          this.subscribers.forEach((subscriber) => subscriber({
+            id: toast2.id,
+            dismiss: true
+          }));
+        });
+      }
+      return id;
+    };
+    this.message = (message, data) => {
+      return this.create({
+        ...data,
+        message
+      });
+    };
+    this.error = (message, data) => {
+      return this.create({
+        ...data,
+        message,
+        type: "error"
+      });
+    };
+    this.success = (message, data) => {
+      return this.create({
+        ...data,
+        type: "success",
+        message
+      });
+    };
+    this.info = (message, data) => {
+      return this.create({
+        ...data,
+        type: "info",
+        message
+      });
+    };
+    this.warning = (message, data) => {
+      return this.create({
+        ...data,
+        type: "warning",
+        message
+      });
+    };
+    this.loading = (message, data) => {
+      return this.create({
+        ...data,
+        type: "loading",
+        message
+      });
+    };
+    this.promise = (promise, data) => {
+      if (!data) {
+        return;
+      }
+      let id = void 0;
+      if (data.loading !== void 0) {
+        id = this.create({
+          ...data,
+          promise,
+          type: "loading",
+          message: data.loading,
+          description: typeof data.description !== "function" ? data.description : void 0
+        });
+      }
+      const p = Promise.resolve(promise instanceof Function ? promise() : promise);
+      let shouldDismiss = id !== void 0;
+      let result;
+      const originalPromise = p.then(async (response) => {
+        result = [
+          "resolve",
+          response
+        ];
+        const isReactElementResponse = React.isValidElement(response);
+        if (isReactElementResponse) {
+          shouldDismiss = false;
+          this.create({
+            id,
+            type: "default",
+            message: response
+          });
+        } else if (isHttpResponse(response) && !response.ok) {
+          shouldDismiss = false;
+          const promiseData = typeof data.error === "function" ? await data.error(`HTTP error! status: ${response.status}`) : data.error;
+          const description = typeof data.description === "function" ? await data.description(`HTTP error! status: ${response.status}`) : data.description;
+          const isExtendedResult = typeof promiseData === "object" && !React.isValidElement(promiseData);
+          const toastSettings = isExtendedResult ? promiseData : {
+            message: promiseData
+          };
+          this.create({
+            id,
+            type: "error",
+            description,
+            ...toastSettings
+          });
+        } else if (response instanceof Error) {
+          shouldDismiss = false;
+          const promiseData = typeof data.error === "function" ? await data.error(response) : data.error;
+          const description = typeof data.description === "function" ? await data.description(response) : data.description;
+          const isExtendedResult = typeof promiseData === "object" && !React.isValidElement(promiseData);
+          const toastSettings = isExtendedResult ? promiseData : {
+            message: promiseData
+          };
+          this.create({
+            id,
+            type: "error",
+            description,
+            ...toastSettings
+          });
+        } else if (data.success !== void 0) {
+          shouldDismiss = false;
+          const promiseData = typeof data.success === "function" ? await data.success(response) : data.success;
+          const description = typeof data.description === "function" ? await data.description(response) : data.description;
+          const isExtendedResult = typeof promiseData === "object" && !React.isValidElement(promiseData);
+          const toastSettings = isExtendedResult ? promiseData : {
+            message: promiseData
+          };
+          this.create({
+            id,
+            type: "success",
+            description,
+            ...toastSettings
+          });
+        }
+      }).catch(async (error) => {
+        result = [
+          "reject",
+          error
+        ];
+        if (data.error !== void 0) {
+          shouldDismiss = false;
+          const promiseData = typeof data.error === "function" ? await data.error(error) : data.error;
+          const description = typeof data.description === "function" ? await data.description(error) : data.description;
+          const isExtendedResult = typeof promiseData === "object" && !React.isValidElement(promiseData);
+          const toastSettings = isExtendedResult ? promiseData : {
+            message: promiseData
+          };
+          this.create({
+            id,
+            type: "error",
+            description,
+            ...toastSettings
+          });
+        }
+      }).finally(() => {
+        if (shouldDismiss) {
+          this.dismiss(id);
+          id = void 0;
+        }
+        data.finally == null ? void 0 : data.finally.call(data);
+      });
+      const unwrap = () => new Promise((resolve, reject) => originalPromise.then(() => result[0] === "reject" ? reject(result[1]) : resolve(result[1])).catch(reject));
+      if (typeof id !== "string" && typeof id !== "number") {
+        return {
+          unwrap
+        };
+      } else {
+        return Object.assign(id, {
+          unwrap
+        });
+      }
+    };
+    this.custom = (jsx, data) => {
+      const id = (data == null ? void 0 : data.id) || toastsCounter++;
+      this.create({
+        jsx: jsx(id),
+        id,
+        ...data
+      });
+      return id;
+    };
+    this.getActiveToasts = () => {
+      return this.toasts.filter((toast2) => !this.dismissedToasts.has(toast2.id));
+    };
+    this.subscribers = [];
+    this.toasts = [];
+    this.dismissedToasts = /* @__PURE__ */ new Set();
+  }
+}
+const ToastState = new Observer();
+const toastFunction = (message, data) => {
+  const id = (data == null ? void 0 : data.id) || toastsCounter++;
+  ToastState.addToast({
+    title: message,
+    ...data,
+    id
+  });
+  return id;
+};
+const isHttpResponse = (data) => {
+  return data && typeof data === "object" && "ok" in data && typeof data.ok === "boolean" && "status" in data && typeof data.status === "number";
+};
+const basicToast = toastFunction;
+const getHistory = () => ToastState.toasts;
+const getToasts = () => ToastState.getActiveToasts();
+const toast = Object.assign(basicToast, {
+  success: ToastState.success,
+  info: ToastState.info,
+  warning: ToastState.warning,
+  error: ToastState.error,
+  custom: ToastState.custom,
+  message: ToastState.message,
+  promise: ToastState.promise,
+  dismiss: ToastState.dismiss,
+  loading: ToastState.loading
+}, {
+  getHistory,
+  getToasts
+});
+__insertCSS("[data-sonner-toaster][dir=ltr],html[dir=ltr]{--toast-icon-margin-start:-3px;--toast-icon-margin-end:4px;--toast-svg-margin-start:-1px;--toast-svg-margin-end:0px;--toast-button-margin-start:auto;--toast-button-margin-end:0;--toast-close-button-start:0;--toast-close-button-end:unset;--toast-close-button-transform:translate(-35%, -35%)}[data-sonner-toaster][dir=rtl],html[dir=rtl]{--toast-icon-margin-start:4px;--toast-icon-margin-end:-3px;--toast-svg-margin-start:0px;--toast-svg-margin-end:-1px;--toast-button-margin-start:0;--toast-button-margin-end:auto;--toast-close-button-start:unset;--toast-close-button-end:0;--toast-close-button-transform:translate(35%, -35%)}[data-sonner-toaster]{position:fixed;width:var(--width);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica Neue,Arial,Noto Sans,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji;--gray1:hsl(0, 0%, 99%);--gray2:hsl(0, 0%, 97.3%);--gray3:hsl(0, 0%, 95.1%);--gray4:hsl(0, 0%, 93%);--gray5:hsl(0, 0%, 90.9%);--gray6:hsl(0, 0%, 88.7%);--gray7:hsl(0, 0%, 85.8%);--gray8:hsl(0, 0%, 78%);--gray9:hsl(0, 0%, 56.1%);--gray10:hsl(0, 0%, 52.3%);--gray11:hsl(0, 0%, 43.5%);--gray12:hsl(0, 0%, 9%);--border-radius:8px;box-sizing:border-box;padding:0;margin:0;list-style:none;outline:0;z-index:999999999;transition:transform .4s ease}@media (hover:none) and (pointer:coarse){[data-sonner-toaster][data-lifted=true]{transform:none}}[data-sonner-toaster][data-x-position=right]{right:var(--offset-right)}[data-sonner-toaster][data-x-position=left]{left:var(--offset-left)}[data-sonner-toaster][data-x-position=center]{left:50%;transform:translateX(-50%)}[data-sonner-toaster][data-y-position=top]{top:var(--offset-top)}[data-sonner-toaster][data-y-position=bottom]{bottom:var(--offset-bottom)}[data-sonner-toast]{--y:translateY(100%);--lift-amount:calc(var(--lift) * var(--gap));z-index:var(--z-index);position:absolute;opacity:0;transform:var(--y);touch-action:none;transition:transform .4s,opacity .4s,height .4s,box-shadow .2s;box-sizing:border-box;outline:0;overflow-wrap:anywhere}[data-sonner-toast][data-styled=true]{padding:16px;background:var(--normal-bg);border:1px solid var(--normal-border);color:var(--normal-text);border-radius:var(--border-radius);box-shadow:0 4px 12px rgba(0,0,0,.1);width:var(--width);font-size:13px;display:flex;align-items:center;gap:6px}[data-sonner-toast]:focus-visible{box-shadow:0 4px 12px rgba(0,0,0,.1),0 0 0 2px rgba(0,0,0,.2)}[data-sonner-toast][data-y-position=top]{top:0;--y:translateY(-100%);--lift:1;--lift-amount:calc(1 * var(--gap))}[data-sonner-toast][data-y-position=bottom]{bottom:0;--y:translateY(100%);--lift:-1;--lift-amount:calc(var(--lift) * var(--gap))}[data-sonner-toast][data-styled=true] [data-description]{font-weight:400;line-height:1.4;color:#3f3f3f}[data-rich-colors=true][data-sonner-toast][data-styled=true] [data-description]{color:inherit}[data-sonner-toaster][data-sonner-theme=dark] [data-description]{color:#e8e8e8}[data-sonner-toast][data-styled=true] [data-title]{font-weight:500;line-height:1.5;color:inherit}[data-sonner-toast][data-styled=true] [data-icon]{display:flex;height:16px;width:16px;position:relative;justify-content:flex-start;align-items:center;flex-shrink:0;margin-left:var(--toast-icon-margin-start);margin-right:var(--toast-icon-margin-end)}[data-sonner-toast][data-promise=true] [data-icon]>svg{opacity:0;transform:scale(.8);transform-origin:center;animation:sonner-fade-in .3s ease forwards}[data-sonner-toast][data-styled=true] [data-icon]>*{flex-shrink:0}[data-sonner-toast][data-styled=true] [data-icon] svg{margin-left:var(--toast-svg-margin-start);margin-right:var(--toast-svg-margin-end)}[data-sonner-toast][data-styled=true] [data-content]{display:flex;flex-direction:column;gap:2px}[data-sonner-toast][data-styled=true] [data-button]{border-radius:4px;padding-left:8px;padding-right:8px;height:24px;font-size:12px;color:var(--normal-bg);background:var(--normal-text);margin-left:var(--toast-button-margin-start);margin-right:var(--toast-button-margin-end);border:none;font-weight:500;cursor:pointer;outline:0;display:flex;align-items:center;flex-shrink:0;transition:opacity .4s,box-shadow .2s}[data-sonner-toast][data-styled=true] [data-button]:focus-visible{box-shadow:0 0 0 2px rgba(0,0,0,.4)}[data-sonner-toast][data-styled=true] [data-button]:first-of-type{margin-left:var(--toast-button-margin-start);margin-right:var(--toast-button-margin-end)}[data-sonner-toast][data-styled=true] [data-cancel]{color:var(--normal-text);background:rgba(0,0,0,.08)}[data-sonner-toaster][data-sonner-theme=dark] [data-sonner-toast][data-styled=true] [data-cancel]{background:rgba(255,255,255,.3)}[data-sonner-toast][data-styled=true] [data-close-button]{position:absolute;left:var(--toast-close-button-start);right:var(--toast-close-button-end);top:0;height:20px;width:20px;display:flex;justify-content:center;align-items:center;padding:0;color:var(--gray12);background:var(--normal-bg);border:1px solid var(--gray4);transform:var(--toast-close-button-transform);border-radius:50%;cursor:pointer;z-index:1;transition:opacity .1s,background .2s,border-color .2s}[data-sonner-toast][data-styled=true] [data-close-button]:focus-visible{box-shadow:0 4px 12px rgba(0,0,0,.1),0 0 0 2px rgba(0,0,0,.2)}[data-sonner-toast][data-styled=true] [data-disabled=true]{cursor:not-allowed}[data-sonner-toast][data-styled=true]:hover [data-close-button]:hover{background:var(--gray2);border-color:var(--gray5)}[data-sonner-toast][data-swiping=true]::before{content:'';position:absolute;left:-100%;right:-100%;height:100%;z-index:-1}[data-sonner-toast][data-y-position=top][data-swiping=true]::before{bottom:50%;transform:scaleY(3) translateY(50%)}[data-sonner-toast][data-y-position=bottom][data-swiping=true]::before{top:50%;transform:scaleY(3) translateY(-50%)}[data-sonner-toast][data-swiping=false][data-removed=true]::before{content:'';position:absolute;inset:0;transform:scaleY(2)}[data-sonner-toast][data-expanded=true]::after{content:'';position:absolute;left:0;height:calc(var(--gap) + 1px);bottom:100%;width:100%}[data-sonner-toast][data-mounted=true]{--y:translateY(0);opacity:1}[data-sonner-toast][data-expanded=false][data-front=false]{--scale:var(--toasts-before) * 0.05 + 1;--y:translateY(calc(var(--lift-amount) * var(--toasts-before))) scale(calc(-1 * var(--scale)));height:var(--front-toast-height)}[data-sonner-toast]>*{transition:opacity .4s}[data-sonner-toast][data-x-position=right]{right:0}[data-sonner-toast][data-x-position=left]{left:0}[data-sonner-toast][data-expanded=false][data-front=false][data-styled=true]>*{opacity:0}[data-sonner-toast][data-visible=false]{opacity:0;pointer-events:none}[data-sonner-toast][data-mounted=true][data-expanded=true]{--y:translateY(calc(var(--lift) * var(--offset)));height:var(--initial-height)}[data-sonner-toast][data-removed=true][data-front=true][data-swipe-out=false]{--y:translateY(calc(var(--lift) * -100%));opacity:0}[data-sonner-toast][data-removed=true][data-front=false][data-swipe-out=false][data-expanded=true]{--y:translateY(calc(var(--lift) * var(--offset) + var(--lift) * -100%));opacity:0}[data-sonner-toast][data-removed=true][data-front=false][data-swipe-out=false][data-expanded=false]{--y:translateY(40%);opacity:0;transition:transform .5s,opacity .2s}[data-sonner-toast][data-removed=true][data-front=false]::before{height:calc(var(--initial-height) + 20%)}[data-sonner-toast][data-swiping=true]{transform:var(--y) translateY(var(--swipe-amount-y,0)) translateX(var(--swipe-amount-x,0));transition:none}[data-sonner-toast][data-swiped=true]{user-select:none}[data-sonner-toast][data-swipe-out=true][data-y-position=bottom],[data-sonner-toast][data-swipe-out=true][data-y-position=top]{animation-duration:.2s;animation-timing-function:ease-out;animation-fill-mode:forwards}[data-sonner-toast][data-swipe-out=true][data-swipe-direction=left]{animation-name:swipe-out-left}[data-sonner-toast][data-swipe-out=true][data-swipe-direction=right]{animation-name:swipe-out-right}[data-sonner-toast][data-swipe-out=true][data-swipe-direction=up]{animation-name:swipe-out-up}[data-sonner-toast][data-swipe-out=true][data-swipe-direction=down]{animation-name:swipe-out-down}@keyframes swipe-out-left{from{transform:var(--y) translateX(var(--swipe-amount-x));opacity:1}to{transform:var(--y) translateX(calc(var(--swipe-amount-x) - 100%));opacity:0}}@keyframes swipe-out-right{from{transform:var(--y) translateX(var(--swipe-amount-x));opacity:1}to{transform:var(--y) translateX(calc(var(--swipe-amount-x) + 100%));opacity:0}}@keyframes swipe-out-up{from{transform:var(--y) translateY(var(--swipe-amount-y));opacity:1}to{transform:var(--y) translateY(calc(var(--swipe-amount-y) - 100%));opacity:0}}@keyframes swipe-out-down{from{transform:var(--y) translateY(var(--swipe-amount-y));opacity:1}to{transform:var(--y) translateY(calc(var(--swipe-amount-y) + 100%));opacity:0}}@media (max-width:600px){[data-sonner-toaster]{position:fixed;right:var(--mobile-offset-right);left:var(--mobile-offset-left);width:100%}[data-sonner-toaster][dir=rtl]{left:calc(var(--mobile-offset-left) * -1)}[data-sonner-toaster] [data-sonner-toast]{left:0;right:0;width:calc(100% - var(--mobile-offset-left) * 2)}[data-sonner-toaster][data-x-position=left]{left:var(--mobile-offset-left)}[data-sonner-toaster][data-y-position=bottom]{bottom:var(--mobile-offset-bottom)}[data-sonner-toaster][data-y-position=top]{top:var(--mobile-offset-top)}[data-sonner-toaster][data-x-position=center]{left:var(--mobile-offset-left);right:var(--mobile-offset-right);transform:none}}[data-sonner-toaster][data-sonner-theme=light]{--normal-bg:#fff;--normal-border:var(--gray4);--normal-text:var(--gray12);--success-bg:hsl(143, 85%, 96%);--success-border:hsl(145, 92%, 87%);--success-text:hsl(140, 100%, 27%);--info-bg:hsl(208, 100%, 97%);--info-border:hsl(221, 91%, 93%);--info-text:hsl(210, 92%, 45%);--warning-bg:hsl(49, 100%, 97%);--warning-border:hsl(49, 91%, 84%);--warning-text:hsl(31, 92%, 45%);--error-bg:hsl(359, 100%, 97%);--error-border:hsl(359, 100%, 94%);--error-text:hsl(360, 100%, 45%)}[data-sonner-toaster][data-sonner-theme=light] [data-sonner-toast][data-invert=true]{--normal-bg:#000;--normal-border:hsl(0, 0%, 20%);--normal-text:var(--gray1)}[data-sonner-toaster][data-sonner-theme=dark] [data-sonner-toast][data-invert=true]{--normal-bg:#fff;--normal-border:var(--gray3);--normal-text:var(--gray12)}[data-sonner-toaster][data-sonner-theme=dark]{--normal-bg:#000;--normal-bg-hover:hsl(0, 0%, 12%);--normal-border:hsl(0, 0%, 20%);--normal-border-hover:hsl(0, 0%, 25%);--normal-text:var(--gray1);--success-bg:hsl(150, 100%, 6%);--success-border:hsl(147, 100%, 12%);--success-text:hsl(150, 86%, 65%);--info-bg:hsl(215, 100%, 6%);--info-border:hsl(223, 43%, 17%);--info-text:hsl(216, 87%, 65%);--warning-bg:hsl(64, 100%, 6%);--warning-border:hsl(60, 100%, 9%);--warning-text:hsl(46, 87%, 65%);--error-bg:hsl(358, 76%, 10%);--error-border:hsl(357, 89%, 16%);--error-text:hsl(358, 100%, 81%)}[data-sonner-toaster][data-sonner-theme=dark] [data-sonner-toast] [data-close-button]{background:var(--normal-bg);border-color:var(--normal-border);color:var(--normal-text)}[data-sonner-toaster][data-sonner-theme=dark] [data-sonner-toast] [data-close-button]:hover{background:var(--normal-bg-hover);border-color:var(--normal-border-hover)}[data-rich-colors=true][data-sonner-toast][data-type=success]{background:var(--success-bg);border-color:var(--success-border);color:var(--success-text)}[data-rich-colors=true][data-sonner-toast][data-type=success] [data-close-button]{background:var(--success-bg);border-color:var(--success-border);color:var(--success-text)}[data-rich-colors=true][data-sonner-toast][data-type=info]{background:var(--info-bg);border-color:var(--info-border);color:var(--info-text)}[data-rich-colors=true][data-sonner-toast][data-type=info] [data-close-button]{background:var(--info-bg);border-color:var(--info-border);color:var(--info-text)}[data-rich-colors=true][data-sonner-toast][data-type=warning]{background:var(--warning-bg);border-color:var(--warning-border);color:var(--warning-text)}[data-rich-colors=true][data-sonner-toast][data-type=warning] [data-close-button]{background:var(--warning-bg);border-color:var(--warning-border);color:var(--warning-text)}[data-rich-colors=true][data-sonner-toast][data-type=error]{background:var(--error-bg);border-color:var(--error-border);color:var(--error-text)}[data-rich-colors=true][data-sonner-toast][data-type=error] [data-close-button]{background:var(--error-bg);border-color:var(--error-border);color:var(--error-text)}.sonner-loading-wrapper{--size:16px;height:var(--size);width:var(--size);position:absolute;inset:0;z-index:10}.sonner-loading-wrapper[data-visible=false]{transform-origin:center;animation:sonner-fade-out .2s ease forwards}.sonner-spinner{position:relative;top:50%;left:50%;height:var(--size);width:var(--size)}.sonner-loading-bar{animation:sonner-spin 1.2s linear infinite;background:var(--gray11);border-radius:6px;height:8%;left:-10%;position:absolute;top:-3.9%;width:24%}.sonner-loading-bar:first-child{animation-delay:-1.2s;transform:rotate(.0001deg) translate(146%)}.sonner-loading-bar:nth-child(2){animation-delay:-1.1s;transform:rotate(30deg) translate(146%)}.sonner-loading-bar:nth-child(3){animation-delay:-1s;transform:rotate(60deg) translate(146%)}.sonner-loading-bar:nth-child(4){animation-delay:-.9s;transform:rotate(90deg) translate(146%)}.sonner-loading-bar:nth-child(5){animation-delay:-.8s;transform:rotate(120deg) translate(146%)}.sonner-loading-bar:nth-child(6){animation-delay:-.7s;transform:rotate(150deg) translate(146%)}.sonner-loading-bar:nth-child(7){animation-delay:-.6s;transform:rotate(180deg) translate(146%)}.sonner-loading-bar:nth-child(8){animation-delay:-.5s;transform:rotate(210deg) translate(146%)}.sonner-loading-bar:nth-child(9){animation-delay:-.4s;transform:rotate(240deg) translate(146%)}.sonner-loading-bar:nth-child(10){animation-delay:-.3s;transform:rotate(270deg) translate(146%)}.sonner-loading-bar:nth-child(11){animation-delay:-.2s;transform:rotate(300deg) translate(146%)}.sonner-loading-bar:nth-child(12){animation-delay:-.1s;transform:rotate(330deg) translate(146%)}@keyframes sonner-fade-in{0%{opacity:0;transform:scale(.8)}100%{opacity:1;transform:scale(1)}}@keyframes sonner-fade-out{0%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(.8)}}@keyframes sonner-spin{0%{opacity:1}100%{opacity:.15}}@media (prefers-reduced-motion){.sonner-loading-bar,[data-sonner-toast],[data-sonner-toast]>*{transition:none!important;animation:none!important}}.sonner-loader{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);transform-origin:center;transition:opacity .2s,transform .2s}.sonner-loader[data-visible=false]{opacity:0;transform:scale(.8) translate(-50%,-50%)}");
+function isAction(action) {
+  return action.label !== void 0;
+}
+const VISIBLE_TOASTS_AMOUNT = 3;
+const VIEWPORT_OFFSET = "24px";
+const MOBILE_VIEWPORT_OFFSET = "16px";
+const TOAST_LIFETIME = 4e3;
+const TOAST_WIDTH = 356;
+const GAP = 14;
+const SWIPE_THRESHOLD = 45;
+const TIME_BEFORE_UNMOUNT = 200;
+function cn(...classes) {
+  return classes.filter(Boolean).join(" ");
+}
+function getDefaultSwipeDirections(position) {
+  const [y, x] = position.split("-");
+  const directions = [];
+  if (y) {
+    directions.push(y);
+  }
+  if (x) {
+    directions.push(x);
+  }
+  return directions;
+}
+const Toast = (props) => {
+  var _toast_classNames, _toast_classNames1, _toast_classNames2, _toast_classNames3, _toast_classNames4, _toast_classNames5, _toast_classNames6, _toast_classNames7, _toast_classNames8;
+  const { invert: ToasterInvert, toast: toast2, unstyled, interacting, setHeights, visibleToasts, heights, index, toasts, expanded, removeToast, defaultRichColors, closeButton: closeButtonFromToaster, style, cancelButtonStyle, actionButtonStyle, className = "", descriptionClassName = "", duration: durationFromToaster, position, gap, expandByDefault, classNames, icons, closeButtonAriaLabel = "Close toast" } = props;
+  const [swipeDirection, setSwipeDirection] = React.useState(null);
+  const [swipeOutDirection, setSwipeOutDirection] = React.useState(null);
+  const [mounted, setMounted] = React.useState(false);
+  const [removed, setRemoved] = React.useState(false);
+  const [swiping, setSwiping] = React.useState(false);
+  const [swipeOut, setSwipeOut] = React.useState(false);
+  const [isSwiped, setIsSwiped] = React.useState(false);
+  const [offsetBeforeRemove, setOffsetBeforeRemove] = React.useState(0);
+  const [initialHeight, setInitialHeight] = React.useState(0);
+  const remainingTime = React.useRef(toast2.duration || durationFromToaster || TOAST_LIFETIME);
+  const dragStartTime = React.useRef(null);
+  const toastRef = React.useRef(null);
+  const isFront = index === 0;
+  const isVisible = index + 1 <= visibleToasts;
+  const toastType = toast2.type;
+  const dismissible = toast2.dismissible !== false;
+  const toastClassname = toast2.className || "";
+  const toastDescriptionClassname = toast2.descriptionClassName || "";
+  const heightIndex = React.useMemo(() => heights.findIndex((height) => height.toastId === toast2.id) || 0, [
+    heights,
+    toast2.id
+  ]);
+  const closeButton = React.useMemo(() => {
+    var _toast_closeButton;
+    return (_toast_closeButton = toast2.closeButton) != null ? _toast_closeButton : closeButtonFromToaster;
+  }, [
+    toast2.closeButton,
+    closeButtonFromToaster
+  ]);
+  const duration = React.useMemo(() => toast2.duration || durationFromToaster || TOAST_LIFETIME, [
+    toast2.duration,
+    durationFromToaster
+  ]);
+  const closeTimerStartTimeRef = React.useRef(0);
+  const offset = React.useRef(0);
+  const lastCloseTimerStartTimeRef = React.useRef(0);
+  const pointerStartRef = React.useRef(null);
+  const [y, x] = position.split("-");
+  const toastsHeightBefore = React.useMemo(() => {
+    return heights.reduce((prev, curr, reducerIndex) => {
+      if (reducerIndex >= heightIndex) {
+        return prev;
+      }
+      return prev + curr.height;
+    }, 0);
+  }, [
+    heights,
+    heightIndex
+  ]);
+  const isDocumentHidden = useIsDocumentHidden();
+  const invert = toast2.invert || ToasterInvert;
+  const disabled = toastType === "loading";
+  offset.current = React.useMemo(() => heightIndex * gap + toastsHeightBefore, [
+    heightIndex,
+    toastsHeightBefore
+  ]);
+  React.useEffect(() => {
+    remainingTime.current = duration;
+  }, [
+    duration
+  ]);
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+  React.useEffect(() => {
+    const toastNode = toastRef.current;
+    if (toastNode) {
+      const height = toastNode.getBoundingClientRect().height;
+      setInitialHeight(height);
+      setHeights((h) => [
+        {
+          toastId: toast2.id,
+          height,
+          position: toast2.position
+        },
+        ...h
+      ]);
+      return () => setHeights((h) => h.filter((height2) => height2.toastId !== toast2.id));
+    }
+  }, [
+    setHeights,
+    toast2.id
+  ]);
+  React.useLayoutEffect(() => {
+    if (!mounted) return;
+    const toastNode = toastRef.current;
+    const originalHeight = toastNode.style.height;
+    toastNode.style.height = "auto";
+    const newHeight = toastNode.getBoundingClientRect().height;
+    toastNode.style.height = originalHeight;
+    setInitialHeight(newHeight);
+    setHeights((heights2) => {
+      const alreadyExists = heights2.find((height) => height.toastId === toast2.id);
+      if (!alreadyExists) {
+        return [
+          {
+            toastId: toast2.id,
+            height: newHeight,
+            position: toast2.position
+          },
+          ...heights2
+        ];
+      } else {
+        return heights2.map((height) => height.toastId === toast2.id ? {
+          ...height,
+          height: newHeight
+        } : height);
+      }
+    });
+  }, [
+    mounted,
+    toast2.title,
+    toast2.description,
+    setHeights,
+    toast2.id,
+    toast2.jsx,
+    toast2.action,
+    toast2.cancel
+  ]);
+  const deleteToast = React.useCallback(() => {
+    setRemoved(true);
+    setOffsetBeforeRemove(offset.current);
+    setHeights((h) => h.filter((height) => height.toastId !== toast2.id));
+    setTimeout(() => {
+      removeToast(toast2);
+    }, TIME_BEFORE_UNMOUNT);
+  }, [
+    toast2,
+    removeToast,
+    setHeights,
+    offset
+  ]);
+  React.useEffect(() => {
+    if (toast2.promise && toastType === "loading" || toast2.duration === Infinity || toast2.type === "loading") return;
+    let timeoutId;
+    const pauseTimer = () => {
+      if (lastCloseTimerStartTimeRef.current < closeTimerStartTimeRef.current) {
+        const elapsedTime = (/* @__PURE__ */ new Date()).getTime() - closeTimerStartTimeRef.current;
+        remainingTime.current = remainingTime.current - elapsedTime;
+      }
+      lastCloseTimerStartTimeRef.current = (/* @__PURE__ */ new Date()).getTime();
+    };
+    const startTimer = () => {
+      if (remainingTime.current === Infinity) return;
+      closeTimerStartTimeRef.current = (/* @__PURE__ */ new Date()).getTime();
+      timeoutId = setTimeout(() => {
+        toast2.onAutoClose == null ? void 0 : toast2.onAutoClose.call(toast2, toast2);
+        deleteToast();
+      }, remainingTime.current);
+    };
+    if (expanded || interacting || isDocumentHidden) {
+      pauseTimer();
+    } else {
+      startTimer();
+    }
+    return () => clearTimeout(timeoutId);
+  }, [
+    expanded,
+    interacting,
+    toast2,
+    toastType,
+    isDocumentHidden,
+    deleteToast
+  ]);
+  React.useEffect(() => {
+    if (toast2.delete) {
+      deleteToast();
+      toast2.onDismiss == null ? void 0 : toast2.onDismiss.call(toast2, toast2);
+    }
+  }, [
+    deleteToast,
+    toast2.delete
+  ]);
+  function getLoadingIcon() {
+    var _toast_classNames9;
+    if (icons == null ? void 0 : icons.loading) {
+      var _toast_classNames12;
+      return /* @__PURE__ */ React.createElement("div", {
+        className: cn(classNames == null ? void 0 : classNames.loader, toast2 == null ? void 0 : (_toast_classNames12 = toast2.classNames) == null ? void 0 : _toast_classNames12.loader, "sonner-loader"),
+        "data-visible": toastType === "loading"
+      }, icons.loading);
+    }
+    return /* @__PURE__ */ React.createElement(Loader, {
+      className: cn(classNames == null ? void 0 : classNames.loader, toast2 == null ? void 0 : (_toast_classNames9 = toast2.classNames) == null ? void 0 : _toast_classNames9.loader),
+      visible: toastType === "loading"
+    });
+  }
+  const icon = toast2.icon || (icons == null ? void 0 : icons[toastType]) || getAsset(toastType);
+  var _toast_richColors, _icons_close;
+  return /* @__PURE__ */ React.createElement("li", {
+    tabIndex: 0,
+    ref: toastRef,
+    className: cn(className, toastClassname, classNames == null ? void 0 : classNames.toast, toast2 == null ? void 0 : (_toast_classNames = toast2.classNames) == null ? void 0 : _toast_classNames.toast, classNames == null ? void 0 : classNames.default, classNames == null ? void 0 : classNames[toastType], toast2 == null ? void 0 : (_toast_classNames1 = toast2.classNames) == null ? void 0 : _toast_classNames1[toastType]),
+    "data-sonner-toast": "",
+    "data-rich-colors": (_toast_richColors = toast2.richColors) != null ? _toast_richColors : defaultRichColors,
+    "data-styled": !Boolean(toast2.jsx || toast2.unstyled || unstyled),
+    "data-mounted": mounted,
+    "data-promise": Boolean(toast2.promise),
+    "data-swiped": isSwiped,
+    "data-removed": removed,
+    "data-visible": isVisible,
+    "data-y-position": y,
+    "data-x-position": x,
+    "data-index": index,
+    "data-front": isFront,
+    "data-swiping": swiping,
+    "data-dismissible": dismissible,
+    "data-type": toastType,
+    "data-invert": invert,
+    "data-swipe-out": swipeOut,
+    "data-swipe-direction": swipeOutDirection,
+    "data-expanded": Boolean(expanded || expandByDefault && mounted),
+    "data-testid": toast2.testId,
+    style: {
+      "--index": index,
+      "--toasts-before": index,
+      "--z-index": toasts.length - index,
+      "--offset": `${removed ? offsetBeforeRemove : offset.current}px`,
+      "--initial-height": expandByDefault ? "auto" : `${initialHeight}px`,
+      ...style,
+      ...toast2.style
+    },
+    onDragEnd: () => {
+      setSwiping(false);
+      setSwipeDirection(null);
+      pointerStartRef.current = null;
+    },
+    onPointerDown: (event) => {
+      if (event.button === 2) return;
+      if (disabled || !dismissible) return;
+      dragStartTime.current = /* @__PURE__ */ new Date();
+      setOffsetBeforeRemove(offset.current);
+      event.target.setPointerCapture(event.pointerId);
+      if (event.target.tagName === "BUTTON") return;
+      setSwiping(true);
+      pointerStartRef.current = {
+        x: event.clientX,
+        y: event.clientY
+      };
+    },
+    onPointerUp: () => {
+      var _toastRef_current, _toastRef_current1, _dragStartTime_current;
+      if (swipeOut || !dismissible) return;
+      pointerStartRef.current = null;
+      const swipeAmountX = Number(((_toastRef_current = toastRef.current) == null ? void 0 : _toastRef_current.style.getPropertyValue("--swipe-amount-x").replace("px", "")) || 0);
+      const swipeAmountY = Number(((_toastRef_current1 = toastRef.current) == null ? void 0 : _toastRef_current1.style.getPropertyValue("--swipe-amount-y").replace("px", "")) || 0);
+      const timeTaken = (/* @__PURE__ */ new Date()).getTime() - ((_dragStartTime_current = dragStartTime.current) == null ? void 0 : _dragStartTime_current.getTime());
+      const swipeAmount = swipeDirection === "x" ? swipeAmountX : swipeAmountY;
+      const velocity = Math.abs(swipeAmount) / timeTaken;
+      if (Math.abs(swipeAmount) >= SWIPE_THRESHOLD || velocity > 0.11) {
+        setOffsetBeforeRemove(offset.current);
+        toast2.onDismiss == null ? void 0 : toast2.onDismiss.call(toast2, toast2);
+        if (swipeDirection === "x") {
+          setSwipeOutDirection(swipeAmountX > 0 ? "right" : "left");
+        } else {
+          setSwipeOutDirection(swipeAmountY > 0 ? "down" : "up");
+        }
+        deleteToast();
+        setSwipeOut(true);
+        return;
+      } else {
+        var _toastRef_current2, _toastRef_current3;
+        (_toastRef_current2 = toastRef.current) == null ? void 0 : _toastRef_current2.style.setProperty("--swipe-amount-x", `0px`);
+        (_toastRef_current3 = toastRef.current) == null ? void 0 : _toastRef_current3.style.setProperty("--swipe-amount-y", `0px`);
+      }
+      setIsSwiped(false);
+      setSwiping(false);
+      setSwipeDirection(null);
+    },
+    onPointerMove: (event) => {
+      var _window_getSelection, _toastRef_current, _toastRef_current1;
+      if (!pointerStartRef.current || !dismissible) return;
+      const isHighlighted = ((_window_getSelection = window.getSelection()) == null ? void 0 : _window_getSelection.toString().length) > 0;
+      if (isHighlighted) return;
+      const yDelta = event.clientY - pointerStartRef.current.y;
+      const xDelta = event.clientX - pointerStartRef.current.x;
+      var _props_swipeDirections;
+      const swipeDirections = (_props_swipeDirections = props.swipeDirections) != null ? _props_swipeDirections : getDefaultSwipeDirections(position);
+      if (!swipeDirection && (Math.abs(xDelta) > 1 || Math.abs(yDelta) > 1)) {
+        setSwipeDirection(Math.abs(xDelta) > Math.abs(yDelta) ? "x" : "y");
+      }
+      let swipeAmount = {
+        x: 0,
+        y: 0
+      };
+      const getDampening = (delta) => {
+        const factor = Math.abs(delta) / 20;
+        return 1 / (1.5 + factor);
+      };
+      if (swipeDirection === "y") {
+        if (swipeDirections.includes("top") || swipeDirections.includes("bottom")) {
+          if (swipeDirections.includes("top") && yDelta < 0 || swipeDirections.includes("bottom") && yDelta > 0) {
+            swipeAmount.y = yDelta;
+          } else {
+            const dampenedDelta = yDelta * getDampening(yDelta);
+            swipeAmount.y = Math.abs(dampenedDelta) < Math.abs(yDelta) ? dampenedDelta : yDelta;
+          }
+        }
+      } else if (swipeDirection === "x") {
+        if (swipeDirections.includes("left") || swipeDirections.includes("right")) {
+          if (swipeDirections.includes("left") && xDelta < 0 || swipeDirections.includes("right") && xDelta > 0) {
+            swipeAmount.x = xDelta;
+          } else {
+            const dampenedDelta = xDelta * getDampening(xDelta);
+            swipeAmount.x = Math.abs(dampenedDelta) < Math.abs(xDelta) ? dampenedDelta : xDelta;
+          }
+        }
+      }
+      if (Math.abs(swipeAmount.x) > 0 || Math.abs(swipeAmount.y) > 0) {
+        setIsSwiped(true);
+      }
+      (_toastRef_current = toastRef.current) == null ? void 0 : _toastRef_current.style.setProperty("--swipe-amount-x", `${swipeAmount.x}px`);
+      (_toastRef_current1 = toastRef.current) == null ? void 0 : _toastRef_current1.style.setProperty("--swipe-amount-y", `${swipeAmount.y}px`);
+    }
+  }, closeButton && !toast2.jsx && toastType !== "loading" ? /* @__PURE__ */ React.createElement("button", {
+    "aria-label": closeButtonAriaLabel,
+    "data-disabled": disabled,
+    "data-close-button": true,
+    onClick: disabled || !dismissible ? () => {
+    } : () => {
+      deleteToast();
+      toast2.onDismiss == null ? void 0 : toast2.onDismiss.call(toast2, toast2);
+    },
+    className: cn(classNames == null ? void 0 : classNames.closeButton, toast2 == null ? void 0 : (_toast_classNames2 = toast2.classNames) == null ? void 0 : _toast_classNames2.closeButton)
+  }, (_icons_close = icons == null ? void 0 : icons.close) != null ? _icons_close : CloseIcon) : null, (toastType || toast2.icon || toast2.promise) && toast2.icon !== null && ((icons == null ? void 0 : icons[toastType]) !== null || toast2.icon) ? /* @__PURE__ */ React.createElement("div", {
+    "data-icon": "",
+    className: cn(classNames == null ? void 0 : classNames.icon, toast2 == null ? void 0 : (_toast_classNames3 = toast2.classNames) == null ? void 0 : _toast_classNames3.icon)
+  }, toast2.promise || toast2.type === "loading" && !toast2.icon ? toast2.icon || getLoadingIcon() : null, toast2.type !== "loading" ? icon : null) : null, /* @__PURE__ */ React.createElement("div", {
+    "data-content": "",
+    className: cn(classNames == null ? void 0 : classNames.content, toast2 == null ? void 0 : (_toast_classNames4 = toast2.classNames) == null ? void 0 : _toast_classNames4.content)
+  }, /* @__PURE__ */ React.createElement("div", {
+    "data-title": "",
+    className: cn(classNames == null ? void 0 : classNames.title, toast2 == null ? void 0 : (_toast_classNames5 = toast2.classNames) == null ? void 0 : _toast_classNames5.title)
+  }, toast2.jsx ? toast2.jsx : typeof toast2.title === "function" ? toast2.title() : toast2.title), toast2.description ? /* @__PURE__ */ React.createElement("div", {
+    "data-description": "",
+    className: cn(descriptionClassName, toastDescriptionClassname, classNames == null ? void 0 : classNames.description, toast2 == null ? void 0 : (_toast_classNames6 = toast2.classNames) == null ? void 0 : _toast_classNames6.description)
+  }, typeof toast2.description === "function" ? toast2.description() : toast2.description) : null), /* @__PURE__ */ React.isValidElement(toast2.cancel) ? toast2.cancel : toast2.cancel && isAction(toast2.cancel) ? /* @__PURE__ */ React.createElement("button", {
+    "data-button": true,
+    "data-cancel": true,
+    style: toast2.cancelButtonStyle || cancelButtonStyle,
+    onClick: (event) => {
+      if (!isAction(toast2.cancel)) return;
+      if (!dismissible) return;
+      toast2.cancel.onClick == null ? void 0 : toast2.cancel.onClick.call(toast2.cancel, event);
+      deleteToast();
+    },
+    className: cn(classNames == null ? void 0 : classNames.cancelButton, toast2 == null ? void 0 : (_toast_classNames7 = toast2.classNames) == null ? void 0 : _toast_classNames7.cancelButton)
+  }, toast2.cancel.label) : null, /* @__PURE__ */ React.isValidElement(toast2.action) ? toast2.action : toast2.action && isAction(toast2.action) ? /* @__PURE__ */ React.createElement("button", {
+    "data-button": true,
+    "data-action": true,
+    style: toast2.actionButtonStyle || actionButtonStyle,
+    onClick: (event) => {
+      if (!isAction(toast2.action)) return;
+      toast2.action.onClick == null ? void 0 : toast2.action.onClick.call(toast2.action, event);
+      if (event.defaultPrevented) return;
+      deleteToast();
+    },
+    className: cn(classNames == null ? void 0 : classNames.actionButton, toast2 == null ? void 0 : (_toast_classNames8 = toast2.classNames) == null ? void 0 : _toast_classNames8.actionButton)
+  }, toast2.action.label) : null);
+};
+function getDocumentDirection() {
+  if (typeof window === "undefined") return "ltr";
+  if (typeof document === "undefined") return "ltr";
+  const dirAttribute = document.documentElement.getAttribute("dir");
+  if (dirAttribute === "auto" || !dirAttribute) {
+    return window.getComputedStyle(document.documentElement).direction;
+  }
+  return dirAttribute;
+}
+function assignOffset(defaultOffset, mobileOffset) {
+  const styles = {};
+  [
+    defaultOffset,
+    mobileOffset
+  ].forEach((offset, index) => {
+    const isMobile = index === 1;
+    const prefix = isMobile ? "--mobile-offset" : "--offset";
+    const defaultValue = isMobile ? MOBILE_VIEWPORT_OFFSET : VIEWPORT_OFFSET;
+    function assignAll(offset2) {
+      [
+        "top",
+        "right",
+        "bottom",
+        "left"
+      ].forEach((key) => {
+        styles[`${prefix}-${key}`] = typeof offset2 === "number" ? `${offset2}px` : offset2;
+      });
+    }
+    if (typeof offset === "number" || typeof offset === "string") {
+      assignAll(offset);
+    } else if (typeof offset === "object") {
+      [
+        "top",
+        "right",
+        "bottom",
+        "left"
+      ].forEach((key) => {
+        if (offset[key] === void 0) {
+          styles[`${prefix}-${key}`] = defaultValue;
+        } else {
+          styles[`${prefix}-${key}`] = typeof offset[key] === "number" ? `${offset[key]}px` : offset[key];
+        }
+      });
+    } else {
+      assignAll(defaultValue);
+    }
+  });
+  return styles;
+}
+const Toaster$1 = /* @__PURE__ */ React.forwardRef(function Toaster(props, ref) {
+  const { id, invert, position = "bottom-right", hotkey = [
+    "altKey",
+    "KeyT"
+  ], expand, closeButton, className, offset, mobileOffset, theme = "light", richColors, duration, style, visibleToasts = VISIBLE_TOASTS_AMOUNT, toastOptions, dir = getDocumentDirection(), gap = GAP, icons, containerAriaLabel = "Notifications" } = props;
+  const [toasts, setToasts] = React.useState([]);
+  const filteredToasts = React.useMemo(() => {
+    if (id) {
+      return toasts.filter((toast2) => toast2.toasterId === id);
+    }
+    return toasts.filter((toast2) => !toast2.toasterId);
+  }, [
+    toasts,
+    id
+  ]);
+  const possiblePositions = React.useMemo(() => {
+    return Array.from(new Set([
+      position
+    ].concat(filteredToasts.filter((toast2) => toast2.position).map((toast2) => toast2.position))));
+  }, [
+    filteredToasts,
+    position
+  ]);
+  const [heights, setHeights] = React.useState([]);
+  const [expanded, setExpanded] = React.useState(false);
+  const [interacting, setInteracting] = React.useState(false);
+  const [actualTheme, setActualTheme] = React.useState(theme !== "system" ? theme : typeof window !== "undefined" ? window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light" : "light");
+  const listRef = React.useRef(null);
+  const hotkeyLabel = hotkey.join("+").replace(/Key/g, "").replace(/Digit/g, "");
+  const lastFocusedElementRef = React.useRef(null);
+  const isFocusWithinRef = React.useRef(false);
+  const removeToast = React.useCallback((toastToRemove) => {
+    setToasts((toasts2) => {
+      var _toasts_find;
+      if (!((_toasts_find = toasts2.find((toast2) => toast2.id === toastToRemove.id)) == null ? void 0 : _toasts_find.delete)) {
+        ToastState.dismiss(toastToRemove.id);
+      }
+      return toasts2.filter(({ id: id2 }) => id2 !== toastToRemove.id);
+    });
+  }, []);
+  React.useEffect(() => {
+    return ToastState.subscribe((toast2) => {
+      if (toast2.dismiss) {
+        requestAnimationFrame(() => {
+          setToasts((toasts2) => toasts2.map((t) => t.id === toast2.id ? {
+            ...t,
+            delete: true
+          } : t));
+        });
+        return;
+      }
+      setTimeout(() => {
+        ReactDOM.flushSync(() => {
+          setToasts((toasts2) => {
+            const indexOfExistingToast = toasts2.findIndex((t) => t.id === toast2.id);
+            if (indexOfExistingToast !== -1) {
+              return [
+                ...toasts2.slice(0, indexOfExistingToast),
+                {
+                  ...toasts2[indexOfExistingToast],
+                  ...toast2
+                },
+                ...toasts2.slice(indexOfExistingToast + 1)
+              ];
+            }
+            return [
+              toast2,
+              ...toasts2
+            ];
+          });
+        });
+      });
+    });
+  }, [
+    toasts
+  ]);
+  React.useEffect(() => {
+    if (theme !== "system") {
+      setActualTheme(theme);
+      return;
+    }
+    if (theme === "system") {
+      if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
+        setActualTheme("dark");
+      } else {
+        setActualTheme("light");
+      }
+    }
+    if (typeof window === "undefined") return;
+    const darkMediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    try {
+      darkMediaQuery.addEventListener("change", ({ matches }) => {
+        if (matches) {
+          setActualTheme("dark");
+        } else {
+          setActualTheme("light");
+        }
+      });
+    } catch (error) {
+      darkMediaQuery.addListener(({ matches }) => {
+        try {
+          if (matches) {
+            setActualTheme("dark");
+          } else {
+            setActualTheme("light");
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      });
+    }
+  }, [
+    theme
+  ]);
+  React.useEffect(() => {
+    if (toasts.length <= 1) {
+      setExpanded(false);
+    }
+  }, [
+    toasts
+  ]);
+  React.useEffect(() => {
+    const handleKeyDown = (event) => {
+      var _listRef_current;
+      const isHotkeyPressed = hotkey.every((key) => event[key] || event.code === key);
+      if (isHotkeyPressed) {
+        var _listRef_current1;
+        setExpanded(true);
+        (_listRef_current1 = listRef.current) == null ? void 0 : _listRef_current1.focus();
+      }
+      if (event.code === "Escape" && (document.activeElement === listRef.current || ((_listRef_current = listRef.current) == null ? void 0 : _listRef_current.contains(document.activeElement)))) {
+        setExpanded(false);
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [
+    hotkey
+  ]);
+  React.useEffect(() => {
+    if (listRef.current) {
+      return () => {
+        if (lastFocusedElementRef.current) {
+          lastFocusedElementRef.current.focus({
+            preventScroll: true
+          });
+          lastFocusedElementRef.current = null;
+          isFocusWithinRef.current = false;
+        }
+      };
+    }
+  }, [
+    listRef.current
+  ]);
+  return (
+    // Remove item from normal navigation flow, only available via hotkey
+    /* @__PURE__ */ React.createElement("section", {
+      ref,
+      "aria-label": `${containerAriaLabel} ${hotkeyLabel}`,
+      tabIndex: -1,
+      "aria-live": "polite",
+      "aria-relevant": "additions text",
+      "aria-atomic": "false",
+      suppressHydrationWarning: true
+    }, possiblePositions.map((position2, index) => {
+      var _heights_;
+      const [y, x] = position2.split("-");
+      if (!filteredToasts.length) return null;
+      return /* @__PURE__ */ React.createElement("ol", {
+        key: position2,
+        dir: dir === "auto" ? getDocumentDirection() : dir,
+        tabIndex: -1,
+        ref: listRef,
+        className,
+        "data-sonner-toaster": true,
+        "data-sonner-theme": actualTheme,
+        "data-y-position": y,
+        "data-x-position": x,
+        style: {
+          "--front-toast-height": `${((_heights_ = heights[0]) == null ? void 0 : _heights_.height) || 0}px`,
+          "--width": `${TOAST_WIDTH}px`,
+          "--gap": `${gap}px`,
+          ...style,
+          ...assignOffset(offset, mobileOffset)
+        },
+        onBlur: (event) => {
+          if (isFocusWithinRef.current && !event.currentTarget.contains(event.relatedTarget)) {
+            isFocusWithinRef.current = false;
+            if (lastFocusedElementRef.current) {
+              lastFocusedElementRef.current.focus({
+                preventScroll: true
+              });
+              lastFocusedElementRef.current = null;
+            }
+          }
+        },
+        onFocus: (event) => {
+          const isNotDismissible = event.target instanceof HTMLElement && event.target.dataset.dismissible === "false";
+          if (isNotDismissible) return;
+          if (!isFocusWithinRef.current) {
+            isFocusWithinRef.current = true;
+            lastFocusedElementRef.current = event.relatedTarget;
+          }
+        },
+        onMouseEnter: () => setExpanded(true),
+        onMouseMove: () => setExpanded(true),
+        onMouseLeave: () => {
+          if (!interacting) {
+            setExpanded(false);
+          }
+        },
+        onDragEnd: () => setExpanded(false),
+        onPointerDown: (event) => {
+          const isNotDismissible = event.target instanceof HTMLElement && event.target.dataset.dismissible === "false";
+          if (isNotDismissible) return;
+          setInteracting(true);
+        },
+        onPointerUp: () => setInteracting(false)
+      }, filteredToasts.filter((toast2) => !toast2.position && index === 0 || toast2.position === position2).map((toast2, index2) => {
+        var _toastOptions_duration, _toastOptions_closeButton;
+        return /* @__PURE__ */ React.createElement(Toast, {
+          key: toast2.id,
+          icons,
+          index: index2,
+          toast: toast2,
+          defaultRichColors: richColors,
+          duration: (_toastOptions_duration = toastOptions == null ? void 0 : toastOptions.duration) != null ? _toastOptions_duration : duration,
+          className: toastOptions == null ? void 0 : toastOptions.className,
+          descriptionClassName: toastOptions == null ? void 0 : toastOptions.descriptionClassName,
+          invert,
+          visibleToasts,
+          closeButton: (_toastOptions_closeButton = toastOptions == null ? void 0 : toastOptions.closeButton) != null ? _toastOptions_closeButton : closeButton,
+          interacting,
+          position: position2,
+          style: toastOptions == null ? void 0 : toastOptions.style,
+          unstyled: toastOptions == null ? void 0 : toastOptions.unstyled,
+          classNames: toastOptions == null ? void 0 : toastOptions.classNames,
+          cancelButtonStyle: toastOptions == null ? void 0 : toastOptions.cancelButtonStyle,
+          actionButtonStyle: toastOptions == null ? void 0 : toastOptions.actionButtonStyle,
+          closeButtonAriaLabel: toastOptions == null ? void 0 : toastOptions.closeButtonAriaLabel,
+          removeToast,
+          toasts: filteredToasts.filter((t) => t.position == toast2.position),
+          heights: heights.filter((h) => h.position == toast2.position),
+          setHeights,
+          expandByDefault: expand,
+          gap,
+          expanded,
+          swipeDirections: props.swipeDirections
+        });
+      }));
+    }))
+  );
+});
 function createMapDot(label) {
   return leafletSrcExports.divIcon({
     className: "map-reference-icon",
-    html: `<div class="map-reference-dot">${label}</div>`,
-    iconSize: [24, 24],
-    iconAnchor: [12, 12]
+    html: `<div class="map-reference-pin"><span>${label}</span></div>`,
+    iconSize: [28, 38],
+    iconAnchor: [14, 38]
   });
+}
+function isAircraftPositionUsable$1(aircraft) {
+  if (!aircraft.connected) return false;
+  if (!Number.isFinite(aircraft.lat) || !Number.isFinite(aircraft.lon)) return false;
+  if (Math.abs(aircraft.lat) > 90 || Math.abs(aircraft.lon) > 180) return false;
+  return !(aircraft.lat === 0 && aircraft.lon === 0 && aircraft.altitudeFt === 0);
 }
 function ClickCaptureLayer({
   onAddPoint
@@ -47124,6 +48599,35 @@ function ClickCaptureLayer({
   });
   return null;
 }
+function AutoFitMapPoints({
+  points,
+  fitKey
+}) {
+  const map = useMap();
+  reactExports.useEffect(() => {
+    if (fitKey <= 0) return;
+    if (points.length !== 2) return;
+    const [a, b] = points;
+    const samePoint = a.lat === b.lat && a.lon === b.lon;
+    if (samePoint) {
+      map.flyTo([a.lat, a.lon], 14, { animate: true, duration: 0.5 });
+      return;
+    }
+    map.flyToBounds(
+      [
+        [a.lat, a.lon],
+        [b.lat, b.lon]
+      ],
+      {
+        animate: true,
+        duration: 0.55,
+        padding: [52, 52],
+        maxZoom: 15
+      }
+    );
+  }, [fitKey, map, points]);
+  return null;
+}
 function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }) {
   const appClient2 = getAppClient();
   const runtime = appClient2.getRuntime();
@@ -47132,11 +48636,17 @@ function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }) {
   const settings = useAppStore((state) => state.settings);
   const { chart, asset, points, setChart, setPoints } = useChartDetailData(chartId);
   const tileConfig = getMapTileConfig(settings?.mapTileProvider);
+  const aircraftPositionUsable = aircraft ? isAircraftPositionUsable$1(aircraft) : false;
+  const mapCenterLat = aircraftPositionUsable ? aircraft?.lat ?? 31.2304 : 31.2304;
+  const mapCenterLon = aircraftPositionUsable ? aircraft?.lon ?? 121.4737 : 121.4737;
   const [title, setTitle] = reactExports.useState("");
   const [airportCode, setAirportCode] = reactExports.useState("");
   const [chartType, setChartType] = reactExports.useState("general");
   const [draftMapPoints, setDraftMapPoints] = reactExports.useState([]);
   const [draftChartPoints, setDraftChartPoints] = reactExports.useState([]);
+  const [draftInitializedForChartId, setDraftInitializedForChartId] = reactExports.useState(null);
+  const [mapAutoFitKey, setMapAutoFitKey] = reactExports.useState(0);
+  const [chartAutoFitKey, setChartAutoFitKey] = reactExports.useState(0);
   const [isMetaModalOpen, setIsMetaModalOpen] = reactExports.useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = reactExports.useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = reactExports.useState("");
@@ -47153,19 +48663,51 @@ function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }) {
     setAirportCode(chart.airportCode ?? "");
     setChartType(chart.chartType);
   }, [chart]);
+  reactExports.useEffect(() => {
+    setDraftMapPoints([]);
+    setDraftChartPoints([]);
+    setDraftInitializedForChartId(null);
+    setMapAutoFitKey(0);
+    setChartAutoFitKey(0);
+  }, [chartId]);
+  reactExports.useEffect(() => {
+    if (draftInitializedForChartId === chartId) return;
+    if (points.length !== 2) return;
+    const sortedPoints = [...points].sort((a, b) => a.index - b.index);
+    setDraftMapPoints(
+      sortedPoints.map((point) => ({
+        lat: point.mapLat,
+        lon: point.mapLon
+      }))
+    );
+    setDraftChartPoints(
+      sortedPoints.map((point) => ({
+        x: point.chartX,
+        y: point.chartY
+      }))
+    );
+    setDraftInitializedForChartId(chartId);
+    setMapAutoFitKey((value) => value + 1);
+    setChartAutoFitKey((value) => value + 1);
+  }, [chartId, draftInitializedForChartId, points]);
   const saveMetadata = async () => {
     if (!chart) return;
-    const updated = await appClient2.updateChart({
-      id: chart.id,
-      title,
-      airportCode: airportCode || null,
-      chartType
-    });
-    if (updated) {
-      setChart(updated);
-      notifyChartChanged();
-      onSaved();
-      setIsMetaModalOpen(false);
+    try {
+      const updated = await appClient2.updateChart({
+        id: chart.id,
+        title,
+        airportCode: airportCode || null,
+        chartType
+      });
+      if (updated) {
+        setChart(updated);
+        notifyChartChanged();
+        onSaved();
+        setIsMetaModalOpen(false);
+        toast.success(t("feedback.saved"));
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t("feedback.failed"));
     }
   };
   const saveReferencePoints = async () => {
@@ -47179,17 +48721,27 @@ function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }) {
       chartX: draftChartPoints[index].x,
       chartY: draftChartPoints[index].y
     }));
-    const saved = await appClient2.saveChartReferencePoints(chart.id, nextPoints);
-    setPoints(saved);
-    notifyChartChanged();
-    onSaved();
+    try {
+      const saved = await appClient2.saveChartReferencePoints(chart.id, nextPoints);
+      setPoints(saved);
+      notifyChartChanged();
+      onSaved();
+      toast.success(t("feedback.saved"));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t("feedback.failed"));
+    }
   };
   const deleteChart = async () => {
     if (!chart) return;
     if (deleteConfirmText.trim() !== chart.title) return;
-    await appClient2.deleteChart(chart.id);
-    notifyChartChanged();
-    onDeleted();
+    try {
+      await appClient2.deleteChart(chart.id);
+      notifyChartChanged();
+      onDeleted();
+      toast.success(t("feedback.deleted"));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t("feedback.failed"));
+    }
   };
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("section", { className: "chart-editor-page", children: [
     /* @__PURE__ */ jsxRuntimeExports.jsxs("header", { className: "chart-editor-topbar", children: [
@@ -47254,8 +48806,8 @@ function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }) {
                   (current) => [
                     ...current.slice(-1),
                     {
-                      lat: aircraft?.lat ?? 31.2304,
-                      lon: aircraft?.lon ?? 121.4737
+                      lat: mapCenterLat,
+                      lon: mapCenterLon
                     }
                   ].slice(0, 2)
                 ),
@@ -47276,7 +48828,7 @@ function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }) {
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "chart-editor-map-stage", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
           MapContainer,
           {
-            center: [aircraft?.lat ?? 31.2304, aircraft?.lon ?? 121.4737],
+            center: [mapCenterLat, mapCenterLon],
             zoom: 10,
             className: "detail-leaflet-map",
             children: [
@@ -47300,17 +48852,35 @@ function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }) {
                 Marker,
                 {
                   position: [point.lat, point.lon],
-                  icon: createMapDot(String(index + 1))
+                  icon: createMapDot(String(index + 1)),
+                  draggable: draftMapPoints.length === 2,
+                  eventHandlers: {
+                    dragend: (event) => {
+                      if (draftMapPoints.length !== 2) return;
+                      const marker = event.target;
+                      const latLng = marker.getLatLng();
+                      setDraftMapPoints(
+                        (current) => current.map(
+                          (currentPoint, currentIndex) => currentIndex === index ? {
+                            lat: latLng.lat,
+                            lon: latLng.lng
+                          } : currentPoint
+                        )
+                      );
+                    }
+                  }
                 },
                 `${point.lat}-${point.lon}`
               )),
-              aircraft ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+              aircraftPositionUsable ? /* @__PURE__ */ jsxRuntimeExports.jsx(
                 Marker,
                 {
-                  position: [aircraft.lat, aircraft.lon],
-                  icon: createMapDot("A")
+                  position: [mapCenterLat, mapCenterLon],
+                  icon: createMapDot("A"),
+                  interactive: false
                 }
-              ) : null
+              ) : null,
+              /* @__PURE__ */ jsxRuntimeExports.jsx(AutoFitMapPoints, { points: draftMapPoints, fitKey: mapAutoFitKey })
             ]
           }
         ) })
@@ -47336,7 +48906,13 @@ function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }) {
             points,
             aircraft,
             draftChartPoints,
-            onChartClick: (point) => setDraftChartPoints((current) => [...current.slice(-1), point].slice(0, 2))
+            autoFocusKey: chartAutoFitKey,
+            onChartClick: (point) => setDraftChartPoints((current) => [...current.slice(-1), point].slice(0, 2)),
+            onDraftChartPointMove: (index, point) => setDraftChartPoints(
+              (current) => current.map(
+                (currentPoint, currentIndex) => currentIndex === index ? point : currentPoint
+              )
+            )
           }
         )
       ] })
@@ -47766,6 +49342,7 @@ function ChartsPage({
       const result = await importChart();
       if (result?.chart) {
         onSelectChart(result.chart.id);
+        toast.success(t("feedback.imported"));
       }
     } catch (error) {
       let message = t("charts.importFailed");
@@ -47773,7 +49350,7 @@ function ChartsPage({
         message = `${t("charts.importFailed")}
 ${error.message}`;
       }
-      window.alert(message);
+      toast.error(message);
     }
   };
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("section", { className: "charts-workspace", children: [
@@ -47803,6 +49380,553 @@ ${error.message}`;
       /* @__PURE__ */ jsxRuntimeExports.jsx("p", { children: t("charts.emptyDescription") })
     ] }) }) })
   ] });
+}
+function Button({
+  variant = "default",
+  className = "",
+  children,
+  ...props
+}) {
+  const base = variant === "secondary" ? "secondary-button" : variant === "danger" ? "secondary-button danger-button" : variant === "icon" ? "icon-button" : "primary-button";
+  return /* @__PURE__ */ jsxRuntimeExports.jsx("button", { className: `${base} ${className}`.trim(), ...props, children });
+}
+function Input(props) {
+  const { className = "", ...rest } = props;
+  return /* @__PURE__ */ jsxRuntimeExports.jsx("input", { className: `text-input ${className}`.trim(), ...rest });
+}
+function Select(props) {
+  const { className = "", ...rest } = props;
+  return /* @__PURE__ */ jsxRuntimeExports.jsx("select", { className, ...rest });
+}
+function Textarea(props) {
+  const { className = "", ...rest } = props;
+  return /* @__PURE__ */ jsxRuntimeExports.jsx("textarea", { className: `text-input ${className}`.trim(), ...rest });
+}
+const EMPTY_PROCEDURES = {
+  airport: null,
+  runways: [],
+  departures: [],
+  arrivals: [],
+  transitions: [],
+  approaches: []
+};
+function FlightPlanDrawer({
+  isOpen,
+  onClose,
+  onOpenSettings,
+  onPlanBuilt,
+  onClearPlan
+}) {
+  const { t } = useTranslation();
+  const appClient2 = getAppClient();
+  const settings = useAppStore((state) => state.settings);
+  const [departureAirport, setDepartureAirport] = reactExports.useState("");
+  const [destinationAirport, setDestinationAirport] = reactExports.useState("");
+  const [enrouteText, setEnrouteText] = reactExports.useState("");
+  const [departureRunway, setDepartureRunway] = reactExports.useState("");
+  const [departureProcedureId, setDepartureProcedureId] = reactExports.useState("");
+  const [arrivalRunway, setArrivalRunway] = reactExports.useState("");
+  const [arrivalProcedureId, setArrivalProcedureId] = reactExports.useState("");
+  const [approachProcedureId, setApproachProcedureId] = reactExports.useState("");
+  const [arrivalTransitionId, setArrivalTransitionId] = reactExports.useState("");
+  const [depCandidates, setDepCandidates] = reactExports.useState([]);
+  const [destCandidates, setDestCandidates] = reactExports.useState([]);
+  const [depProcedures, setDepProcedures] = reactExports.useState(EMPTY_PROCEDURES);
+  const [destProcedures, setDestProcedures] = reactExports.useState(EMPTY_PROCEDURES);
+  const [isLoading, setIsLoading] = reactExports.useState(false);
+  const [navStatus, setNavStatus] = reactExports.useState(null);
+  const buildRequestIdRef = reactExports.useRef(0);
+  const lastClearedSignatureRef = reactExports.useRef("");
+  const prevNavDataReadyRef = reactExports.useRef(false);
+  const onPlanBuiltRef = reactExports.useRef(onPlanBuilt);
+  const onClearPlanRef = reactExports.useRef(onClearPlan);
+  onPlanBuiltRef.current = onPlanBuilt;
+  onClearPlanRef.current = onClearPlan;
+  const navDataReady = Boolean(navStatus?.exists && navStatus?.activePath);
+  reactExports.useEffect(() => {
+    if (navDataReady && !prevNavDataReadyRef.current) {
+      lastClearedSignatureRef.current = "";
+    }
+    prevNavDataReadyRef.current = navDataReady;
+  }, [navDataReady]);
+  reactExports.useEffect(() => {
+    if (!isOpen) return;
+    const refreshNavStatus = () => {
+      void appClient2.getNavDataStatus().then(setNavStatus);
+    };
+    refreshNavStatus();
+    const offSettings = appClient2.onSettingsChanged(() => {
+      refreshNavStatus();
+    });
+    return () => {
+      offSettings();
+    };
+  }, [appClient2, isOpen]);
+  reactExports.useEffect(() => {
+    if (!isOpen) return;
+    if (!navDataReady) {
+      setDepCandidates([]);
+      return;
+    }
+    const token = departureAirport.trim().toUpperCase();
+    if (token.length < 2) {
+      setDepCandidates([]);
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      void appClient2.searchNavAirports(token).then((airports) => {
+        setDepCandidates(airports.map((airport) => airport.ident));
+      });
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [appClient2, departureAirport, isOpen, navDataReady]);
+  reactExports.useEffect(() => {
+    if (!isOpen) return;
+    if (!navDataReady) {
+      setDestCandidates([]);
+      return;
+    }
+    const token = destinationAirport.trim().toUpperCase();
+    if (token.length < 2) {
+      setDestCandidates([]);
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      void appClient2.searchNavAirports(token).then((airports) => {
+        setDestCandidates(airports.map((airport) => airport.ident));
+      });
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [appClient2, destinationAirport, isOpen, navDataReady]);
+  reactExports.useEffect(() => {
+    const ident = departureAirport.trim().toUpperCase();
+    if (!ident || !navDataReady) {
+      setDepProcedures(EMPTY_PROCEDURES);
+      return;
+    }
+    let active = true;
+    void appClient2.getNavAirportProcedures(ident).then((procedures) => {
+      if (!active) return;
+      setDepProcedures(procedures);
+      setDepartureRunway("");
+      setDepartureProcedureId("");
+    });
+    return () => {
+      active = false;
+    };
+  }, [appClient2, departureAirport, isOpen, navDataReady]);
+  reactExports.useEffect(() => {
+    const ident = destinationAirport.trim().toUpperCase();
+    if (!ident || !navDataReady) {
+      setDestProcedures(EMPTY_PROCEDURES);
+      return;
+    }
+    let active = true;
+    void appClient2.getNavAirportProcedures(ident).then((procedures) => {
+      if (!active) return;
+      setDestProcedures(procedures);
+      setArrivalRunway("");
+      setArrivalProcedureId("");
+      setApproachProcedureId("");
+      setArrivalTransitionId("");
+    });
+    return () => {
+      active = false;
+    };
+  }, [appClient2, destinationAirport, isOpen, navDataReady]);
+  const departureProcedureOptions = reactExports.useMemo(
+    () => filterProcedures(depProcedures.departures, departureRunway),
+    [depProcedures.departures, departureRunway]
+  );
+  const arrivalProcedureOptions = reactExports.useMemo(
+    () => filterProcedures(destProcedures.arrivals, arrivalRunway),
+    [arrivalRunway, destProcedures.arrivals]
+  );
+  const approachProcedureOptions = reactExports.useMemo(
+    () => filterProcedures(destProcedures.approaches, arrivalRunway),
+    [arrivalRunway, destProcedures.approaches]
+  );
+  const selectedApproachProcedureId = reactExports.useMemo(
+    () => parseProcedureId(approachProcedureId),
+    [approachProcedureId]
+  );
+  const transitionOptions = reactExports.useMemo(() => {
+    if (!selectedApproachProcedureId) {
+      return [];
+    }
+    return destProcedures.transitions.filter(
+      (transition) => transition.approachId === selectedApproachProcedureId && runwayMatches(transition.runwayName, arrivalRunway)
+    );
+  }, [arrivalRunway, destProcedures.transitions, selectedApproachProcedureId]);
+  reactExports.useEffect(() => {
+    if (!departureProcedureOptions.length) {
+      setDepartureProcedureId("");
+      return;
+    }
+    if (!departureProcedureOptions.some((procedure) => procedure.id === departureProcedureId)) {
+      setDepartureProcedureId("");
+    }
+  }, [departureProcedureId, departureProcedureOptions]);
+  reactExports.useEffect(() => {
+    if (!arrivalProcedureOptions.length) {
+      setArrivalProcedureId("");
+      return;
+    }
+    if (!arrivalProcedureOptions.some((procedure) => procedure.id === arrivalProcedureId)) {
+      setArrivalProcedureId("");
+    }
+  }, [arrivalProcedureId, arrivalProcedureOptions]);
+  reactExports.useEffect(() => {
+    if (!approachProcedureOptions.length) {
+      setApproachProcedureId("");
+      setArrivalTransitionId("");
+      return;
+    }
+    if (!approachProcedureOptions.some((procedure) => procedure.id === approachProcedureId)) {
+      setApproachProcedureId("");
+      setArrivalTransitionId("");
+    }
+  }, [approachProcedureId, approachProcedureOptions]);
+  reactExports.useEffect(() => {
+    if (!transitionOptions.length) {
+      setArrivalTransitionId("");
+      return;
+    }
+    if (!transitionOptions.some((transition) => transition.id === arrivalTransitionId)) {
+      setArrivalTransitionId("");
+    }
+  }, [arrivalTransitionId, transitionOptions]);
+  const handleImportSimBrief = async () => {
+    setIsLoading(true);
+    try {
+      const result = await appClient2.importSimBrief({
+        username: settings?.simbrief.username,
+        userId: settings?.simbrief.userId
+      });
+      setDepartureAirport(result.departureAirport);
+      setDestinationAirport(result.destinationAirport);
+      setEnrouteText(result.routeText);
+      toast.success(t("feedback.imported"));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "SIMBRIEF_IMPORT_FAILED";
+      toast.error(message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  reactExports.useEffect(() => {
+    if (!isOpen) return;
+    const departureIdent = departureAirport.trim().toUpperCase();
+    const destinationIdent = destinationAirport.trim().toUpperCase();
+    const currentSignature = buildRouteSignature({
+      departureAirport: departureIdent,
+      destinationAirport: destinationIdent,
+      enrouteText,
+      departureRunway,
+      departureProcedureId,
+      arrivalRunway,
+      arrivalProcedureId,
+      approachProcedureId,
+      arrivalTransitionId
+    });
+    if (!navDataReady) {
+      if (currentSignature !== lastClearedSignatureRef.current) {
+        lastClearedSignatureRef.current = currentSignature;
+        buildRequestIdRef.current += 1;
+        onClearPlanRef.current();
+      }
+      setIsLoading(false);
+      return;
+    }
+    if (currentSignature === lastClearedSignatureRef.current) {
+      return;
+    }
+    if (!departureIdent || !destinationIdent) {
+      lastClearedSignatureRef.current = currentSignature;
+      buildRequestIdRef.current += 1;
+      onClearPlanRef.current();
+      setIsLoading(false);
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      const requestId = ++buildRequestIdRef.current;
+      setIsLoading(true);
+      void appClient2.buildFlightPlan({
+        departureAirport: departureIdent,
+        destinationAirport: destinationIdent,
+        enrouteText,
+        departureRunway: departureRunway || null,
+        departureProcedureId: departureProcedureId || null,
+        arrivalRunway: arrivalRunway || null,
+        arrivalProcedureId: arrivalProcedureId || null,
+        approachProcedureId: approachProcedureId || null,
+        arrivalTransitionId: arrivalTransitionId || null
+      }).then((result) => {
+        if (requestId !== buildRequestIdRef.current) {
+          return;
+        }
+        lastClearedSignatureRef.current = "";
+        onPlanBuiltRef.current(result);
+      }).catch((error) => {
+        if (requestId !== buildRequestIdRef.current) {
+          return;
+        }
+        const message = error instanceof Error ? error.message : "ROUTE_BUILD_FAILED";
+        toast.error(message);
+      }).finally(() => {
+        if (requestId === buildRequestIdRef.current) {
+          setIsLoading(false);
+        }
+      });
+    }, 350);
+    return () => window.clearTimeout(timer);
+  }, [
+    appClient2,
+    arrivalProcedureId,
+    arrivalRunway,
+    arrivalTransitionId,
+    departureAirport,
+    departureProcedureId,
+    departureRunway,
+    destinationAirport,
+    enrouteText,
+    isOpen,
+    navDataReady
+  ]);
+  if (!isOpen) {
+    return null;
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsx("section", { className: "flight-plan-drawer-layer", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("aside", { className: "flight-plan-drawer", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("header", { className: "flight-plan-head", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: t("flightPlan.title") }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "settings-inline-row", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          Button,
+          {
+            type: "button",
+            variant: "icon",
+            onClick: onOpenSettings,
+            "aria-label": t("flightPlan.openSettings"),
+            title: t("flightPlan.openSettings"),
+            children: /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { viewBox: "0 0 24 24", "aria-hidden": "true", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M12 8.5A3.5 3.5 0 1 0 12 15.5A3.5 3.5 0 1 0 12 8.5Z" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M19.4 15A1 1 0 0 0 19.6 16.1L19.7 16.2A1 1 0 1 1 18.3 17.6L18.2 17.5A1 1 0 0 0 17.1 17.3A1 1 0 0 0 16.5 18.2V18.5A1 1 0 1 1 14.5 18.5V18.3A1 1 0 0 0 13.8 17.4A1 1 0 0 0 12.7 17.7L12.6 17.8A1 1 0 0 1 11.2 16.4L11.3 16.3A1 1 0 0 0 11.5 15.2A1 1 0 0 0 10.6 14.6H10.3A1 1 0 1 1 10.3 12.6H10.5A1 1 0 0 0 11.4 11.9A1 1 0 0 0 11.1 10.8L11 10.7A1 1 0 1 1 12.4 9.3L12.5 9.4A1 1 0 0 0 13.6 9.6A1 1 0 0 0 14.2 8.7V8.4A1 1 0 1 1 16.2 8.4V8.6A1 1 0 0 0 16.9 9.5A1 1 0 0 0 18 9.2L18.1 9.1A1 1 0 0 1 19.5 10.5L19.4 10.6A1 1 0 0 0 19.2 11.7A1 1 0 0 0 20.1 12.3H20.4A1 1 0 1 1 20.4 14.3H20.2A1 1 0 0 0 19.4 15Z" })
+            ] })
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "button", variant: "icon", onClick: onClose, "aria-label": t("flightPlan.close"), children: /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { viewBox: "0 0 24 24", "aria-hidden": "true", children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M6 6L18 18M18 6L6 18" }) }) })
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flight-plan-body", children: [
+      !navDataReady ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "settings-note settings-note-card flight-plan-alert", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: t("flightPlan.navDataRequired") }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: t("flightPlan.navDataRequiredHint") }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "settings-inline-row", children: /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "button", variant: "secondary", onClick: onOpenSettings, children: t("flightPlan.navDataOpenSettings") }) })
+      ] }) : null,
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("section", { className: "flight-plan-section", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flight-plan-section-head", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: t("flightPlan.departureSection") }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: t("flightPlan.departureSectionHint") })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: "settings-field", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: t("flightPlan.departureAirport") }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            Input,
+            {
+              value: departureAirport,
+              onChange: (event) => setDepartureAirport(event.target.value.toUpperCase()),
+              list: "departure-airports",
+              placeholder: t("flightPlan.airportPlaceholder"),
+              disabled: !navDataReady
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("datalist", { id: "departure-airports", children: depCandidates.map((ident) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: ident }, ident)) })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: "settings-field", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: t("flightPlan.departureRunway") }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            Select,
+            {
+              value: departureRunway,
+              onChange: (event) => setDepartureRunway(event.target.value),
+              disabled: !navDataReady,
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "", children: t("flightPlan.notSpecified") }),
+                depProcedures.runways.map((runway) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: runway.name, children: runway.displayName }, runway.name))
+              ]
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: "settings-field", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: t("flightPlan.departureProcedure") }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            Select,
+            {
+              value: departureProcedureId,
+              onChange: (event) => setDepartureProcedureId(event.target.value),
+              disabled: !navDataReady,
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "", children: t("flightPlan.notSpecified") }),
+                departureProcedureOptions.map((procedure) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: procedure.id, children: procedure.name }, procedure.id))
+              ]
+            }
+          )
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("section", { className: "flight-plan-section", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flight-plan-section-head", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: t("flightPlan.routeSection") }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: t("flightPlan.routeSectionHint") })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: "settings-field", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: t("flightPlan.enroute") }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            Textarea,
+            {
+              className: "flight-plan-textarea",
+              value: enrouteText,
+              onChange: (event) => setEnrouteText(event.target.value.toUpperCase()),
+              placeholder: t("flightPlan.enroutePlaceholder"),
+              disabled: !navDataReady
+            }
+          )
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("section", { className: "flight-plan-section", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flight-plan-section-head", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: t("flightPlan.arrivalSection") }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: t("flightPlan.arrivalSectionHint") })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: "settings-field", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: t("flightPlan.destinationAirport") }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            Input,
+            {
+              value: destinationAirport,
+              onChange: (event) => setDestinationAirport(event.target.value.toUpperCase()),
+              list: "destination-airports",
+              placeholder: t("flightPlan.airportPlaceholder"),
+              disabled: !navDataReady
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("datalist", { id: "destination-airports", children: destCandidates.map((ident) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: ident }, ident)) })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: "settings-field", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: t("flightPlan.arrivalRunway") }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            Select,
+            {
+              value: arrivalRunway,
+              onChange: (event) => setArrivalRunway(event.target.value),
+              disabled: !navDataReady,
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "", children: t("flightPlan.notSpecified") }),
+                destProcedures.runways.map((runway) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: runway.name, children: runway.displayName }, runway.name))
+              ]
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: "settings-field", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: t("flightPlan.arrivalProcedure") }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            Select,
+            {
+              value: arrivalProcedureId,
+              onChange: (event) => setArrivalProcedureId(event.target.value),
+              disabled: !navDataReady,
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "", children: t("flightPlan.notSpecified") }),
+                arrivalProcedureOptions.map((procedure) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: procedure.id, children: procedure.name }, procedure.id))
+              ]
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: "settings-field", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: t("flightPlan.approachProcedure") }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            Select,
+            {
+              value: approachProcedureId,
+              onChange: (event) => setApproachProcedureId(event.target.value),
+              disabled: !navDataReady,
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "", children: t("flightPlan.notSpecified") }),
+                approachProcedureOptions.map((procedure) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: procedure.id, children: procedure.name }, procedure.id))
+              ]
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: "settings-field", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: t("flightPlan.arrivalTransition") }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            Select,
+            {
+              value: arrivalTransitionId,
+              onChange: (event) => setArrivalTransitionId(event.target.value),
+              disabled: !navDataReady,
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "", children: t("flightPlan.notSpecified") }),
+                transitionOptions.map((transition) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: transition.id, children: transition.name }, transition.id))
+              ]
+            }
+          )
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "button-row", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "button", variant: "secondary", disabled: isLoading || !navDataReady, onClick: handleImportSimBrief, children: t("flightPlan.importSimbrief") }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          Button,
+          {
+            type: "button",
+            variant: "secondary",
+            disabled: isLoading,
+            onClick: () => {
+              lastClearedSignatureRef.current = buildRouteSignature({
+                departureAirport: departureAirport.trim().toUpperCase(),
+                destinationAirport: destinationAirport.trim().toUpperCase(),
+                enrouteText,
+                departureRunway,
+                departureProcedureId,
+                arrivalRunway,
+                arrivalProcedureId,
+                approachProcedureId,
+                arrivalTransitionId
+              });
+              buildRequestIdRef.current += 1;
+              onClearPlanRef.current();
+            },
+            children: t("flightPlan.clear")
+          }
+        )
+      ] })
+    ] })
+  ] }) });
+}
+function filterProcedures(items, selectedRunway) {
+  return items.filter((item) => runwayMatches(item.runwayName, selectedRunway));
+}
+function runwayMatches(optionRunway, selectedRunway) {
+  if (!selectedRunway) return true;
+  if (!optionRunway?.trim()) return true;
+  return optionRunway.trim().toUpperCase() === selectedRunway.trim().toUpperCase();
+}
+function parseProcedureId(value) {
+  if (!value.startsWith("approach:")) return null;
+  const parsed = Number(value.slice("approach:".length));
+  return Number.isFinite(parsed) ? parsed : null;
+}
+function buildRouteSignature(input) {
+  return [
+    input.departureAirport,
+    input.destinationAirport,
+    input.enrouteText,
+    input.departureRunway,
+    input.departureProcedureId,
+    input.arrivalRunway,
+    input.arrivalProcedureId,
+    input.approachProcedureId,
+    input.arrivalTransitionId
+  ].join("|");
 }
 function ConnectionBadge() {
   const { t } = useTranslation();
@@ -47843,6 +49967,65 @@ function useMapOverlayChart(chartId) {
     ...raster
   };
 }
+const MAP_VIEW_STORAGE_KEY = "nextefb.map-view.v1";
+const DEFAULT_MAP_ZOOM = 7;
+const DEFAULT_MAP_CENTERS = {
+  "zh-CN": { lat: 31.2304, lon: 121.4737 },
+  "en-US": { lat: 40.7128, lon: -74.006 }
+};
+function isAircraftPositionUsable(aircraft) {
+  if (!aircraft.connected) return false;
+  if (!Number.isFinite(aircraft.lat) || !Number.isFinite(aircraft.lon)) return false;
+  if (Math.abs(aircraft.lat) > 90 || Math.abs(aircraft.lon) > 180) return false;
+  return !(aircraft.lat === 0 && aircraft.lon === 0 && aircraft.altitudeFt === 0);
+}
+function readStoredMapView(language) {
+  const defaultCenter = DEFAULT_MAP_CENTERS[language];
+  if (typeof window === "undefined") {
+    return { ...defaultCenter, zoom: DEFAULT_MAP_ZOOM };
+  }
+  try {
+    const raw = window.localStorage.getItem(MAP_VIEW_STORAGE_KEY);
+    if (!raw) return { ...defaultCenter, zoom: DEFAULT_MAP_ZOOM };
+    const parsed = JSON.parse(raw);
+    if (typeof parsed.lat !== "number" || typeof parsed.lon !== "number" || typeof parsed.zoom !== "number") {
+      return { ...defaultCenter, zoom: DEFAULT_MAP_ZOOM };
+    }
+    if (!Number.isFinite(parsed.lat) || !Number.isFinite(parsed.lon) || !Number.isFinite(parsed.zoom)) {
+      return { ...defaultCenter, zoom: DEFAULT_MAP_ZOOM };
+    }
+    return {
+      lat: Math.max(-90, Math.min(90, parsed.lat)),
+      lon: Math.max(-180, Math.min(180, parsed.lon)),
+      zoom: Math.max(1, Math.min(19, parsed.zoom))
+    };
+  } catch {
+    return { ...defaultCenter, zoom: DEFAULT_MAP_ZOOM };
+  }
+}
+function MapViewPersistence() {
+  const map = useMap();
+  reactExports.useEffect(() => {
+    const persist = () => {
+      const center = map.getCenter();
+      const zoom = map.getZoom();
+      const payload = {
+        lat: center.lat,
+        lon: center.lng,
+        zoom
+      };
+      window.localStorage.setItem(MAP_VIEW_STORAGE_KEY, JSON.stringify(payload));
+    };
+    map.on("moveend", persist);
+    map.on("zoomend", persist);
+    persist();
+    return () => {
+      map.off("moveend", persist);
+      map.off("zoomend", persist);
+    };
+  }, [map]);
+  return null;
+}
 function formatCoord(value) {
   if (typeof value !== "number") return "--";
   return value.toFixed(4);
@@ -47862,19 +50045,29 @@ function FollowAircraft({
   }, [enabled, lat, lon, map]);
   return null;
 }
-function RecenterMap({
-  lat,
-  lon,
+function FitRouteView({
+  points,
   trigger
 }) {
   const map = useMap();
   reactExports.useEffect(() => {
-    if (trigger === 0) return;
-    map.flyTo([lat, lon], map.getZoom(), {
-      animate: true,
-      duration: 0.6
-    });
-  }, [lat, lon, map, trigger]);
+    if (trigger === 0 || points.length === 0) return;
+    if (points.length === 1) {
+      const [point] = points;
+      map.flyTo([point.lat, point.lon], Math.max(map.getZoom(), 11), {
+        animate: true,
+        duration: 0.75
+      });
+      return;
+    }
+    map.fitBounds(
+      points.map((point) => [point.lat, point.lon]),
+      {
+        padding: [48, 48],
+        animate: true
+      }
+    );
+  }, [map, points, trigger]);
   return null;
 }
 function ChartOverlay({
@@ -47950,20 +50143,41 @@ function MountedChartOverlay({
     }
   );
 }
+function dedupeRoutePoints(points) {
+  const output = [];
+  for (const point of points) {
+    const prev = output[output.length - 1];
+    if (prev && Math.abs(prev.lat - point.lat) < 1e-7 && Math.abs(prev.lon - point.lon) < 1e-7) {
+      continue;
+    }
+    output.push(point);
+  }
+  return output;
+}
 function MapPanel({
   mountedChartIds,
-  activeChartId
+  activeChartId,
+  routePoints,
+  routeSegments
 }) {
   const { t } = useTranslation();
   const appClient2 = getAppClient();
   const aircraft = useAppStore((state) => state.aircraft);
+  const language = useAppStore((state) => state.language);
   const settings = useAppStore((state) => state.settings);
   const setSettings = useAppStore((state) => state.setSettings);
-  const lat = aircraft?.lat ?? 31.2304;
-  const lon = aircraft?.lon ?? 121.4737;
-  const heading = aircraft?.headingDeg ?? 0;
-  const [recenterTrigger, setRecenterTrigger] = reactExports.useState(0);
+  const [initialMapView] = reactExports.useState(() => readStoredMapView(language));
+  const aircraftPositionUsable = aircraft ? isAircraftPositionUsable(aircraft) : false;
+  const lat = aircraftPositionUsable ? aircraft?.lat ?? initialMapView.lat : initialMapView.lat;
+  const lon = aircraftPositionUsable ? aircraft?.lon ?? initialMapView.lon : initialMapView.lon;
+  const heading = aircraftPositionUsable ? aircraft?.headingDeg ?? 0 : 0;
+  const [isFollowActive, setIsFollowActive] = reactExports.useState(false);
+  const [routeViewTrigger, setRouteViewTrigger] = reactExports.useState(0);
   const tileConfig = getMapTileConfig(settings?.mapTileProvider);
+  const routeViewPoints = reactExports.useMemo(() => {
+    const points = routeSegments.length > 0 ? routeSegments.flatMap((segment) => segment.points) : routePoints;
+    return dedupeRoutePoints(points);
+  }, [routePoints, routeSegments]);
   const updateMapTileProvider = async (mapTileProvider) => {
     const nextSettings = await appClient2.updateSettings({ mapTileProvider });
     setSettings(nextSettings);
@@ -47972,8 +50186,8 @@ function MapPanel({
     /* @__PURE__ */ jsxRuntimeExports.jsxs(
       MapContainer,
       {
-        center: [lat, lon],
-        zoom: 7,
+        center: [initialMapView.lat, initialMapView.lon],
+        zoom: initialMapView.zoom,
         className: "leaflet-map",
         zoomControl: true,
         attributionControl: true,
@@ -47986,14 +50200,14 @@ function MapPanel({
               subdomains: tileConfig.subdomains
             }
           ),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
+          aircraftPositionUsable ? /* @__PURE__ */ jsxRuntimeExports.jsx(
             Marker,
             {
               position: [lat, lon],
               icon: createAircraftLeafletIcon(heading),
               title: t("map.aircraftMarker")
             }
-          ),
+          ) : null,
           mountedChartIds.map((chartId, index) => /* @__PURE__ */ jsxRuntimeExports.jsx(
             MountedChartOverlay,
             {
@@ -48003,25 +50217,84 @@ function MapPanel({
             },
             chartId
           )),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(FollowAircraft, { lat, lon, enabled: settings?.followAircraft ?? true }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(RecenterMap, { lat, lon, trigger: recenterTrigger })
+          routeSegments.length > 0 ? routeSegments.map(
+            (segment, index) => segment.points.length > 1 ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+              Polyline,
+              {
+                positions: segment.points.map((point) => [point.lat, point.lon]),
+                pathOptions: {
+                  color: segment.color ?? "#ffcf5a",
+                  weight: 3,
+                  opacity: segment.dashed ? 0.75 : 0.92,
+                  dashArray: segment.dashed ? "10 10" : void 0,
+                  lineCap: "round",
+                  lineJoin: "round"
+                }
+              },
+              `segment:${index}`
+            ) : null
+          ) : routePoints.length > 1 ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+            Polyline,
+            {
+              positions: routePoints.map((point) => [point.lat, point.lon]),
+              pathOptions: { color: "#ffcf5a", weight: 3, opacity: 0.9 }
+            }
+          ) : null,
+          routePoints.map((point, index) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+            CircleMarker,
+            {
+              center: [point.lat, point.lon],
+              radius: index === 0 || index === routePoints.length - 1 ? 6 : 4,
+              pathOptions: {
+                color: "#0a1a2b",
+                weight: 1,
+                fillColor: index === 0 || index === routePoints.length - 1 ? "#ff7f50" : "#ffd46c",
+                fillOpacity: 0.95
+              },
+              children: /* @__PURE__ */ jsxRuntimeExports.jsx(Tooltip, { direction: "top", offset: [0, -4], children: `${index + 1}. ${point.ident}` })
+            },
+            `${point.ident}:${index}`
+          )),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(FitRouteView, { points: routeViewPoints, trigger: routeViewTrigger }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(FollowAircraft, { lat, lon, enabled: aircraftPositionUsable && isFollowActive }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(MapViewPersistence, {})
         ]
       }
     ),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "map-coordinates", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: `${t("map.lat")} ${formatCoord(aircraft?.lat)}` }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: `${t("map.lon")} ${formatCoord(aircraft?.lon)}` })
+      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: `${t("map.lat")} ${formatCoord(aircraftPositionUsable ? aircraft?.lat : void 0)}` }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: `${t("map.lon")} ${formatCoord(aircraftPositionUsable ? aircraft?.lon : void 0)}` })
     ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx(
-      "button",
-      {
-        type: "button",
-        className: "map-recenter-button",
-        "aria-label": t("map.recenter"),
-        onClick: () => setRecenterTrigger((current) => current + 1),
-        children: /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { viewBox: "0 0 24 24", "aria-hidden": "true", children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M12 3L18 16H13V21H11V16H6L12 3Z" }) })
-      }
-    ),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "map-control-stack", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "button",
+        {
+          type: "button",
+          className: "map-route-fit-button",
+          "aria-label": t("map.fitRoute"),
+          title: t("map.fitRoute"),
+          disabled: routeViewPoints.length === 0,
+          onClick: () => {
+            setIsFollowActive(false);
+            setRouteViewTrigger((current) => current + 1);
+          },
+          children: /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { viewBox: "0 0 24 24", "aria-hidden": "true", children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M4 4H9V6H6V9H4V4ZM15 4H20V9H18V6H15V4ZM4 15H6V18H9V20H4V15ZM18 15H20V20H15V18H18V15Z" }) })
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "button",
+        {
+          type: "button",
+          className: `map-recenter-button ${isFollowActive ? "is-active" : ""}`,
+          "aria-label": isFollowActive ? t("map.followAircraftStop") : t("map.followAircraftStart"),
+          title: isFollowActive ? t("map.followAircraftStop") : t("map.followAircraftStart"),
+          disabled: !aircraftPositionUsable,
+          "aria-pressed": isFollowActive,
+          onClick: () => setIsFollowActive((current) => !current),
+          children: /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { viewBox: "0 0 24 24", "aria-hidden": "true", children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M12 2.75A9.25 9.25 0 1 0 21.25 12A9.26 9.26 0 0 0 12 2.75Zm0 2A7.25 7.25 0 1 1 4.75 12A7.26 7.26 0 0 1 12 4.75Zm0 1.75A5.5 5.5 0 1 0 17.5 12A5.51 5.51 0 0 0 12 6.5Zm0 2A3.5 3.5 0 1 1 8.5 12A3.5 3.5 0 0 1 12 8.5Z" }) })
+        }
+      )
+    ] }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "map-floating-toolbar", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "map-provider-chip", "aria-label": t("settings.mapTileProvider"), children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
         "select",
@@ -48041,7 +50314,7 @@ function MapPanel({
     ] })
   ] }) });
 }
-function MapPage({ onOpenChartLibrary, onEditChart }) {
+function MapPage({ onOpenChartLibrary, onEditChart, onOpenSettings }) {
   const runtime = getAppClient().getRuntime();
   const { t } = useTranslation();
   const { charts } = useChartLibraryData();
@@ -48052,6 +50325,9 @@ function MapPage({ onOpenChartLibrary, onEditChart }) {
   const [mountedChartIds, setMountedChartIds] = reactExports.useState([]);
   const [activeChartId, setActiveChartId] = reactExports.useState(null);
   const [isChartDrawerOpen, setIsChartDrawerOpen] = reactExports.useState(false);
+  const [isFlightPlanDrawerOpen, setIsFlightPlanDrawerOpen] = reactExports.useState(false);
+  const [flightPlanPoints, setFlightPlanPoints] = reactExports.useState([]);
+  const [flightPlanSegments, setFlightPlanSegments] = reactExports.useState([]);
   const mountedCharts = reactExports.useMemo(
     () => mountedChartIds.map((chartId) => georeferencedCharts.find((chart) => chart.id === chartId)).filter((chart) => Boolean(chart)),
     [georeferencedCharts, mountedChartIds]
@@ -48081,8 +50357,20 @@ function MapPage({ onOpenChartLibrary, onEditChart }) {
   const unmountChart = (chartId) => {
     setMountedChartIds((current) => current.filter((id) => id !== chartId));
   };
+  const handlePlanBuilt = (result) => {
+    setFlightPlanPoints(result.points);
+    setFlightPlanSegments(result.segments);
+  };
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("section", { className: "map-workspace", children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx(MapPanel, { mountedChartIds, activeChartId }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      MapPanel,
+      {
+        mountedChartIds,
+        activeChartId,
+        routePoints: flightPlanPoints,
+        routeSegments: flightPlanSegments
+      }
+    ),
     /* @__PURE__ */ jsxRuntimeExports.jsx("section", { className: "chart-dock", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "chart-dock-main", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx(
         "button",
@@ -48092,6 +50380,20 @@ function MapPage({ onOpenChartLibrary, onEditChart }) {
           onClick: () => setIsChartDrawerOpen(true),
           "aria-label": t("charts.add"),
           children: /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { viewBox: "0 0 24 24", "aria-hidden": "true", children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M12 5V19M5 12H19" }) })
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "button",
+        {
+          type: "button",
+          className: "chart-dock-add-button",
+          onClick: () => setIsFlightPlanDrawerOpen(true),
+          "aria-label": t("flightPlan.openDrawer"),
+          title: t("flightPlan.openDrawer"),
+          children: /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { viewBox: "0 0 24 24", "aria-hidden": "true", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M3 7H7L10 13L14 9L17 13H21" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M7 7L9 5M17 13L19 11" })
+          ] })
         }
       ),
       mountedCharts.length > 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "chart-dock-bar", children: mountedCharts.map((chart) => {
@@ -48138,6 +50440,19 @@ function MapPage({ onOpenChartLibrary, onEditChart }) {
         onSelect: onOpenChartLibrary,
         onEdit: runtime.canWrite ? onEditChart : void 0,
         onPin: mountChart
+      }
+    ),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      FlightPlanDrawer,
+      {
+        isOpen: isFlightPlanDrawerOpen,
+        onClose: () => setIsFlightPlanDrawerOpen(false),
+        onOpenSettings,
+        onPlanBuilt: handlePlanBuilt,
+        onClearPlan: () => {
+          setFlightPlanPoints([]);
+          setFlightPlanSegments([]);
+        }
       }
     )
   ] });
@@ -50275,14 +52590,25 @@ function SettingsPanel() {
   const settings = useAppStore((state) => state.settings);
   const setSettings = useAppStore((state) => state.setSettings);
   const [remoteAccessStatus, setRemoteAccessStatus] = reactExports.useState(null);
+  const [navDataStatus, setNavDataStatus] = reactExports.useState(null);
   const [portDraft, setPortDraft] = reactExports.useState("31831");
+  const [navPathDraft, setNavPathDraft] = reactExports.useState("");
+  const [simbriefUsernameDraft, setSimbriefUsernameDraft] = reactExports.useState("");
+  const [simbriefUserIdDraft, setSimbriefUserIdDraft] = reactExports.useState("");
   const [qrCodeUrl, setQrCodeUrl] = reactExports.useState(null);
   reactExports.useEffect(() => {
     const refreshRemoteAccessStatus = () => {
       void appClient2.getRemoteAccessStatus().then(setRemoteAccessStatus);
     };
+    const refreshNavDataStatus = () => {
+      void appClient2.getNavDataStatus().then(setNavDataStatus);
+    };
     refreshRemoteAccessStatus();
-    const offSettings = appClient2.onSettingsChanged(refreshRemoteAccessStatus);
+    refreshNavDataStatus();
+    const offSettings = appClient2.onSettingsChanged(() => {
+      refreshRemoteAccessStatus();
+      refreshNavDataStatus();
+    });
     return () => {
       offSettings();
     };
@@ -50290,6 +52616,11 @@ function SettingsPanel() {
   reactExports.useEffect(() => {
     setPortDraft(String(settings?.lanAccess.port ?? 31831));
   }, [settings?.lanAccess.port]);
+  reactExports.useEffect(() => {
+    setNavPathDraft(settings?.navData.sqlitePath ?? "");
+    setSimbriefUsernameDraft(settings?.simbrief.username ?? "");
+    setSimbriefUserIdDraft(settings?.simbrief.userId ?? "");
+  }, [settings?.navData.sqlitePath, settings?.simbrief.userId, settings?.simbrief.username]);
   reactExports.useEffect(() => {
     const accessUrl = remoteAccessStatus?.primaryAccessUrl;
     if (!accessUrl) {
@@ -50334,11 +52665,33 @@ function SettingsPanel() {
     const nextStatus = await appClient2.getRemoteAccessStatus();
     setRemoteAccessStatus(nextStatus);
   };
+  const saveNavDataPath = async (sqlitePath) => {
+    const nextSettings = await appClient2.updateSettings({
+      navData: {
+        autoDetect: true,
+        sqlitePath: sqlitePath.trim() || null
+      }
+    });
+    setSettings(nextSettings);
+    const nextStatus = await appClient2.getNavDataStatus();
+    setNavDataStatus(nextStatus);
+    toast.success(t("feedback.saved"));
+  };
+  const saveSimBriefSettings = async () => {
+    const nextSettings = await appClient2.updateSettings({
+      simbrief: {
+        username: simbriefUsernameDraft.trim(),
+        userId: simbriefUserIdDraft.trim()
+      }
+    });
+    setSettings(nextSettings);
+    toast.success(t("feedback.saved"));
+  };
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("section", { className: "panel settings-panel settings-panel-compact", "aria-label": t("settings.title"), children: [
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "settings-field", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx("label", { htmlFor: "language-select", children: t("settings.language") }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs(
-        "select",
+        Select,
         {
           id: "language-select",
           value: settings?.language ?? "zh-CN",
@@ -50356,7 +52709,7 @@ function SettingsPanel() {
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "settings-field", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx("label", { htmlFor: "provider-select", children: t("settings.provider") }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs(
-        "select",
+        Select,
         {
           id: "provider-select",
           value: settings?.providerMode ?? "simconnect",
@@ -50374,7 +52727,7 @@ function SettingsPanel() {
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "settings-field", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx("label", { htmlFor: "map-tile-provider-select", children: t("settings.mapTileProvider") }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs(
-        "select",
+        Select,
         {
           id: "map-tile-provider-select",
           value: settings?.mapTileProvider ?? "osm",
@@ -50390,6 +52743,82 @@ function SettingsPanel() {
         }
       ),
       /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "settings-note-inline", children: t("settings.mapTileProviderHint") })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "settings-field", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("label", { children: t("settings.navDataTitle") }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "settings-note settings-note-card", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: t("settings.navDataDefaultPath", { path: navDataStatus?.defaultPath ?? "-" }) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: t("settings.navDataActivePath", { path: navDataStatus?.activePath ?? t("settings.navDataMissing") }) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "settings-inline-row", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            Input,
+            {
+              value: navPathDraft,
+              onChange: (event) => setNavPathDraft(event.target.value),
+              placeholder: t("settings.navDataPathPlaceholder")
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            Button,
+            {
+              type: "button",
+              variant: "secondary",
+              onClick: async () => {
+                const picked = await appClient2.pickNavSqliteFile();
+                if (!picked) return;
+                setNavPathDraft(picked);
+                await saveNavDataPath(picked);
+              },
+              children: t("settings.navDataBrowse")
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            Button,
+            {
+              type: "button",
+              variant: "secondary",
+              onClick: () => {
+                void saveNavDataPath(navPathDraft);
+              },
+              children: t("settings.navDataSave")
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            Button,
+            {
+              type: "button",
+              variant: "secondary",
+              onClick: () => {
+                setNavPathDraft("");
+                void saveNavDataPath("");
+              },
+              children: t("settings.navDataClear")
+            }
+          )
+        ] })
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "settings-field", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("label", { children: t("settings.simbriefTitle") }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "settings-note settings-note-card", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          Input,
+          {
+            value: simbriefUsernameDraft,
+            onChange: (event) => setSimbriefUsernameDraft(event.target.value),
+            placeholder: t("settings.simbriefUsername")
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          Input,
+          {
+            value: simbriefUserIdDraft,
+            onChange: (event) => setSimbriefUserIdDraft(event.target.value),
+            placeholder: t("settings.simbriefUserId")
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "settings-inline-row", children: /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "button", variant: "secondary", onClick: saveSimBriefSettings, children: t("settings.simbriefSave") }) })
+      ] })
     ] }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "settings-field", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx("label", { children: t("settings.remoteAccess") }),
@@ -50441,9 +52870,9 @@ function SettingsPanel() {
           ] }),
           /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "settings-inline-row", children: [
             /* @__PURE__ */ jsxRuntimeExports.jsx(
-              "input",
+              Input,
               {
-                className: "text-input settings-port-input",
+                className: "settings-port-input",
                 type: "number",
                 min: 1024,
                 max: 65535,
@@ -50452,10 +52881,10 @@ function SettingsPanel() {
               }
             ),
             /* @__PURE__ */ jsxRuntimeExports.jsx(
-              "button",
+              Button,
               {
                 type: "button",
-                className: "secondary-button",
+                variant: "secondary",
                 onClick: () => {
                   const nextPort = Number(portDraft);
                   if (!Number.isFinite(nextPort) || nextPort < 1024 || nextPort > 65535) {
@@ -50487,7 +52916,7 @@ function App() {
   const [selectedChartId, setSelectedChartId] = reactExports.useState(null);
   const [detailChartId, setDetailChartId] = reactExports.useState(null);
   const [chartDetailBackRoute, setChartDetailBackRoute] = reactExports.useState("charts");
-  const [sidebarCollapsed, setSidebarCollapsed] = reactExports.useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = reactExports.useState(true);
   const isFullBleedRoute = route === "map" || route === "charts" || route === "chartDetail" || route === "settings";
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("main", { className: `product-shell ${sidebarCollapsed ? "sidebar-collapsed" : ""}`, children: [
     /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -50517,7 +52946,8 @@ function App() {
             setDetailChartId(chartId);
             setChartDetailBackRoute("map");
             setRoute("chartDetail");
-          }
+          },
+          onOpenSettings: () => setRoute("settings")
         }
       ) }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("section", { className: `route-view ${route === "charts" ? "active" : ""}`, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -50534,7 +52964,7 @@ function App() {
         }
       ) }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("section", { className: `route-view ${route === "settings" ? "active" : ""}`, children: /* @__PURE__ */ jsxRuntimeExports.jsx(SettingsPage, {}) }),
-      detailChartId ? /* @__PURE__ */ jsxRuntimeExports.jsx("section", { className: `route-view ${route === "chartDetail" ? "active" : ""}`, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+      route === "chartDetail" && detailChartId ? /* @__PURE__ */ jsxRuntimeExports.jsx("section", { className: `route-view ${route === "chartDetail" ? "active" : ""}`, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
         ChartDetailPage,
         {
           chartId: detailChartId,
@@ -50550,6 +52980,22 @@ function App() {
     ] })
   ] });
 }
-ReactDOM.createRoot(document.getElementById("root")).render(
-  /* @__PURE__ */ jsxRuntimeExports.jsx(React.StrictMode, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(App, {}) })
+function Toaster2() {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    Toaster$1,
+    {
+      position: "top-right",
+      richColors: true,
+      closeButton: true,
+      toastOptions: {
+        duration: 2600
+      }
+    }
+  );
+}
+ReactDOM$1.createRoot(document.getElementById("root")).render(
+  /* @__PURE__ */ jsxRuntimeExports.jsxs(React.StrictMode, { children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx(App, {}),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(Toaster2, {})
+  ] })
 );
