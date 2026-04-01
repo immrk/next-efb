@@ -452,6 +452,8 @@ export class LanServer {
       title: input.title,
       airportCode: null,
       chartType: 'general',
+      titleMode: 'manual',
+      boundApproachProcedureId: null,
       sourceFilePath: imported.destinationPath,
       previewImagePath: displayPath,
       fileFormat: displayFormat,

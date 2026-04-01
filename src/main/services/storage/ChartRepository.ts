@@ -11,6 +11,8 @@ type ChartRow = {
   title: string
   airport_code: string | null
   chart_type: ChartRecord['chartType']
+  title_mode: ChartRecord['titleMode']
+  bound_approach_procedure_id: string | null
   source_file_path: string
   preview_image_path: string | null
   file_format: ChartRecord['fileFormat']
@@ -58,9 +60,9 @@ export class ChartRepository {
       .prepare(
         `
         INSERT INTO charts (
-          id, title, airport_code, chart_type, source_file_path, preview_image_path,
+          id, title, airport_code, chart_type, title_mode, bound_approach_procedure_id, source_file_path, preview_image_path,
           file_format, width, height, is_georeferenced, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `
       )
       .run(
@@ -68,6 +70,8 @@ export class ChartRepository {
         chart.title,
         chart.airportCode,
         chart.chartType,
+        chart.titleMode,
+        chart.boundApproachProcedureId,
         chart.sourceFilePath,
         chart.previewImagePath,
         chart.fileFormat,
@@ -87,11 +91,19 @@ export class ChartRepository {
       .prepare(
         `
         UPDATE charts
-        SET title = ?, airport_code = ?, chart_type = ?, updated_at = ?
+        SET title = ?, airport_code = ?, chart_type = ?, title_mode = ?, bound_approach_procedure_id = ?, updated_at = ?
         WHERE id = ?
       `
       )
-      .run(input.title, input.airportCode, input.chartType, now, input.id)
+      .run(
+        input.title,
+        input.airportCode,
+        input.chartType,
+        input.titleMode,
+        input.boundApproachProcedureId,
+        now,
+        input.id
+      )
 
     return this.getChart(input.id)
   }
@@ -175,6 +187,8 @@ export class ChartRepository {
         title TEXT NOT NULL,
         airport_code TEXT,
         chart_type TEXT NOT NULL,
+        title_mode TEXT NOT NULL DEFAULT 'manual',
+        bound_approach_procedure_id TEXT,
         source_file_path TEXT NOT NULL,
         preview_image_path TEXT,
         file_format TEXT NOT NULL,
@@ -196,6 +210,22 @@ export class ChartRepository {
         created_at INTEGER NOT NULL
       );
     `)
+
+    this.migrateChartsTable()
+  }
+
+  private migrateChartsTable(): void {
+    const columns = new Set<string>(
+      (this.db.prepare('PRAGMA table_info(charts)').all() as Array<{ name: string }>).map((row) => row.name)
+    )
+
+    if (!columns.has('title_mode')) {
+      this.db.prepare(`ALTER TABLE charts ADD COLUMN title_mode TEXT NOT NULL DEFAULT 'manual'`).run()
+    }
+
+    if (!columns.has('bound_approach_procedure_id')) {
+      this.db.prepare(`ALTER TABLE charts ADD COLUMN bound_approach_procedure_id TEXT`).run()
+    }
   }
 
   private toChartRecord(row: ChartRow): ChartRecord {
@@ -204,6 +234,8 @@ export class ChartRepository {
       title: row.title,
       airportCode: row.airport_code,
       chartType: row.chart_type,
+      titleMode: row.title_mode ?? 'manual',
+      boundApproachProcedureId: row.bound_approach_procedure_id ?? null,
       sourceFilePath: row.source_file_path,
       previewImagePath: row.preview_image_path,
       fileFormat: row.file_format,

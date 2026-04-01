@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import type { BuildFlightPlanResult, NavAirportProcedures, NavDataStatus } from '@shared/flight-plan-types'
 import { getAppClient } from '../client'
 import { useAppStore } from '../store/useAppStore'
+import { filterProceduresByRunway, parseApproachProcedureId, runwayMatches } from '../utils/navProcedures'
 import { toast } from './ui/use-toast'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
@@ -181,22 +182,22 @@ export function FlightPlanDrawer({
   }, [appClient, destinationAirport, isOpen, navDataReady])
 
   const departureProcedureOptions = useMemo(
-    () => filterProcedures(depProcedures.departures, departureRunway),
+    () => filterProceduresByRunway(depProcedures.departures, departureRunway),
     [depProcedures.departures, departureRunway]
   )
 
   const arrivalProcedureOptions = useMemo(
-    () => filterProcedures(destProcedures.arrivals, arrivalRunway),
+    () => filterProceduresByRunway(destProcedures.arrivals, arrivalRunway),
     [arrivalRunway, destProcedures.arrivals]
   )
 
   const approachProcedureOptions = useMemo(
-    () => filterProcedures(destProcedures.approaches, arrivalRunway),
+    () => filterProceduresByRunway(destProcedures.approaches, arrivalRunway),
     [arrivalRunway, destProcedures.approaches]
   )
 
   const selectedApproachProcedureId = useMemo(
-    () => parseProcedureId(approachProcedureId),
+    () => parseApproachProcedureId(approachProcedureId),
     [approachProcedureId]
   )
 
@@ -632,22 +633,6 @@ export function FlightPlanDrawer({
       </aside>
     </section>
   )
-}
-
-function filterProcedures<T extends { runwayName: string | null; name: string }>(items: T[], selectedRunway: string): T[] {
-  return items.filter((item) => runwayMatches(item.runwayName, selectedRunway))
-}
-
-function runwayMatches(optionRunway: string | null, selectedRunway: string): boolean {
-  if (!selectedRunway) return true
-  if (!optionRunway?.trim()) return true
-  return optionRunway.trim().toUpperCase() === selectedRunway.trim().toUpperCase()
-}
-
-function parseProcedureId(value: string): number | null {
-  if (!value.startsWith('approach:')) return null
-  const parsed = Number(value.slice('approach:'.length))
-  return Number.isFinite(parsed) ? parsed : null
 }
 
 function buildRouteSignature(input: {

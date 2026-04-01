@@ -169,6 +169,8 @@ function registerIpc(options) {
         title: input.title,
         airportCode: null,
         chartType: "general",
+        titleMode: "manual",
+        boundApproachProcedureId: null,
         sourceFilePath: imported.destinationPath,
         previewImagePath: displayPath,
         fileFormat: displayFormat,
@@ -702,15 +704,17 @@ class ChartRepository {
     this.db.prepare(
       `
         INSERT INTO charts (
-          id, title, airport_code, chart_type, source_file_path, preview_image_path,
+          id, title, airport_code, chart_type, title_mode, bound_approach_procedure_id, source_file_path, preview_image_path,
           file_format, width, height, is_georeferenced, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `
     ).run(
       chart.id,
       chart.title,
       chart.airportCode,
       chart.chartType,
+      chart.titleMode,
+      chart.boundApproachProcedureId,
       chart.sourceFilePath,
       chart.previewImagePath,
       chart.fileFormat,
@@ -727,10 +731,18 @@ class ChartRepository {
     this.db.prepare(
       `
         UPDATE charts
-        SET title = ?, airport_code = ?, chart_type = ?, updated_at = ?
+        SET title = ?, airport_code = ?, chart_type = ?, title_mode = ?, bound_approach_procedure_id = ?, updated_at = ?
         WHERE id = ?
       `
-    ).run(input.title, input.airportCode, input.chartType, now, input.id);
+    ).run(
+      input.title,
+      input.airportCode,
+      input.chartType,
+      input.titleMode,
+      input.boundApproachProcedureId,
+      now,
+      input.id
+    );
     return this.getChart(input.id);
   }
   deleteChart(chartId) {
@@ -799,6 +811,8 @@ class ChartRepository {
         title TEXT NOT NULL,
         airport_code TEXT,
         chart_type TEXT NOT NULL,
+        title_mode TEXT NOT NULL DEFAULT 'manual',
+        bound_approach_procedure_id TEXT,
         source_file_path TEXT NOT NULL,
         preview_image_path TEXT,
         file_format TEXT NOT NULL,
@@ -820,6 +834,18 @@ class ChartRepository {
         created_at INTEGER NOT NULL
       );
     `);
+    this.migrateChartsTable();
+  }
+  migrateChartsTable() {
+    const columns = new Set(
+      this.db.prepare("PRAGMA table_info(charts)").all().map((row) => row.name)
+    );
+    if (!columns.has("title_mode")) {
+      this.db.prepare(`ALTER TABLE charts ADD COLUMN title_mode TEXT NOT NULL DEFAULT 'manual'`).run();
+    }
+    if (!columns.has("bound_approach_procedure_id")) {
+      this.db.prepare(`ALTER TABLE charts ADD COLUMN bound_approach_procedure_id TEXT`).run();
+    }
   }
   toChartRecord(row) {
     return {
@@ -827,6 +853,8 @@ class ChartRepository {
       title: row.title,
       airportCode: row.airport_code,
       chartType: row.chart_type,
+      titleMode: row.title_mode ?? "manual",
+      boundApproachProcedureId: row.bound_approach_procedure_id ?? null,
       sourceFilePath: row.source_file_path,
       previewImagePath: row.preview_image_path,
       fileFormat: row.file_format,
@@ -1215,6 +1243,8 @@ class LanServer {
       title: input.title,
       airportCode: null,
       chartType: "general",
+      titleMode: "manual",
+      boundApproachProcedureId: null,
       sourceFilePath: imported.destinationPath,
       previewImagePath: displayPath,
       fileFormat: displayFormat,

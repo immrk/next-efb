@@ -1735,6 +1735,84 @@ body {
   padding: 4px 12px 12px;
 }
 
+.chart-meta-tabs {
+  display: grid;
+  gap: 12px;
+}
+
+.chart-meta-tabs-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 6px;
+  border: 1px solid rgba(139, 196, 255, 0.14);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.tabs-trigger {
+  min-height: 40px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: rgba(244, 247, 251, 0.7);
+  cursor: pointer;
+  font: inherit;
+  padding: 0 12px;
+  transition:
+    background 160ms ease,
+    color 160ms ease,
+    border-color 160ms ease,
+    transform 160ms ease;
+}
+
+.tabs-trigger:hover:not(:disabled) {
+  color: #f4f7fb;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.tabs-trigger.active,
+.tabs-trigger[data-state='active'] {
+  color: #f8fafc;
+  background: linear-gradient(135deg, rgba(57, 123, 219, 0.42), rgba(35, 181, 116, 0.2));
+  border-color: rgba(139, 196, 255, 0.28);
+}
+
+.tabs-trigger:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.chart-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.chart-meta-tab-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.chart-meta-derived-title {
+  display: grid;
+  gap: 6px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(139, 196, 255, 0.12);
+}
+
+.chart-meta-derived-title span {
+  color: rgba(244, 247, 251, 0.68);
+  font-size: 13px;
+}
+
+.chart-meta-hint {
+  color: rgba(244, 247, 251, 0.72);
+  line-height: 1.5;
+}
+
 .chart-meta-modal-foot {
   padding: 10px 12px 12px;
   display: flex;

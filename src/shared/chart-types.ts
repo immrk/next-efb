@@ -1,4 +1,5 @@
 export type ChartType = 'airport' | 'sid' | 'star' | 'approach' | 'general'
+export type ChartTitleMode = 'manual' | 'approach-procedure'
 
 export type ChartFileFormat = 'pdf' | 'png' | 'jpg' | 'jpeg'
 
@@ -7,6 +8,8 @@ export interface ChartRecord {
   title: string
   airportCode: string | null
   chartType: ChartType
+  titleMode: ChartTitleMode
+  boundApproachProcedureId: string | null
   sourceFilePath: string
   previewImagePath: string | null
   fileFormat: ChartFileFormat
@@ -71,6 +74,8 @@ export interface ChartUpdateInput {
   title: string
   airportCode: string | null
   chartType: ChartType
+  titleMode: ChartTitleMode
+  boundApproachProcedureId: string | null
 }
 
 export interface ChartAssetPayload {

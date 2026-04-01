@@ -1,18 +1,21 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { divIcon } from 'leaflet'
 import { MapContainer, Marker, TileLayer, useMap, useMapEvents } from 'react-leaflet'
 import { useTranslation } from 'react-i18next'
-import type { ChartType, GeoReferencePoint } from '@shared/chart-types'
+import type { ChartTitleMode, ChartType, GeoReferencePoint } from '@shared/chart-types'
+import type { NavAirportProcedures, NavDataStatus } from '@shared/flight-plan-types'
 import { getAppClient } from '../client'
 import { useAppStore } from '../store/useAppStore'
 import { ChartImagePreview } from '../components/ChartImagePreview'
 import { useChartDetailData } from '../hooks/useChartDetailData'
 import { getMapTileConfig } from '../utils/mapTileProviders'
+import { filterProceduresByRunway } from '../utils/navProcedures'
 import { notifyChartChanged } from '../utils/chartSync'
 import { toast } from '../components/ui/use-toast'
 import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import {
   Select,
   SelectContent,
@@ -103,6 +106,17 @@ function AutoFitMapPoints({
   return null
 }
 
+const EMPTY_PROCEDURES: NavAirportProcedures = {
+  airport: null,
+  runways: [],
+  departures: [],
+  arrivals: [],
+  transitions: [],
+  approaches: []
+}
+
+const NONE_SELECT_VALUE = '__none__'
+
 export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDetailPageProps) {
   const appClient = getAppClient()
   const runtime = appClient.getRuntime()
@@ -112,12 +126,16 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
   const { chart, asset, points, setChart, setPoints } = useChartDetailData(chartId)
   const tileConfig = getMapTileConfig(settings?.mapTileProvider)
   const aircraftPositionUsable = aircraft ? isAircraftPositionUsable(aircraft) : false
-  const mapCenterLat = aircraftPositionUsable ? (aircraft?.lat ?? 31.2304) : 31.2304
-  const mapCenterLon = aircraftPositionUsable ? (aircraft?.lon ?? 121.4737) : 121.4737
-
-  const [title, setTitle] = useState('')
+  const [navStatus, setNavStatus] = useState<NavDataStatus | null>(null)
+  const [titleMode, setTitleMode] = useState<ChartTitleMode>('manual')
+  const [manualTitle, setManualTitle] = useState('')
   const [airportCode, setAirportCode] = useState('')
   const [chartType, setChartType] = useState<ChartType>('general')
+  const [boundApproachProcedureId, setBoundApproachProcedureId] = useState('')
+  const [boundApproachRunway, setBoundApproachRunway] = useState('')
+  const [navProcedures, setNavProcedures] = useState<NavAirportProcedures>(EMPTY_PROCEDURES)
+  const [navProceduresLoading, setNavProceduresLoading] = useState(false)
+  const [navProceduresError, setNavProceduresError] = useState('')
   const [draftMapPoints, setDraftMapPoints] = useState<Array<{ lat: number; lon: number }>>([])
   const [draftChartPoints, setDraftChartPoints] = useState<Array<{ x: number; y: number }>>([])
   const [draftInitializedForChartId, setDraftInitializedForChartId] = useState<string | null>(null)
@@ -126,6 +144,9 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
   const [isMetaModalOpen, setIsMetaModalOpen] = useState(false)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
+  const navDataReady = Boolean(navStatus?.exists && navStatus?.activePath)
+  const mapCenterLat = aircraftPositionUsable ? (aircraft?.lat ?? 31.2304) : 31.2304
+  const mapCenterLon = aircraftPositionUsable ? (aircraft?.lon ?? 121.4737) : 121.4737
 
   const chartTypeLabel: Record<ChartType, string> = {
     general: t('chartType.general'),
@@ -137,10 +158,123 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
 
   useEffect(() => {
     if (!chart) return
-    setTitle(chart.title)
+    setManualTitle(chart.title)
     setAirportCode(chart.airportCode ?? '')
     setChartType(chart.chartType)
+    setTitleMode(chart.titleMode)
+    setBoundApproachProcedureId(chart.boundApproachProcedureId ?? '')
+    setBoundApproachRunway('')
   }, [chart])
+
+  useEffect(() => {
+    const refreshNavStatus = () => {
+      void appClient.getNavDataStatus().then(setNavStatus)
+    }
+
+    refreshNavStatus()
+    const offSettings = appClient.onSettingsChanged(() => {
+      refreshNavStatus()
+    })
+
+    return () => {
+      offSettings()
+    }
+  }, [appClient])
+
+  useEffect(() => {
+    if (!navDataReady) {
+      setNavProcedures(EMPTY_PROCEDURES)
+      setNavProceduresError('')
+      setNavProceduresLoading(false)
+      return
+    }
+
+    if (!airportCode.trim() || chartType !== 'approach') {
+      setNavProcedures(EMPTY_PROCEDURES)
+      setNavProceduresError('')
+      setNavProceduresLoading(false)
+      return
+    }
+
+    let active = true
+    setNavProceduresLoading(true)
+    setNavProceduresError('')
+
+    void appClient
+      .getNavAirportProcedures(airportCode.trim().toUpperCase())
+      .then((procedures) => {
+        if (!active) return
+        setNavProcedures(procedures)
+      })
+      .catch((error) => {
+        if (!active) return
+        setNavProcedures(EMPTY_PROCEDURES)
+        setNavProceduresError(error instanceof Error ? error.message : t('feedback.failed'))
+      })
+      .finally(() => {
+        if (active) {
+          setNavProceduresLoading(false)
+        }
+      })
+
+    return () => {
+      active = false
+    }
+  }, [appClient, airportCode, chartType, navDataReady, t])
+
+  useEffect(() => {
+    if (chartType !== 'approach' && titleMode !== 'manual') {
+      setTitleMode('manual')
+      setBoundApproachProcedureId('')
+      setBoundApproachRunway('')
+    }
+  }, [chartType, titleMode])
+
+  useEffect(() => {
+    if (titleMode !== 'approach-procedure') {
+      return
+    }
+
+    const selectedProcedure = navProcedures.approaches.find((procedure) => procedure.id === boundApproachProcedureId)
+    if (!selectedProcedure) {
+      if (boundApproachRunway) {
+        setBoundApproachRunway('')
+      }
+      return
+    }
+
+    if (selectedProcedure.runwayName?.trim() && selectedProcedure.runwayName !== boundApproachRunway) {
+      setBoundApproachRunway(selectedProcedure.runwayName)
+    }
+  }, [boundApproachProcedureId, boundApproachRunway, navProcedures.approaches, titleMode])
+
+  const filteredApproachProcedures = useMemo(
+    () => filterProceduresByRunway(navProcedures.approaches, boundApproachRunway),
+    [boundApproachRunway, navProcedures.approaches]
+  )
+
+  const selectedApproachProcedure = useMemo(
+    () => navProcedures.approaches.find((procedure) => procedure.id === boundApproachProcedureId) ?? null,
+    [boundApproachProcedureId, navProcedures.approaches]
+  )
+
+  useEffect(() => {
+    if (titleMode !== 'approach-procedure') {
+      return
+    }
+
+    if (!boundApproachProcedureId) {
+      return
+    }
+
+    if (!filteredApproachProcedures.some((procedure) => procedure.id === boundApproachProcedureId)) {
+      setBoundApproachProcedureId('')
+    }
+  }, [boundApproachProcedureId, filteredApproachProcedures, titleMode])
+
+  const canUseProcedureMode =
+    chartType === 'approach' && Boolean(airportCode.trim()) && (navDataReady || Boolean(boundApproachProcedureId))
+  const displayTitle = titleMode === 'approach-procedure' ? selectedApproachProcedure?.name ?? manualTitle : manualTitle
 
   useEffect(() => {
     setDraftMapPoints([])
@@ -174,12 +308,39 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
 
   const saveMetadata = async () => {
     if (!chart) return
+
+    const nextManualTitle = manualTitle.trim()
+    const nextTitleMode: ChartTitleMode =
+      canUseProcedureMode && titleMode === 'approach-procedure' ? 'approach-procedure' : 'manual'
+    const nextBoundProcedureId = nextTitleMode === 'approach-procedure' ? boundApproachProcedureId || null : null
+    const selectedProcedureForSave =
+      nextTitleMode === 'approach-procedure' && nextBoundProcedureId
+        ? navProcedures.approaches.find((procedure) => procedure.id === nextBoundProcedureId) ??
+          (chart.boundApproachProcedureId === nextBoundProcedureId
+            ? { id: nextBoundProcedureId, name: chart.title }
+            : null)
+        : null
+
+    if (nextTitleMode === 'manual' && !nextManualTitle) {
+      toast.error(t('chartDetail.titleRequired'))
+      return
+    }
+
+    if (nextTitleMode === 'approach-procedure' && (!nextBoundProcedureId || !selectedProcedureForSave)) {
+      toast.error(t('chartDetail.procedureRequired'))
+      return
+    }
+
     try {
+      const titleToSave = nextTitleMode === 'approach-procedure' ? selectedProcedureForSave?.name ?? chart.title : nextManualTitle
+
       const updated = await appClient.updateChart({
         id: chart.id,
-        title,
+        title: titleToSave,
         airportCode: airportCode || null,
-        chartType
+        chartType,
+        titleMode: nextTitleMode,
+        boundApproachProcedureId: nextBoundProcedureId
       })
       if (updated) {
         setChart(updated)
@@ -430,29 +591,119 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
             </header>
 
             <div className="chart-meta-modal-body">
-              <div className="settings-field">
-                <label>{t('chartDetail.fieldTitle')}</label>
-                <Input value={title} onChange={(e) => setTitle(e.target.value)} />
-              </div>
-              <div className="settings-field">
-                <label>{t('chartDetail.fieldAirportCode')}</label>
-                <Input value={airportCode} onChange={(e) => setAirportCode(e.target.value)} />
-              </div>
-              <div className="settings-field">
-                <label>{t('chartDetail.fieldChartType')}</label>
-                <Select value={chartType} onValueChange={(value) => setChartType(value as ChartType)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="general">{t('chartType.general')}</SelectItem>
-                    <SelectItem value="airport">{t('chartType.airport')}</SelectItem>
-                    <SelectItem value="sid">{t('chartType.sid')}</SelectItem>
-                    <SelectItem value="star">{t('chartType.star')}</SelectItem>
-                    <SelectItem value="approach">{t('chartType.approach')}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              <Tabs
+                value={titleMode}
+                onValueChange={(value) => setTitleMode(value as ChartTitleMode)}
+                className="chart-meta-tabs"
+              >
+                <TabsList className="chart-meta-tabs-list">
+                  <TabsTrigger value="manual">{t('chartDetail.modeManual')}</TabsTrigger>
+                  <TabsTrigger value="approach-procedure" disabled={!canUseProcedureMode}>
+                    {t('chartDetail.modeProcedure')}
+                  </TabsTrigger>
+                </TabsList>
+
+                <div className="chart-meta-grid">
+                  <label className="settings-field">
+                    <span>{t('chartDetail.fieldAirportCode')}</span>
+                    <Input
+                      value={airportCode}
+                      onChange={(event) => setAirportCode(event.target.value.toUpperCase())}
+                      placeholder={t('chartDetail.fieldAirportCodePlaceholder')}
+                    />
+                  </label>
+                  <label className="settings-field">
+                    <span>{t('chartDetail.fieldChartType')}</span>
+                    <Select value={chartType} onValueChange={(value) => setChartType(value as ChartType)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="general">{t('chartType.general')}</SelectItem>
+                        <SelectItem value="airport">{t('chartType.airport')}</SelectItem>
+                        <SelectItem value="sid">{t('chartType.sid')}</SelectItem>
+                        <SelectItem value="star">{t('chartType.star')}</SelectItem>
+                        <SelectItem value="approach">{t('chartType.approach')}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </label>
+                </div>
+
+                <TabsContent value="manual" className="chart-meta-tab-panel">
+                  <label className="settings-field">
+                    <span>{t('chartDetail.fieldTitle')}</span>
+                    <Input
+                      value={manualTitle}
+                      onChange={(event) => setManualTitle(event.target.value)}
+                      placeholder={t('chartDetail.fieldTitlePlaceholder')}
+                    />
+                  </label>
+                </TabsContent>
+
+                <TabsContent value="approach-procedure" className="chart-meta-tab-panel">
+                  <div className="settings-note settings-note-card">
+                    <strong>{t('chartDetail.procedureModeTitle')}</strong>
+                    <span>{canUseProcedureMode ? t('chartDetail.procedureModeHint') : t('chartDetail.procedureModeBlocked')}</span>
+                  </div>
+
+                  <label className="settings-field">
+                    <span>{t('chartDetail.procedureRunway')}</span>
+                    <Select
+                      value={boundApproachRunway || NONE_SELECT_VALUE}
+                      onValueChange={(value) =>
+                        setBoundApproachRunway(value === NONE_SELECT_VALUE ? '' : value)
+                      }
+                      disabled={!canUseProcedureMode || navProceduresLoading}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={NONE_SELECT_VALUE}>{t('chartDetail.procedureAnyRunway')}</SelectItem>
+                        {navProcedures.runways.map((runway) => (
+                          <SelectItem key={runway.name} value={runway.name}>
+                            {runway.displayName}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </label>
+
+                  <label className="settings-field">
+                    <span>{t('chartDetail.procedureSelect')}</span>
+                    <Select
+                      value={boundApproachProcedureId || NONE_SELECT_VALUE}
+                      onValueChange={(value) =>
+                        setBoundApproachProcedureId(value === NONE_SELECT_VALUE ? '' : value)
+                      }
+                      disabled={!canUseProcedureMode || navProceduresLoading || filteredApproachProcedures.length === 0}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={t('chartDetail.procedureSelectPlaceholder')} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={NONE_SELECT_VALUE}>{t('chartDetail.procedureNone')}</SelectItem>
+                        {filteredApproachProcedures.map((procedure) => (
+                          <SelectItem key={procedure.id} value={procedure.id}>
+                            {procedure.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </label>
+
+                  <div className="chart-meta-derived-title">
+                    <span>{t('chartDetail.procedureDerivedTitle')}</span>
+                    <strong>{displayTitle || t('chartDetail.procedureDerivedEmpty')}</strong>
+                  </div>
+
+                  {navProceduresLoading ? (
+                    <div className="chart-meta-hint">{t('chartDetail.procedureLoading')}</div>
+                  ) : null}
+
+                  {navProceduresError ? <div className="chart-meta-hint danger-copy">{navProceduresError}</div> : null}
+                </TabsContent>
+              </Tabs>
             </div>
 
             <footer className="chart-meta-modal-foot">

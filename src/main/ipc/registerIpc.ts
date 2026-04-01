@@ -194,6 +194,8 @@ export function registerIpc(options: RegisterIpcOptions): void {
         title: input.title,
         airportCode: null,
         chartType: 'general',
+        titleMode: 'manual',
+        boundApproachProcedureId: null,
         sourceFilePath: imported.destinationPath,
         previewImagePath: displayPath,
         fileFormat: displayFormat,
