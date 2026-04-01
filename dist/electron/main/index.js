@@ -1558,26 +1558,29 @@ class NavDataService {
     const approachProcedureId = normalizeNullablePath(input.approachProcedureId);
     const arrivalTransitionId = normalizeNullablePath(input.arrivalTransitionId);
     const unresolvedTokens = [];
-    const mainPoints = [];
-    const missedPoints = [];
+    const routePoints = [];
+    const segments = [];
     const departure = this.getAirportByIdent(db, departureIdent);
     const destination = this.getAirportByIdent(db, destinationIdent);
+    const departureLegs = this.resolveApproachLegPoints(db, departureProcedureId);
+    const arrivalLegs = this.resolveApproachLegPoints(db, arrivalProcedureId);
+    const approachLegs = this.resolveApproachLegPoints(db, approachProcedureId);
     const departureStartPoint = departureRunwayName && departure?.airport_id ? this.resolveRunwayEndPoint(db, departure.airport_id, departureRunwayName) ?? this.resolveAirportPoint(departure) : this.resolveAirportPoint(departure);
-    if (departureStartPoint) {
-      mainPoints.push(departureStartPoint);
-    }
-    const departureProcedurePoint = this.resolveProcedurePoint(db, departureProcedureId);
-    if (departureProcedurePoint) {
-      mainPoints.push(departureProcedurePoint);
-    }
+    const departureSegmentPoints = dedupeConsecutivePoints(collectPoints(departureStartPoint, ...departureLegs.main));
+    appendSegment(segments, routePoints, departureSegmentPoints, "departure", FLIGHT_PLAN_COLORS.departure);
+    const departureAnchor = lastPoint(departureSegmentPoints) ?? departureStartPoint;
     const tokens = normalizeRouteTokens(input.enrouteText);
+    const enroutePoints = [];
+    if (departureAnchor) {
+      enroutePoints.push(departureAnchor);
+    }
     for (const token of tokens) {
       if (token === departureIdent || token === destinationIdent) {
         continue;
       }
       const fix = this.resolveFix(db, token);
       if (fix) {
-        mainPoints.push({
+        enroutePoints.push({
           ident: fix.ident,
           lat: fix.laty,
           lon: fix.lonx,
@@ -1587,31 +1590,28 @@ class NavDataService {
         unresolvedTokens.push(token);
       }
     }
-    const arrivalProcedurePoint = this.resolveProcedurePoint(db, arrivalProcedureId);
-    if (arrivalProcedurePoint) {
-      mainPoints.push(arrivalProcedurePoint);
-    }
-    const transitionPoint = this.resolveTransitionPoint(db, arrivalTransitionId);
-    if (transitionPoint) {
-      mainPoints.push(transitionPoint);
-    }
-    const approachLegs = this.resolveApproachLegPoints(db, approachProcedureId);
-    mainPoints.push(...approachLegs.main);
     const destinationPoint = arrivalRunwayName && destination?.airport_id ? this.resolveRunwayEndPoint(db, destination.airport_id, arrivalRunwayName) ?? this.resolveAirportPoint(destination) : this.resolveAirportPoint(destination);
-    if (destinationPoint) {
-      mainPoints.push(destinationPoint);
-    }
-    const missedStartPoint = arrivalRunwayName && destination?.airport_id ? this.resolveRunwayEndPoint(db, destination.airport_id, arrivalRunwayName) ?? destinationPoint : destinationPoint;
-    if (missedStartPoint && approachLegs.missed.length > 0) {
-      missedPoints.push(missedStartPoint, ...approachLegs.missed);
-    }
-    db.close();
-    const mainSegment = dedupeConsecutivePoints(mainPoints);
-    const missedSegment = dedupeConsecutivePoints(missedPoints);
-    const segments = [mainSegment.length > 0 ? { points: mainSegment } : null, missedSegment.length > 0 ? { points: missedSegment, dashed: true } : null].filter(
-      (segment) => Boolean(segment)
+    const enrouteAnchor = lastPoint(enroutePoints) ?? departureAnchor;
+    const transitionPoint = this.resolveTransitionPoint(db, arrivalTransitionId);
+    const arrivalEntryPoint = arrivalLegs.main[0] ?? transitionPoint ?? approachLegs.main[0] ?? destinationPoint;
+    const enrouteSegmentPoints = dedupeConsecutivePoints(
+      collectPoints(enrouteAnchor, ...enroutePoints.slice(1), arrivalEntryPoint)
     );
-    const uniquePoints = dedupeConsecutivePoints([...mainSegment, ...missedSegment]);
+    appendSegment(segments, routePoints, enrouteSegmentPoints, "enroute", FLIGHT_PLAN_COLORS.enroute);
+    const arrivalSegmentPoints = dedupeConsecutivePoints(
+      collectPoints(arrivalEntryPoint, ...arrivalLegs.main.slice(1), transitionPoint)
+    );
+    appendSegment(segments, routePoints, arrivalSegmentPoints, "arrival", FLIGHT_PLAN_COLORS.arrival);
+    const arrivalAnchor = lastPoint(arrivalSegmentPoints) ?? enrouteAnchor;
+    const approachEntryPoint = transitionPoint ?? arrivalAnchor;
+    const approachSegmentPoints = dedupeConsecutivePoints(collectPoints(approachEntryPoint, ...approachLegs.main));
+    const mainApproachPoints = dedupeConsecutivePoints(collectPoints(...approachSegmentPoints, destinationPoint));
+    appendSegment(segments, routePoints, mainApproachPoints, "approach", FLIGHT_PLAN_COLORS.approach);
+    const missedStartPoint = destinationPoint;
+    const missedSegmentPoints = dedupeConsecutivePoints(collectPoints(missedStartPoint, ...approachLegs.missed));
+    appendSegment(segments, routePoints, missedSegmentPoints, "missed", FLIGHT_PLAN_COLORS.missed, true);
+    db.close();
+    const uniquePoints = dedupeConsecutivePoints(routePoints);
     const procedureSummary = [
       departureRunwayName ? `DEP RWY ${departureRunwayName}` : "DEP AUTO",
       departureProcedureId ? `DEP PROC ${departureProcedureId.replace(/^approach:/, "")}` : null,
@@ -1836,6 +1836,30 @@ function stripMissedFlag(point) {
   const { isMissed: _isMissed, ...rest } = point;
   return rest;
 }
+function appendSegment(segments, routePoints, points, phase, color, dashed = false) {
+  const cleaned = dedupeConsecutivePoints(collectPoints(...points));
+  if (cleaned.length < 2) {
+    if (cleaned.length === 1) {
+      routePoints.push(cleaned[0]);
+    }
+    return;
+  }
+  segments.push({ points: cleaned, phase, color, dashed });
+  routePoints.push(...cleaned);
+}
+function lastPoint(points) {
+  return points.length > 0 ? points[points.length - 1] : null;
+}
+function collectPoints(...points) {
+  return points.filter((point) => Boolean(point));
+}
+const FLIGHT_PLAN_COLORS = {
+  departure: "#4fd1c5",
+  enroute: "#6aa8ff",
+  arrival: "#ffbf69",
+  approach: "#ff7b72",
+  missed: "#c084fc"
+};
 function normalizeNullablePath(pathValue) {
   if (!pathValue) return null;
   const trimmed = pathValue.trim();

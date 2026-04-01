@@ -59,6 +59,8 @@ export interface FlightPlanPoint {
 export interface FlightPlanSegment {
   points: FlightPlanPoint[]
   dashed?: boolean
+  color?: string
+  phase?: 'departure' | 'enroute' | 'arrival' | 'approach' | 'missed'
 }
 
 export interface BuildFlightPlanInput {

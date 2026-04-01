@@ -303,7 +303,7 @@ export function MapPanel({
                     key={`segment:${index}`}
                     positions={segment.points.map((point) => [point.lat, point.lon])}
                     pathOptions={{
-                      color: '#ffcf5a',
+                      color: segment.color ?? '#ffcf5a',
                       weight: 3,
                       opacity: segment.dashed ? 0.75 : 0.92,
                       dashArray: segment.dashed ? '10 10' : undefined,
