@@ -2,7 +2,13 @@ export type AppLanguage = 'zh-CN' | 'en-US'
 export type AppRoute = 'map' | 'charts' | 'chartDetail' | 'settings'
 
 export type AircraftSource = 'mock' | 'simconnect'
-export type MapTileProvider = 'osm' | 'osmfr' | 'cartoLight'
+export type MapTileProvider =
+  | 'esriWorldStreet'
+  | 'osm'
+  | 'osmHot'
+  | 'cartoLight'
+  | 'cartoVoyager'
+  | 'osmfr'
 
 export interface LanAccessSettings {
   enabled: boolean

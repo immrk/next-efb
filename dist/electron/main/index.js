@@ -2190,13 +2190,18 @@ let hasShownSingleInstanceNotice = false;
 const DEV_LOAD_RETRY_MS = 1200;
 const DEV_LOAD_MAX_ATTEMPTS = 12;
 const TILE_REQUEST_URLS = [
+  "https://server.arcgisonline.com/*",
   "https://tile.openstreetmap.org/*",
   "https://a.tile.openstreetmap.org/*",
   "https://b.tile.openstreetmap.org/*",
   "https://c.tile.openstreetmap.org/*",
   "https://a.tile.openstreetmap.fr/*",
   "https://b.tile.openstreetmap.fr/*",
-  "https://c.tile.openstreetmap.fr/*"
+  "https://c.tile.openstreetmap.fr/*",
+  "https://a.basemaps.cartocdn.com/*",
+  "https://b.basemaps.cartocdn.com/*",
+  "https://c.basemaps.cartocdn.com/*",
+  "https://d.basemaps.cartocdn.com/*"
 ];
 const APP_TILE_REFERER = "https://nextefb.app/";
 async function delay(ms) {

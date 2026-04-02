@@ -15651,10 +15651,13 @@ const zhCN = {
   "settings.providerMock": "Mock 模拟数据",
   "settings.providerNotice": "默认使用 SimConnect。当前无法连接 MSFS 时可切换为 Mock 模式。",
   "settings.mapTileProvider": "地图底图",
+  "settings.mapTileProviderEsriWorldStreet": "Esri World Street（英文标注）",
   "settings.mapTileProviderCartoLight": "CARTO Positron",
+  "settings.mapTileProviderCartoVoyager": "CARTO Voyager",
+  "settings.mapTileProviderOsmHot": "OpenStreetMap HOT",
   "settings.mapTileProviderOsmFr": "OpenStreetMap France",
   "settings.mapTileProviderOsm": "OpenStreetMap 标准",
-  "settings.mapTileProviderHint": "默认优先使用 OpenStreetMap Standard。如果某个底图源在你的网络下不稳定，可以在这里切换。",
+  "settings.mapTileProviderHint": "默认使用 Esri World Street，因为它更容易保持英文标注。如果某个底图源在你的网络下不稳定，可以在这里切换。",
   "settings.chartOpacity": "航图不透明度",
   "settings.chartOpacityHint": "控制地图上挂载航图的显示强度。",
   "settings.remoteAccess": "局域网远程访问",
@@ -15833,10 +15836,13 @@ const enUS = {
   "settings.providerMock": "Mock Simulated Data",
   "settings.providerNotice": "Use SimConnect by default. Switch to Mock mode when MSFS is unavailable.",
   "settings.mapTileProvider": "Map Tile Provider",
+  "settings.mapTileProviderEsriWorldStreet": "Esri World Street (English labels)",
   "settings.mapTileProviderCartoLight": "CARTO Positron",
+  "settings.mapTileProviderCartoVoyager": "CARTO Voyager",
+  "settings.mapTileProviderOsmHot": "OpenStreetMap HOT",
   "settings.mapTileProviderOsmFr": "OpenStreetMap France",
   "settings.mapTileProviderOsm": "OpenStreetMap Standard",
-  "settings.mapTileProviderHint": "OpenStreetMap Standard is the preferred default. If one provider is unstable on your network, switch to another free raster source here.",
+  "settings.mapTileProviderHint": "Esri World Street is the default because it keeps labels in English more consistently. If one provider is unstable on your network, switch to another raster source here.",
   "settings.chartOpacity": "Chart opacity",
   "settings.chartOpacityHint": "Controls how strongly mounted charts appear on the map.",
   "settings.remoteAccess": "LAN Remote Access",
@@ -47816,10 +47822,21 @@ function useChartDetailData(chartId) {
   };
 }
 const MAP_TILE_CONFIGS = {
+  esriWorldStreet: {
+    name: "Esri World Street Map",
+    url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",
+    attribution: 'Tiles &copy; <a href="https://www.esri.com/">Esri</a>, HERE, Garmin, USGS, OpenStreetMap contributors'
+  },
   osm: {
     name: "OpenStreetMap Standard",
     url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  },
+  osmHot: {
+    name: "OpenStreetMap HOT",
+    url: "https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png",
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, style by Humanitarian OpenStreetMap Team',
+    subdomains: ["a", "b", "c"]
   },
   osmfr: {
     name: "OpenStreetMap France",
@@ -47830,6 +47847,12 @@ const MAP_TILE_CONFIGS = {
   cartoLight: {
     name: "Carto Positron",
     url: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+    subdomains: ["a", "b", "c", "d"]
+  },
+  cartoVoyager: {
+    name: "Carto Voyager",
+    url: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
     subdomains: ["a", "b", "c", "d"]
   }
@@ -56162,8 +56185,11 @@ function MapPanel({
               }
             ),
             /* @__PURE__ */ jsxRuntimeExports.jsxs(SelectContent, { children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: "esriWorldStreet", children: t("settings.mapTileProviderEsriWorldStreet") }),
               /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: "osm", children: t("settings.mapTileProviderOsm") }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: "osmHot", children: t("settings.mapTileProviderOsmHot") }),
               /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: "cartoLight", children: t("settings.mapTileProviderCartoLight") }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: "cartoVoyager", children: t("settings.mapTileProviderCartoVoyager") }),
               /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: "osmfr", children: t("settings.mapTileProviderOsmFr") })
             ] })
           ]
@@ -59101,8 +59127,11 @@ function SettingsPanel() {
           children: [
             /* @__PURE__ */ jsxRuntimeExports.jsx(SelectTrigger, { id: "map-tile-provider-select", children: /* @__PURE__ */ jsxRuntimeExports.jsx(SelectValue, {}) }),
             /* @__PURE__ */ jsxRuntimeExports.jsxs(SelectContent, { children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: "esriWorldStreet", children: t("settings.mapTileProviderEsriWorldStreet") }),
               /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: "osm", children: t("settings.mapTileProviderOsm") }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: "osmHot", children: t("settings.mapTileProviderOsmHot") }),
               /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: "cartoLight", children: t("settings.mapTileProviderCartoLight") }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: "cartoVoyager", children: t("settings.mapTileProviderCartoVoyager") }),
               /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: "osmfr", children: t("settings.mapTileProviderOsmFr") })
             ] })
           ]

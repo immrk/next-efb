@@ -193,8 +193,11 @@ export function SettingsPanel() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="esriWorldStreet">{t('settings.mapTileProviderEsriWorldStreet')}</SelectItem>
             <SelectItem value="osm">{t('settings.mapTileProviderOsm')}</SelectItem>
+            <SelectItem value="osmHot">{t('settings.mapTileProviderOsmHot')}</SelectItem>
             <SelectItem value="cartoLight">{t('settings.mapTileProviderCartoLight')}</SelectItem>
+            <SelectItem value="cartoVoyager">{t('settings.mapTileProviderCartoVoyager')}</SelectItem>
             <SelectItem value="osmfr">{t('settings.mapTileProviderOsmFr')}</SelectItem>
           </SelectContent>
         </Select>
