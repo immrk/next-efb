@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { APP_NAME } from '@shared/branding'
 import { getAppClient } from '../client'
+import { BRAND_ICON_URL } from '../branding'
 
 function WindowControlIcon({ kind }: { kind: 'minimize' | 'maximize' | 'restore' | 'close' | 'tools' | 'refresh' }) {
   if (kind === 'minimize') {
@@ -92,7 +93,7 @@ export function DesktopTitleBar() {
       <div className="desktop-titlebar-left">
         <div className="desktop-titlebar-brand">
           <span className="desktop-titlebar-logo" aria-hidden="true">
-            <img src="/brand-mark.svg" alt="" />
+            <img src={BRAND_ICON_URL} alt="" />
           </span>
           <div className="desktop-titlebar-copy">
             <strong>{APP_NAME}</strong>

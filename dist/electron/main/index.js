@@ -2152,6 +2152,16 @@ let appTray = null;
 let isQuitting = false;
 const DEV_LOAD_RETRY_MS = 1200;
 const DEV_LOAD_MAX_ATTEMPTS = 12;
+const TILE_REQUEST_URLS = [
+  "https://tile.openstreetmap.org/*",
+  "https://a.tile.openstreetmap.org/*",
+  "https://b.tile.openstreetmap.org/*",
+  "https://c.tile.openstreetmap.org/*",
+  "https://a.tile.openstreetmap.fr/*",
+  "https://b.tile.openstreetmap.fr/*",
+  "https://c.tile.openstreetmap.fr/*"
+];
+const APP_TILE_REFERER = "https://nextefb.app/";
 async function delay(ms) {
   await new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -2237,6 +2247,7 @@ function resolveSystemLanguage(locale) {
   return locale.trim().toLowerCase().startsWith("zh") ? "zh-CN" : "en-US";
 }
 electron.app.whenReady().then(async () => {
+  configureTileRequestHeaders();
   electron.app.on("before-quit", () => {
     isQuitting = true;
   });
@@ -2247,6 +2258,19 @@ electron.app.whenReady().then(async () => {
     }
   });
 });
+function configureTileRequestHeaders() {
+  const userAgent = `${APP_NAME}/${electron.app.getVersion()} (Electron ${process.versions.electron})`;
+  electron.app.userAgentFallback = userAgent;
+  electron.session.defaultSession.webRequest.onBeforeSendHeaders({ urls: TILE_REQUEST_URLS }, (details, callback) => {
+    callback({
+      requestHeaders: {
+        ...details.requestHeaders,
+        "User-Agent": userAgent,
+        Referer: APP_TILE_REFERER
+      }
+    });
+  });
+}
 electron.app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {
     electron.app.quit();

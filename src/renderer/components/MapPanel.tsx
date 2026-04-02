@@ -313,9 +313,9 @@ export function MapPanel({
           <TileLayer
             attribution={tileConfig.attribution}
             url={tileConfig.url}
-            subdomains={tileConfig.subdomains}
             updateWhenIdle={false}
             referrerPolicy="strict-origin-when-cross-origin"
+            {...(tileConfig.subdomains ? { subdomains: tileConfig.subdomains } : {})}
           />
           {aircraftPositionUsable ? (
             <Marker

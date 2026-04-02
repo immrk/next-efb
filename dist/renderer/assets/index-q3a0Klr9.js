@@ -12756,6 +12756,8 @@ const useTranslation = (ns, props = {}) => {
   });
 };
 const APP_NAME = "NextEFB";
+const brandIconUrl = "" + new URL("brand-mark-rIPLYFvC.png", import.meta.url).href;
+const BRAND_ICON_URL = brandIconUrl;
 const variantClassNames$1 = {
   default: "button button-default",
   secondary: "button button-secondary",
@@ -12790,7 +12792,7 @@ function Button({
 }
 function SidebarIcon({ kind }) {
   if (kind === "brand") {
-    return /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: "/brand-mark.svg", alt: "" });
+    return /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: BRAND_ICON_URL, alt: "" });
   }
   if (kind === "collapse") {
     return /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { viewBox: "0 0 24 24", "aria-hidden": "true", children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M15 6L9 12L15 18" }) });
@@ -13308,7 +13310,7 @@ function DesktopTitleBar() {
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("header", { className: "desktop-titlebar", children: [
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "desktop-titlebar-left", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "desktop-titlebar-brand", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "desktop-titlebar-logo", "aria-hidden": "true", children: /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: "/brand-mark.svg", alt: "" }) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "desktop-titlebar-logo", "aria-hidden": "true", children: /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: BRAND_ICON_URL, alt: "" }) }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "desktop-titlebar-copy", children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: APP_NAME }),
           /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: t("desktop.chromeSubtitle") })
@@ -47816,9 +47818,8 @@ function useChartDetailData(chartId) {
 const MAP_TILE_CONFIGS = {
   osm: {
     name: "OpenStreetMap Standard",
-    url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-    subdomains: ["a", "b", "c"]
+    url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
   },
   osmfr: {
     name: "OpenStreetMap France",
@@ -47834,10 +47835,14 @@ const MAP_TILE_CONFIGS = {
   }
 };
 function getMapTileConfig(provider) {
-  if (!provider) {
-    return MAP_TILE_CONFIGS.osm;
+  const config = provider ? MAP_TILE_CONFIGS[provider] ?? MAP_TILE_CONFIGS.osm : MAP_TILE_CONFIGS.osm;
+  const usesSubdomains = config.url.includes("{s}");
+  if (!usesSubdomains) {
+    return {
+      ...config,
+      subdomains: void 0
+    };
   }
-  const config = MAP_TILE_CONFIGS[provider] ?? MAP_TILE_CONFIGS.osm;
   return {
     ...config,
     subdomains: config.subdomains ?? ["a", "b", "c"]
@@ -54448,8 +54453,8 @@ function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }) {
                 {
                   attribution: tileConfig.attribution,
                   url: tileConfig.url,
-                  subdomains: tileConfig.subdomains,
-                  referrerPolicy: "strict-origin-when-cross-origin"
+                  referrerPolicy: "strict-origin-when-cross-origin",
+                  ...tileConfig.subdomains ? { subdomains: tileConfig.subdomains } : {}
                 }
               ),
               /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -56039,9 +56044,9 @@ function MapPanel({
             {
               attribution: tileConfig.attribution,
               url: tileConfig.url,
-              subdomains: tileConfig.subdomains,
               updateWhenIdle: false,
-              referrerPolicy: "strict-origin-when-cross-origin"
+              referrerPolicy: "strict-origin-when-cross-origin",
+              ...tileConfig.subdomains ? { subdomains: tileConfig.subdomains } : {}
             }
           ),
           aircraftPositionUsable ? /* @__PURE__ */ jsxRuntimeExports.jsx(

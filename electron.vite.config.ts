@@ -31,6 +31,7 @@ export default defineConfig({
   renderer: {
     root: 'src/renderer',
     publicDir: resolve(__dirname, 'assets/branding'),
+    base: './',
     plugins: [react()],
     server: {
       host: '127.0.0.1'

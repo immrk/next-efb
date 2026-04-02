@@ -10,10 +10,9 @@ export interface MapTileConfig {
 export const MAP_TILE_CONFIGS: Record<MapTileProvider, MapTileConfig> = {
   osm: {
     name: 'OpenStreetMap Standard',
-    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
     attribution:
-      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-    subdomains: ['a', 'b', 'c']
+      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
   },
   osmfr: {
     name: 'OpenStreetMap France',
@@ -32,11 +31,16 @@ export const MAP_TILE_CONFIGS: Record<MapTileProvider, MapTileConfig> = {
 }
 
 export function getMapTileConfig(provider: MapTileProvider | undefined): MapTileConfig {
-  if (!provider) {
-    return MAP_TILE_CONFIGS.osm
+  const config = provider ? (MAP_TILE_CONFIGS[provider] ?? MAP_TILE_CONFIGS.osm) : MAP_TILE_CONFIGS.osm
+  const usesSubdomains = config.url.includes('{s}')
+
+  if (!usesSubdomains) {
+    return {
+      ...config,
+      subdomains: undefined
+    }
   }
 
-  const config = MAP_TILE_CONFIGS[provider] ?? MAP_TILE_CONFIGS.osm
   return {
     ...config,
     subdomains: config.subdomains ?? ['a', 'b', 'c']

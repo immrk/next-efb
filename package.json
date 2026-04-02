@@ -9,7 +9,8 @@
     "dev": "npm run branding:generate && electron-vite dev",
     "build:bundle": "npm run branding:generate && electron-vite build",
     "clean:release": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"if (Test-Path 'artifacts') { Remove-Item -LiteralPath 'artifacts' -Recurse -Force }\"",
-    "build": "npm run clean:release && npm run build:bundle && set CSC_IDENTITY_AUTO_DISCOVERY=false&& electron-builder --win nsis portable",
+    "build": "npm run clean:release && npm run build:bundle && set CSC_IDENTITY_AUTO_DISCOVERY=false&& electron-builder --win nsis",
+    "build:portable": "npm run clean:release && npm run build:bundle && set CSC_IDENTITY_AUTO_DISCOVERY=false&& electron-builder --win portable",
     "preview": "npm run branding:generate && electron-vite preview",
     "rebuild-native": "electron-rebuild -f -w better-sqlite3",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
@@ -53,6 +54,7 @@
     "productName": "NextEFB",
     "artifactName": "NextEFB-${version}-${arch}.${ext}",
     "executableName": "NextEFB",
+    "afterPack": "scripts/after-pack.cjs",
     "directories": {
       "output": "artifacts"
     },
@@ -69,15 +71,18 @@
       "icon": "assets/branding/NextEFB.ico",
       "signAndEditExecutable": false,
       "target": [
-        "nsis",
-        "portable"
+        "nsis"
       ]
     },
     "nsis": {
+      "artifactName": "NextEFB-${version}-${arch}-installer.${ext}",
       "installerIcon": "assets/branding/NextEFB.ico",
       "uninstallerIcon": "assets/branding/NextEFB.ico",
       "oneClick": false,
       "allowToChangeInstallationDirectory": true
+    },
+    "portable": {
+      "artifactName": "NextEFB-${version}-${arch}-portable.${ext}"
     }
   }
 }

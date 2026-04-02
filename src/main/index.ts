@@ -1,4 +1,4 @@
-import { Menu, Tray, app, nativeImage, BrowserWindow } from 'electron'
+import { Menu, Tray, app, nativeImage, BrowserWindow, session } from 'electron'
 import { join } from 'node:path'
 import { IPC_CHANNELS } from '@shared/channels'
 import { APP_NAME } from '@shared/branding'
@@ -17,6 +17,16 @@ let appTray: Tray | null = null
 let isQuitting = false
 const DEV_LOAD_RETRY_MS = 1200
 const DEV_LOAD_MAX_ATTEMPTS = 12
+const TILE_REQUEST_URLS = [
+  'https://tile.openstreetmap.org/*',
+  'https://a.tile.openstreetmap.org/*',
+  'https://b.tile.openstreetmap.org/*',
+  'https://c.tile.openstreetmap.org/*',
+  'https://a.tile.openstreetmap.fr/*',
+  'https://b.tile.openstreetmap.fr/*',
+  'https://c.tile.openstreetmap.fr/*'
+]
+const APP_TILE_REFERER = 'https://nextefb.app/'
 
 async function delay(ms: number): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, ms))
@@ -117,6 +127,8 @@ function resolveSystemLanguage(locale: string): 'zh-CN' | 'en-US' {
 }
 
 app.whenReady().then(async () => {
+  configureTileRequestHeaders()
+
   app.on('before-quit', () => {
     isQuitting = true
   })
@@ -129,6 +141,22 @@ app.whenReady().then(async () => {
     }
   })
 })
+
+function configureTileRequestHeaders(): void {
+  const userAgent = `${APP_NAME}/${app.getVersion()} (Electron ${process.versions.electron})`
+
+  app.userAgentFallback = userAgent
+
+  session.defaultSession.webRequest.onBeforeSendHeaders({ urls: TILE_REQUEST_URLS }, (details, callback) => {
+    callback({
+      requestHeaders: {
+        ...details.requestHeaders,
+        'User-Agent': userAgent,
+        Referer: APP_TILE_REFERER
+      }
+    })
+  })
+}
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {

@@ -500,8 +500,8 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
               <TileLayer
                 attribution={tileConfig.attribution}
                 url={tileConfig.url}
-                subdomains={tileConfig.subdomains}
                 referrerPolicy="strict-origin-when-cross-origin"
+                {...(tileConfig.subdomains ? { subdomains: tileConfig.subdomains } : {})}
               />
               <ClickCaptureLayer
                 onAddPoint={(point) => {

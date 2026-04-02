@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { APP_NAME } from '@shared/branding'
 import type { AppRoute } from '@shared/types'
+import { BRAND_ICON_URL } from '../branding'
 import { Button } from './ui/button'
 
 interface AppSidebarProps {
@@ -13,7 +14,7 @@ interface AppSidebarProps {
 function SidebarIcon({ kind }: { kind: 'map' | 'charts' | 'settings' | 'brand' | 'collapse' }) {
   if (kind === 'brand') {
     return (
-      <img src="/brand-mark.svg" alt="" />
+      <img src={BRAND_ICON_URL} alt="" />
     )
   }
 
