@@ -425,7 +425,7 @@ export class NavDataService {
     const transitionPoint = this.resolveTransitionPoint(db, arrivalTransitionId)
     const arrivalEntryPoint = arrivalLegs.main[0] ?? transitionPoint ?? approachLegs.main[0] ?? destinationPoint
     const enrouteSegmentPoints = dedupeConsecutivePoints(
-      collectPoints(enrouteAnchor, ...enroutePoints.slice(1), arrivalEntryPoint)
+      collectPoints(...enroutePoints, arrivalEntryPoint)
     )
     appendSegment(segments, routePoints, enrouteSegmentPoints, 'enroute', FLIGHT_PLAN_COLORS.enroute)
 
