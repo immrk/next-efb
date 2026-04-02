@@ -2150,6 +2150,7 @@ function isAirwayToken(token) {
 let mainWindow = null;
 let appTray = null;
 let isQuitting = false;
+let hasShownSingleInstanceNotice = false;
 const DEV_LOAD_RETRY_MS = 1200;
 const DEV_LOAD_MAX_ATTEMPTS = 12;
 const TILE_REQUEST_URLS = [
@@ -2246,17 +2247,26 @@ async function createWindow() {
 function resolveSystemLanguage(locale) {
   return locale.trim().toLowerCase().startsWith("zh") ? "zh-CN" : "en-US";
 }
-electron.app.whenReady().then(async () => {
-  configureTileRequestHeaders();
-  electron.app.on("before-quit", () => {
-    isQuitting = true;
+const hasSingleInstanceLock = electron.app.requestSingleInstanceLock();
+if (!hasSingleInstanceLock) {
+  electron.app.quit();
+} else {
+  electron.app.whenReady().then(async () => {
+    configureTileRequestHeaders();
+    electron.app.on("before-quit", () => {
+      isQuitting = true;
+    });
+    await createWindow();
+    electron.app.on("activate", async () => {
+      if (electron.BrowserWindow.getAllWindows().length === 0) {
+        await createWindow();
+      }
+    });
   });
-  await createWindow();
-  electron.app.on("activate", async () => {
-    if (electron.BrowserWindow.getAllWindows().length === 0) {
-      await createWindow();
-    }
-  });
+}
+electron.app.on("second-instance", () => {
+  showMainWindow();
+  notifyAlreadyRunning();
 });
 function configureTileRequestHeaders() {
   const userAgent = `${APP_NAME}/${electron.app.getVersion()} (Electron ${process.versions.electron})`;
@@ -2319,6 +2329,23 @@ function showMainWindow() {
   mainWindow.show();
   mainWindow.focus();
   sendWindowState(mainWindow);
+}
+function notifyAlreadyRunning() {
+  if (!mainWindow || mainWindow.isDestroyed() || hasShownSingleInstanceNotice) {
+    return;
+  }
+  hasShownSingleInstanceNotice = true;
+  void electron.dialog.showMessageBox(mainWindow, {
+    type: "info",
+    buttons: ["OK"],
+    defaultId: 0,
+    noLink: true,
+    title: APP_NAME,
+    message: `${APP_NAME} is already running.`,
+    detail: "The existing window has been brought to the front."
+  }).finally(() => {
+    hasShownSingleInstanceNotice = false;
+  });
 }
 function createTrayIcon() {
   return electron.nativeImage.createFromPath(getBrandingAssetPath("tray-icon-32.png"));

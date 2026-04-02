@@ -1,4 +1,4 @@
-import { Menu, Tray, app, nativeImage, BrowserWindow, session } from 'electron'
+import { Menu, Tray, app, nativeImage, BrowserWindow, session, dialog } from 'electron'
 import { join } from 'node:path'
 import { IPC_CHANNELS } from '@shared/channels'
 import { APP_NAME } from '@shared/branding'
@@ -15,6 +15,7 @@ import { NavDataService } from './services/navigation/NavDataService'
 let mainWindow: BrowserWindow | null = null
 let appTray: Tray | null = null
 let isQuitting = false
+let hasShownSingleInstanceNotice = false
 const DEV_LOAD_RETRY_MS = 1200
 const DEV_LOAD_MAX_ATTEMPTS = 12
 const TILE_REQUEST_URLS = [
@@ -126,6 +127,11 @@ function resolveSystemLanguage(locale: string): 'zh-CN' | 'en-US' {
   return locale.trim().toLowerCase().startsWith('zh') ? 'zh-CN' : 'en-US'
 }
 
+const hasSingleInstanceLock = app.requestSingleInstanceLock()
+
+if (!hasSingleInstanceLock) {
+  app.quit()
+} else {
 app.whenReady().then(async () => {
   configureTileRequestHeaders()
 
@@ -140,6 +146,12 @@ app.whenReady().then(async () => {
       await createWindow()
     }
   })
+})
+}
+
+app.on('second-instance', () => {
+  showMainWindow()
+  notifyAlreadyRunning()
 })
 
 function configureTileRequestHeaders(): void {
@@ -214,6 +226,28 @@ function showMainWindow(): void {
   mainWindow.show()
   mainWindow.focus()
   sendWindowState(mainWindow)
+}
+
+function notifyAlreadyRunning(): void {
+  if (!mainWindow || mainWindow.isDestroyed() || hasShownSingleInstanceNotice) {
+    return
+  }
+
+  hasShownSingleInstanceNotice = true
+
+  void dialog
+    .showMessageBox(mainWindow, {
+      type: 'info',
+      buttons: ['OK'],
+      defaultId: 0,
+      noLink: true,
+      title: APP_NAME,
+      message: `${APP_NAME} is already running.`,
+      detail: 'The existing window has been brought to the front.'
+    })
+    .finally(() => {
+      hasShownSingleInstanceNotice = false
+    })
 }
 
 function createTrayIcon() {
