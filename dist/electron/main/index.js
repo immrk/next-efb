@@ -1672,7 +1672,9 @@ class NavDataService {
       if (token === departureIdent || token === destinationIdent) {
         continue;
       }
-      const fix = this.resolveFix(db, token);
+      const fix = this.resolveFix(db, token, {
+        referencePoint: enroutePoints[enroutePoints.length - 1] ?? departureAnchor
+      });
       if (fix) {
         enroutePoints.push({
           ident: fix.ident,
@@ -1731,7 +1733,7 @@ class NavDataService {
     }
     const row = db.prepare(
       `
-        SELECT approach_id, fix_ident
+        SELECT approach_id, fix_ident, fix_region
         FROM approach
         WHERE approach_id = ?
         LIMIT 1
@@ -1740,7 +1742,9 @@ class NavDataService {
     if (!row) {
       return null;
     }
-    const fix = row.fix_ident?.trim() ? this.resolveFix(db, row.fix_ident) : null;
+    const fix = row.fix_ident?.trim() ? this.resolveFix(db, row.fix_ident, {
+      region: row.fix_region
+    }) : null;
     if (!fix) {
       return null;
     }
@@ -1761,7 +1765,7 @@ class NavDataService {
     }
     const row = db.prepare(
       `
-        SELECT t.fix_ident, t.dme_ident, t.type, a.runway_name AS runway_name,
+        SELECT t.fix_ident, t.fix_region, t.dme_ident, t.dme_region, t.type, a.runway_name AS runway_name,
           a.type AS approach_type, a.suffix AS approach_suffix, a.arinc_name AS approach_arinc_name
         FROM transition t
         JOIN approach a ON a.approach_id = t.approach_id
@@ -1776,7 +1780,9 @@ class NavDataService {
     if (!token) {
       return null;
     }
-    const fix = this.resolveFix(db, token);
+    const fix = this.resolveFix(db, token, {
+      region: row.fix_ident?.trim() ? row.fix_region : row.dme_region
+    });
     if (!fix) {
       return null;
     }
@@ -1932,38 +1938,63 @@ class NavDataService {
       "SELECT airport_id, ident, name, city, country, laty, lonx FROM airport WHERE ident = ? LIMIT 1"
     ).get(ident) ?? null;
   }
-  resolveFix(db, token) {
+  resolveFix(db, token, options) {
     const ident = token.trim().toUpperCase();
     if (!ident) return null;
-    const waypoint = db.prepare(
+    const candidates = db.prepare(
       `
-        SELECT ident, laty, lonx, 'waypoint' AS source
+        SELECT ident, laty, lonx, region, airport_ident, 'waypoint' AS source, 0 AS source_rank
         FROM waypoint
         WHERE ident = ?
-        ORDER BY CASE WHEN airport_ident IS NULL OR airport_ident = '' THEN 0 ELSE 1 END, waypoint_id
-        LIMIT 1
-        `
-    ).get(ident);
-    if (waypoint) return waypoint;
-    const vor = db.prepare(
-      `
-        SELECT ident, laty, lonx, 'vor' AS source
+        UNION ALL
+        SELECT ident, laty, lonx, region, airport_ident, 'vor' AS source, 1 AS source_rank
         FROM vor
         WHERE ident = ?
-        LIMIT 1
-        `
-    ).get(ident);
-    if (vor) return vor;
-    const ndb = db.prepare(
-      `
-        SELECT ident, laty, lonx, 'ndb' AS source
+        UNION ALL
+        SELECT ident, laty, lonx, region, airport_ident, 'ndb' AS source, 2 AS source_rank
         FROM ndb
         WHERE ident = ?
-        LIMIT 1
         `
-    ).get(ident);
-    if (ndb) return ndb;
-    return null;
+    ).all(ident, ident, ident);
+    if (!candidates.length) return null;
+    const normalizedAirportIdent = normalizeText(options?.airportIdent);
+    const normalizedRegion = normalizeText(options?.region);
+    let pool = candidates;
+    if (normalizedAirportIdent) {
+      const airportMatches = candidates.filter(
+        (candidate) => normalizeText(candidate.airport_ident) === normalizedAirportIdent
+      );
+      if (airportMatches.length) {
+        pool = airportMatches;
+      }
+    }
+    if (normalizedRegion) {
+      const regionMatches = pool.filter((candidate) => normalizeText(candidate.region) === normalizedRegion);
+      if (regionMatches.length) {
+        pool = regionMatches;
+      }
+    }
+    const referencePoint = options?.referencePoint;
+    const [best] = [...pool].sort((left, right) => {
+      if (referencePoint) {
+        const distanceDelta = approximateDistanceSquared(left.laty, left.lonx, referencePoint) - approximateDistanceSquared(right.laty, right.lonx, referencePoint);
+        if (Math.abs(distanceDelta) > 1e-9) {
+          return distanceDelta;
+        }
+      }
+      const airportWeightLeft = left.airport_ident?.trim() ? 1 : 0;
+      const airportWeightRight = right.airport_ident?.trim() ? 1 : 0;
+      if (airportWeightLeft !== airportWeightRight) {
+        return airportWeightLeft - airportWeightRight;
+      }
+      return left.source_rank - right.source_rank;
+    });
+    return best ? {
+      ident: best.ident,
+      laty: best.laty,
+      lonx: best.lonx,
+      source: best.source
+    } : null;
   }
   resolveAirportPoint(airport) {
     if (!airport) return null;
@@ -2046,6 +2077,11 @@ function dedupeConsecutivePoints(points) {
     output.push(point);
   }
   return output;
+}
+function approximateDistanceSquared(lat, lon, referencePoint) {
+  const latDelta = lat - referencePoint.lat;
+  const lonDelta = lon - referencePoint.lon;
+  return latDelta * latDelta + lonDelta * lonDelta;
 }
 function readStringPath(data, path) {
   let current = data;
