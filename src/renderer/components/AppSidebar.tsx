@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { APP_NAME } from '@shared/branding'
 import type { AppRoute } from '@shared/types'
 import { BRAND_ICON_URL } from '../branding'
+import { SettingsIcon } from './icons/SettingsIcon'
 import { Button } from './ui/button'
 
 interface AppSidebarProps {
@@ -45,10 +46,7 @@ function SidebarIcon({ kind }: { kind: 'map' | 'charts' | 'settings' | 'brand' |
   }
 
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <circle cx="12" cy="12" r="3" />
-      <path d="M19 12a7 7 0 0 0-.05-.82l2.02-1.57-1.99-3.45-2.42.82a7 7 0 0 0-1.42-.82L14.7 4h-3.4l-.44 2.16a7 7 0 0 0-1.42.82l-2.42-.82-1.99 3.45 2.02 1.57A7 7 0 0 0 7 12a7 7 0 0 0 .05.82l-2.02 1.57 1.99 3.45 2.42-.82a7 7 0 0 0 1.42.82L11.3 20h3.4l.44-2.16a7 7 0 0 0 1.42-.82l2.42.82 1.99-3.45-2.02-1.57c.03-.27.05-.54.05-.82Z" />
-    </svg>
+    <SettingsIcon />
   )
 }
 

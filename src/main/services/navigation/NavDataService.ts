@@ -619,7 +619,7 @@ export class NavDataService {
     const username = input.username?.trim() ?? ''
     const userId = input.userId?.trim() ?? ''
     if (!username && !userId) {
-      throw new Error('SIMBRIEF_ID_REQUIRED')
+      throw new Error('SIMBRIEF_USERNAME_REQUIRED')
     }
 
     const query = new URLSearchParams()

@@ -40,18 +40,6 @@ function createMapDot(label: string) {
   })
 }
 
-function isAircraftPositionUsable(aircraft: {
-  connected: boolean
-  lat: number
-  lon: number
-  altitudeFt: number
-}): boolean {
-  if (!aircraft.connected) return false
-  if (!Number.isFinite(aircraft.lat) || !Number.isFinite(aircraft.lon)) return false
-  if (Math.abs(aircraft.lat) > 90 || Math.abs(aircraft.lon) > 180) return false
-  return !(aircraft.lat === 0 && aircraft.lon === 0 && aircraft.altitudeFt === 0)
-}
-
 function ClickCaptureLayer({
   onAddPoint
 }: {
@@ -121,11 +109,9 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
   const appClient = getAppClient()
   const runtime = appClient.getRuntime()
   const { t } = useTranslation()
-  const aircraft = useAppStore((state) => state.aircraft)
   const settings = useAppStore((state) => state.settings)
   const { chart, asset, points, setChart, setPoints } = useChartDetailData(chartId)
   const tileConfig = getMapTileConfig(settings?.mapTileProvider)
-  const aircraftPositionUsable = aircraft ? isAircraftPositionUsable(aircraft) : false
   const [navStatus, setNavStatus] = useState<NavDataStatus | null>(null)
   const [titleMode, setTitleMode] = useState<ChartTitleMode>('manual')
   const [manualTitle, setManualTitle] = useState('')
@@ -144,9 +130,9 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
   const [isMetaModalOpen, setIsMetaModalOpen] = useState(false)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
-  const navDataReady = Boolean(navStatus?.exists && navStatus?.activePath)
-  const mapCenterLat = aircraftPositionUsable ? (aircraft?.lat ?? 31.2304) : 31.2304
-  const mapCenterLon = aircraftPositionUsable ? (aircraft?.lon ?? 121.4737) : 121.4737
+  const navDataReady = Boolean(navStatus?.activePath)
+  const mapCenterLat = 31.2304
+  const mapCenterLon = 121.4737
 
   const chartTypeLabel: Record<ChartType, string> = {
     general: t('chartType.general'),
@@ -156,14 +142,24 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
     approach: t('chartType.approach')
   }
 
-  useEffect(() => {
-    if (!chart) return
-    setManualTitle(chart.title)
-    setAirportCode(chart.airportCode ?? '')
-    setChartType(chart.chartType)
-    setTitleMode(chart.titleMode)
-    setBoundApproachProcedureId(chart.boundApproachProcedureId ?? '')
+  const resetMetadataDraft = (sourceChart: typeof chart | null) => {
+    if (!sourceChart) return
+    setManualTitle(sourceChart.title)
+    setAirportCode(sourceChart.airportCode ?? '')
+    setChartType(sourceChart.chartType)
+    setTitleMode(sourceChart.titleMode)
+    setBoundApproachProcedureId(sourceChart.boundApproachProcedureId ?? '')
     setBoundApproachRunway('')
+    setNavProceduresError('')
+  }
+
+  const closeMetaModal = () => {
+    resetMetadataDraft(chart)
+    setIsMetaModalOpen(false)
+  }
+
+  useEffect(() => {
+    resetMetadataDraft(chart)
   }, [chart])
 
   useEffect(() => {
@@ -181,15 +177,13 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
     }
   }, [appClient])
 
-  useEffect(() => {
-    if (!navDataReady) {
-      setNavProcedures(EMPTY_PROCEDURES)
-      setNavProceduresError('')
-      setNavProceduresLoading(false)
-      return
-    }
+  const normalizedAirportCode = airportCode.trim().toUpperCase()
+  const isProcedureModeActive = titleMode === 'approach-procedure'
+  const hasProcedureLookupContext =
+    Boolean(normalizedAirportCode) && (chartType === 'approach' || isProcedureModeActive)
 
-    if (!airportCode.trim() || chartType !== 'approach') {
+  useEffect(() => {
+    if (!hasProcedureLookupContext) {
       setNavProcedures(EMPTY_PROCEDURES)
       setNavProceduresError('')
       setNavProceduresLoading(false)
@@ -201,7 +195,7 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
     setNavProceduresError('')
 
     void appClient
-      .getNavAirportProcedures(airportCode.trim().toUpperCase())
+      .getNavAirportProcedures(normalizedAirportCode)
       .then((procedures) => {
         if (!active) return
         setNavProcedures(procedures)
@@ -220,43 +214,11 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
     return () => {
       active = false
     }
-  }, [appClient, airportCode, chartType, navDataReady, t])
-
-  useEffect(() => {
-    if (chartType !== 'approach' && titleMode !== 'manual') {
-      setTitleMode('manual')
-      setBoundApproachProcedureId('')
-      setBoundApproachRunway('')
-    }
-  }, [chartType, titleMode])
-
-  useEffect(() => {
-    if (titleMode !== 'approach-procedure') {
-      return
-    }
-
-    const selectedProcedure = navProcedures.approaches.find((procedure) => procedure.id === boundApproachProcedureId)
-    if (!selectedProcedure) {
-      if (boundApproachRunway) {
-        setBoundApproachRunway('')
-      }
-      return
-    }
-
-    if (selectedProcedure.runwayName?.trim() && selectedProcedure.runwayName !== boundApproachRunway) {
-      setBoundApproachRunway(selectedProcedure.runwayName)
-    }
-  }, [boundApproachProcedureId, boundApproachRunway, navProcedures.approaches, titleMode])
+  }, [appClient, hasProcedureLookupContext, normalizedAirportCode, t])
 
   const filteredApproachProcedures = useMemo(
     () => filterProceduresByRunway(navProcedures.approaches, boundApproachRunway),
     [boundApproachRunway, navProcedures.approaches]
-  )
-  const normalizedAirportCode = airportCode.trim().toUpperCase()
-
-  const selectedApproachProcedure = useMemo(
-    () => navProcedures.approaches.find((procedure) => procedure.id === boundApproachProcedureId) ?? null,
-    [boundApproachProcedureId, navProcedures.approaches]
   )
 
   useEffect(() => {
@@ -288,9 +250,8 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
     titleMode
   ])
 
-  const canUseProcedureMode =
-    chartType === 'approach' && Boolean(airportCode.trim()) && (navDataReady || Boolean(boundApproachProcedureId))
-  const displayTitle = titleMode === 'approach-procedure' ? selectedApproachProcedure?.name ?? manualTitle : manualTitle
+  const canOpenProcedureModeTab = navDataReady
+  const canUseProcedureMode = Boolean(normalizedAirportCode) && navDataReady
 
   useEffect(() => {
     setDraftMapPoints([])
@@ -329,6 +290,7 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
     const nextTitleMode: ChartTitleMode =
       canUseProcedureMode && titleMode === 'approach-procedure' ? 'approach-procedure' : 'manual'
     const nextBoundProcedureId = nextTitleMode === 'approach-procedure' ? boundApproachProcedureId || null : null
+    const nextChartType: ChartType = nextTitleMode === 'approach-procedure' ? 'approach' : chartType
     const selectedProcedureForSave =
       nextTitleMode === 'approach-procedure' && nextBoundProcedureId
         ? navProcedures.approaches.find((procedure) => procedure.id === nextBoundProcedureId) ??
@@ -348,16 +310,16 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
     }
 
     try {
-      const titleToSave = nextTitleMode === 'approach-procedure' ? selectedProcedureForSave?.name ?? chart.title : nextManualTitle
+        const titleToSave = nextTitleMode === 'approach-procedure' ? selectedProcedureForSave?.name ?? chart.title : nextManualTitle
 
-      const updated = await appClient.updateChart({
-        id: chart.id,
-        title: titleToSave,
-        airportCode: airportCode || null,
-        chartType,
-        titleMode: nextTitleMode,
-        boundApproachProcedureId: nextBoundProcedureId
-      })
+        const updated = await appClient.updateChart({
+          id: chart.id,
+          title: titleToSave,
+          airportCode: airportCode || null,
+          chartType: nextChartType,
+          titleMode: nextTitleMode,
+          boundApproachProcedureId: nextBoundProcedureId
+        })
       if (updated) {
         setChart(updated)
         notifyChartChanged()
@@ -425,7 +387,10 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
             variant="outline"
             size="icon"
             disabled={!runtime.canWrite}
-            onClick={() => setIsMetaModalOpen(true)}
+            onClick={() => {
+              resetMetadataDraft(chart)
+              setIsMetaModalOpen(true)
+            }}
             aria-label={t('chartDetail.editMeta')}
           >
             <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -464,23 +429,6 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
           <div className="chart-editor-pane-head">
             <h2>{t('chartDetail.mapPickerTitle')}</h2>
             <div className="button-row">
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() =>
-                  setDraftMapPoints((current) =>
-                    [
-                      ...current.slice(-1),
-                      {
-                        lat: mapCenterLat,
-                        lon: mapCenterLon
-                      }
-                    ].slice(0, 2)
-                  )
-                }
-              >
-                {t('chartDetail.captureFromAircraft')}
-              </Button>
               <Button
                 type="button"
                 variant="secondary"
@@ -535,13 +483,6 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
                   }}
                 />
               ))}
-              {aircraftPositionUsable ? (
-                <Marker
-                  position={[mapCenterLat, mapCenterLon]}
-                  icon={createMapDot('A')}
-                  interactive={false}
-                />
-              ) : null}
               <AutoFitMapPoints points={draftMapPoints} fitKey={mapAutoFitKey} />
             </MapContainer>
           </div>
@@ -558,13 +499,13 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
               {t('chartDetail.clearChartPoints')}
             </Button>
           </div>
-          <ChartImagePreview
-            chartTitle={chart?.title ?? 'chart'}
-            asset={asset}
-            points={points}
-            aircraft={aircraft}
-            draftChartPoints={draftChartPoints}
-            autoFocusKey={chartAutoFitKey}
+            <ChartImagePreview
+              chartTitle={chart?.title ?? 'chart'}
+              asset={asset}
+              points={points}
+              aircraft={null}
+              draftChartPoints={draftChartPoints}
+              autoFocusKey={chartAutoFitKey}
             onChartClick={(point) =>
               setDraftChartPoints((current) => [...current.slice(-1), point].slice(0, 2))
             }
@@ -583,7 +524,7 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
         <div
           className="chart-meta-modal-backdrop"
           role="presentation"
-          onClick={() => setIsMetaModalOpen(false)}
+          onClick={closeMetaModal}
         >
           <section
             className="chart-meta-modal"
@@ -594,13 +535,13 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
           >
             <header className="chart-meta-modal-head">
               <h3>{t('chartDetail.metaTitle')}</h3>
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={() => setIsMetaModalOpen(false)}
-                aria-label={t('common.close')}
-              >
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={closeMetaModal}
+                  aria-label={t('common.close')}
+                >
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M6 6L18 18M18 6L6 18" />
                 </svg>
@@ -610,12 +551,18 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
             <div className="chart-meta-modal-body">
               <Tabs
                 value={titleMode}
-                onValueChange={(value) => setTitleMode(value as ChartTitleMode)}
+                onValueChange={(value) => {
+                  const nextMode = value as ChartTitleMode
+                  setTitleMode(nextMode)
+                  if (nextMode === 'approach-procedure' && chartType !== 'approach') {
+                    setChartType('approach')
+                  }
+                }}
                 className="chart-meta-tabs"
               >
                 <TabsList className="chart-meta-tabs-list">
                   <TabsTrigger value="manual">{t('chartDetail.modeManual')}</TabsTrigger>
-                  <TabsTrigger value="approach-procedure" disabled={!canUseProcedureMode}>
+                  <TabsTrigger value="approach-procedure" disabled={!canOpenProcedureModeTab}>
                     {t('chartDetail.modeProcedure')}
                   </TabsTrigger>
                 </TabsList>
@@ -658,11 +605,6 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
                 </TabsContent>
 
                 <TabsContent value="approach-procedure" className="chart-meta-tab-panel">
-                  <div className="settings-note settings-note-card">
-                    <strong>{t('chartDetail.procedureModeTitle')}</strong>
-                    <span>{canUseProcedureMode ? t('chartDetail.procedureModeHint') : t('chartDetail.procedureModeBlocked')}</span>
-                  </div>
-
                   <label className="settings-field">
                     <span>{t('chartDetail.procedureRunway')}</span>
                     <Select
@@ -709,11 +651,6 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
                     </Select>
                   </label>
 
-                  <div className="chart-meta-derived-title">
-                    <span>{t('chartDetail.procedureDerivedTitle')}</span>
-                    <strong>{displayTitle || t('chartDetail.procedureDerivedEmpty')}</strong>
-                  </div>
-
                   {navProceduresLoading ? (
                     <div className="chart-meta-hint">{t('chartDetail.procedureLoading')}</div>
                   ) : null}
@@ -724,7 +661,7 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
             </div>
 
             <footer className="chart-meta-modal-foot">
-              <Button type="button" variant="secondary" onClick={() => setIsMetaModalOpen(false)}>
+              <Button type="button" variant="secondary" onClick={closeMetaModal}>
                 {t('common.cancel')}
               </Button>
               <Button type="button" onClick={saveMetadata}>

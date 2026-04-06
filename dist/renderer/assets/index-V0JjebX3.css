@@ -1927,7 +1927,7 @@ body {
   width: min(460px, calc(100% - 44px));
   border: 1px solid var(--ui-border);
   border-left: 0;
-  border-radius: 0 12px 12px 0;
+  border-radius: 0;
   background:
     radial-gradient(circle at top right, rgba(42, 78, 112, 0.2), transparent 30%),
     linear-gradient(180deg, rgba(16, 19, 26, 0.99), rgba(9, 12, 18, 0.99));
@@ -3307,7 +3307,7 @@ body {
   .chart-picker-drawer-overlay {
     width: calc(100% - 12px);
     bottom: 0;
-    border-radius: 0 10px 10px 0;
+    border-radius: 0;
   }
 
   .flight-plan-drawer {

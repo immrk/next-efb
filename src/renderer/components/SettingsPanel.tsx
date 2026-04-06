@@ -28,7 +28,6 @@ export function SettingsPanel() {
   const [portDraft, setPortDraft] = useState('31831')
   const [navPathDraft, setNavPathDraft] = useState('')
   const [simbriefUsernameDraft, setSimbriefUsernameDraft] = useState('')
-  const [simbriefUserIdDraft, setSimbriefUserIdDraft] = useState('')
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null)
 
   useEffect(() => {
@@ -57,8 +56,7 @@ export function SettingsPanel() {
   useEffect(() => {
     setNavPathDraft(settings?.navData.sqlitePath ?? '')
     setSimbriefUsernameDraft(settings?.simbrief.username ?? '')
-    setSimbriefUserIdDraft(settings?.simbrief.userId ?? '')
-  }, [settings?.navData.sqlitePath, settings?.simbrief.userId, settings?.simbrief.username])
+  }, [settings?.navData.sqlitePath, settings?.simbrief.username])
 
   useEffect(() => {
     const accessUrl = remoteAccessStatus?.primaryAccessUrl
@@ -133,7 +131,7 @@ export function SettingsPanel() {
     const nextSettings = await appClient.updateSettings({
       simbrief: {
         username: simbriefUsernameDraft.trim(),
-        userId: simbriefUserIdDraft.trim()
+        userId: ''
       }
     })
     setSettings(nextSettings)
@@ -161,24 +159,26 @@ export function SettingsPanel() {
         </Select>
       </div>
 
-      <div className="settings-field">
-        <label htmlFor="provider-select">{t('settings.provider')}</label>
-        <Select
-          value={settings?.providerMode ?? 'simconnect'}
-          disabled={!runtime.canWrite}
-          onValueChange={(value) => {
-            void updateProviderMode(value as AircraftSource)
-          }}
-        >
-          <SelectTrigger id="provider-select">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="simconnect">{t('settings.providerSimConnect')}</SelectItem>
-            <SelectItem value="mock">{t('settings.providerMock')}</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+      {runtime.isDev ? (
+        <div className="settings-field">
+          <label htmlFor="provider-select">{t('settings.provider')}</label>
+          <Select
+            value={settings?.providerMode ?? 'simconnect'}
+            disabled={!runtime.canWrite}
+            onValueChange={(value) => {
+              void updateProviderMode(value as AircraftSource)
+            }}
+          >
+            <SelectTrigger id="provider-select">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="simconnect">{t('settings.providerSimConnect')}</SelectItem>
+              <SelectItem value="mock">{t('settings.providerMock')}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      ) : null}
 
       <div className="settings-field">
         <label htmlFor="map-tile-provider-select">{t('settings.mapTileProvider')}</label>
@@ -282,11 +282,6 @@ export function SettingsPanel() {
             value={simbriefUsernameDraft}
             onChange={(event) => setSimbriefUsernameDraft(event.target.value)}
             placeholder={t('settings.simbriefUsername')}
-          />
-          <Input
-            value={simbriefUserIdDraft}
-            onChange={(event) => setSimbriefUserIdDraft(event.target.value)}
-            placeholder={t('settings.simbriefUserId')}
           />
           <div className="settings-inline-row">
             <Button type="button" variant="secondary" onClick={saveSimBriefSettings}>

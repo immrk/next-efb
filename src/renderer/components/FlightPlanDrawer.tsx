@@ -10,6 +10,7 @@ import type {
 } from '@shared/flight-plan-types'
 import { getAppClient } from '../client'
 import { useAppStore } from '../store/useAppStore'
+import { SettingsIcon } from './icons/SettingsIcon'
 import { filterProceduresByRunway, parseApproachProcedureId, runwayMatches } from '../utils/navProcedures'
 import { toast } from './ui/use-toast'
 import { Button } from './ui/button'
@@ -342,8 +343,7 @@ export function FlightPlanDrawer({
     setIsLoading(true)
     try {
       const result = await appClient.importSimBrief({
-        username: settings?.simbrief.username,
-        userId: settings?.simbrief.userId
+        username: settings?.simbrief.username
       })
       const [importedDepProcedures, importedDestProcedures] = await Promise.all([
         result.departureAirport ? appClient.getNavAirportProcedures(result.departureAirport) : Promise.resolve(EMPTY_PROCEDURES),
@@ -422,10 +422,7 @@ export function FlightPlanDrawer({
               aria-label={t('flightPlan.openSettings')}
               title={t('flightPlan.openSettings')}
             >
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <circle cx="12" cy="12" r="3" />
-                <path d="M19 12a7 7 0 0 0-.05-.82l2.02-1.57-1.99-3.45-2.42.82a7 7 0 0 0-1.42-.82L14.7 4h-3.4l-.44 2.16a7 7 0 0 0-1.42.82l-2.42-.82-1.99 3.45 2.02 1.57A7 7 0 0 0 7 12a7 7 0 0 0 .05.82l-2.02 1.57 1.99 3.45 2.42-.82a7 7 0 0 0 1.42.82L11.3 20h3.4l.44-2.16a7 7 0 0 0 1.42-.82l2.42.82 1.99-3.45-2.02-1.57c.03-.27.05-.54.05-.82Z" />
-              </svg>
+              <SettingsIcon />
             </Button>
             <Button type="button" variant="outline" size="icon" onClick={onClose} aria-label={t('flightPlan.close')}>
               <svg viewBox="0 0 24 24" aria-hidden="true">

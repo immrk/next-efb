@@ -339,7 +339,7 @@ const DEFAULT_SETTINGS_BASE = {
     userId: ""
   },
   lanAccess: {
-    enabled: false,
+    enabled: true,
     port: 31831,
     authEnabled: false,
     authToken: createAuthToken(),
@@ -417,80 +417,6 @@ class SettingsStore {
 }
 function createAuthToken() {
   return node_crypto.randomBytes(24).toString("hex");
-}
-class MockAircraftProvider {
-  constructor() {
-    this.aircraftState = {
-      connected: true,
-      source: "mock",
-      lat: 31.2304,
-      lon: 121.4737,
-      altitudeFt: 3200,
-      headingDeg: 90,
-      groundSpeedKts: 120,
-      onGround: false,
-      updatedAt: Date.now()
-    };
-    this.connectionState = {
-      connected: true,
-      source: "mock",
-      messageCode: "MOCK_READY",
-      updatedAt: Date.now()
-    };
-    this.timer = null;
-    this.aircraftListeners = /* @__PURE__ */ new Set();
-    this.connectionListeners = /* @__PURE__ */ new Set();
-  }
-  start() {
-    this.emitConnection();
-    if (this.timer) return;
-    this.timer = setInterval(() => {
-      const nextHeading = (this.aircraftState.headingDeg + 4) % 360;
-      const radians = nextHeading * Math.PI / 180;
-      this.aircraftState = {
-        ...this.aircraftState,
-        lat: this.aircraftState.lat + Math.sin(radians) * 0.02,
-        lon: this.aircraftState.lon + Math.cos(radians) * 0.02,
-        altitudeFt: 3e3 + Math.sin(Date.now() / 2e3) * 600,
-        headingDeg: nextHeading,
-        groundSpeedKts: 118 + Math.cos(Date.now() / 1500) * 6,
-        updatedAt: Date.now()
-      };
-      this.emitAircraft();
-    }, 500);
-  }
-  stop() {
-    if (this.timer) {
-      clearInterval(this.timer);
-      this.timer = null;
-    }
-  }
-  getAircraftState() {
-    return this.aircraftState;
-  }
-  getConnectionState() {
-    return this.connectionState;
-  }
-  onAircraftState(listener) {
-    this.aircraftListeners.add(listener);
-    listener(this.aircraftState);
-    return () => this.aircraftListeners.delete(listener);
-  }
-  onConnectionState(listener) {
-    this.connectionListeners.add(listener);
-    listener(this.connectionState);
-    return () => this.connectionListeners.delete(listener);
-  }
-  emitAircraft() {
-    for (const listener of this.aircraftListeners) {
-      listener(this.aircraftState);
-    }
-  }
-  emitConnection() {
-    for (const listener of this.connectionListeners) {
-      listener(this.connectionState);
-    }
-  }
 }
 const RETRY_MS = 5e3;
 class NodeSimConnectProvider {
@@ -722,10 +648,9 @@ class SimConnectService {
     this.provider.start();
   }
   createProvider(_settings) {
-    if (_settings.providerMode === "simconnect") {
+    {
       return new NodeSimConnectProvider();
     }
-    return new MockAircraftProvider();
   }
   bindProvider() {
     this.unsubscribeAircraft = this.provider.onAircraftState((state) => {
@@ -1825,7 +1750,7 @@ class NavDataService {
     const username = input.username?.trim() ?? "";
     const userId = input.userId?.trim() ?? "";
     if (!username && !userId) {
-      throw new Error("SIMBRIEF_ID_REQUIRED");
+      throw new Error("SIMBRIEF_USERNAME_REQUIRED");
     }
     const query = new URLSearchParams();
     query.set("json", "1");

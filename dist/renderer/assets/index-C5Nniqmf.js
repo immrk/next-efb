@@ -12758,6 +12758,12 @@ const useTranslation = (ns, props = {}) => {
 const APP_NAME = "NextEFB";
 const brandIconUrl = "" + new URL("brand-mark-rIPLYFvC.png", import.meta.url).href;
 const BRAND_ICON_URL = brandIconUrl;
+function SettingsIcon() {
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { viewBox: "0 0 24 24", "aria-hidden": "true", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M10.4 3.2h3.2l.5 2.05c.37.11.72.25 1.06.44l1.88-.95 2.26 2.26-.95 1.88c.19.34.33.69.44 1.06l2.05.5v3.2l-2.05.5c-.11.37-.25.72-.44 1.06l.95 1.88-2.26 2.26-1.88-.95c-.34.19-.69.33-1.06.44l-.5 2.05h-3.2l-.5-2.05a6.77 6.77 0 0 1-1.06-.44l-1.88.95-2.26-2.26.95-1.88a6.77 6.77 0 0 1-.44-1.06l-2.05-.5v-3.2l2.05-.5c.11-.37.25-.72.44-1.06l-.95-1.88 2.26-2.26 1.88.95c.34-.19.69-.33 1.06-.44z" }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M12 9.25a2.75 2.75 0 1 0 0 5.5a2.75 2.75 0 0 0 0-5.5Z" })
+  ] });
+}
 const variantClassNames$1 = {
   default: "button button-default",
   secondary: "button button-secondary",
@@ -12809,10 +12815,7 @@ function SidebarIcon({ kind }) {
       /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M8 8H16M8 12H16M8 16H12" })
     ] });
   }
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { viewBox: "0 0 24 24", "aria-hidden": "true", children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx("circle", { cx: "12", cy: "12", r: "3" }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M19 12a7 7 0 0 0-.05-.82l2.02-1.57-1.99-3.45-2.42.82a7 7 0 0 0-1.42-.82L14.7 4h-3.4l-.44 2.16a7 7 0 0 0-1.42.82l-2.42-.82-1.99 3.45 2.02 1.57A7 7 0 0 0 7 12a7 7 0 0 0 .05.82l-2.02 1.57 1.99 3.45 2.42-.82a7 7 0 0 0 1.42.82L11.3 20h3.4l.44-2.16a7 7 0 0 0 1.42-.82l2.42.82 1.99-3.45-2.02-1.57c.03-.27.05-.54.05-.82Z" })
-  ] });
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(SettingsIcon, {});
 }
 function AppSidebar({ route, collapsed, onToggleCollapse, onNavigate }) {
   const { t } = useTranslation();
@@ -15692,12 +15695,12 @@ const zhCN = {
   "chartType.sid": "SID",
   "chartType.star": "STAR",
   "chartType.approach": "进近",
-  "chartDetail.title": "航图详情",
-  "chartDetail.saveReference": "保存配准",
+  "chartDetail.title": "航图取点",
+  "chartDetail.saveReference": "坐标绑定",
   "chartDetail.mapPickerTitle": "地图取点",
   "chartDetail.captureFromAircraft": "获取飞机当前位置",
   "chartDetail.clearMapPoints": "清除地图点位",
-  "chartDetail.viewerTitle": "航图预览",
+  "chartDetail.viewerTitle": "航图取点",
   "chartDetail.clearChartPoints": "清除航图点位",
   "chartDetail.metaTitle": "基础信息",
   "chartDetail.modeManual": "自定义名称",
@@ -15722,8 +15725,8 @@ const zhCN = {
   "chartDetail.procedureRequired": "请选择一个进近程序。",
   "chartDetail.saveMeta": "保存信息",
   "chartDetail.editMeta": "编辑航图信息",
-  "chartDetail.countMap": "地图 {{count}}/2",
-  "chartDetail.countChart": "航图 {{count}}/2",
+  "chartDetail.countMap": "地图取点 {{count}}/2",
+  "chartDetail.countChart": "航图取点 {{count}}/2",
   "chartDetail.countSaved": "已保存 {{count}}/2",
   "chartDetail.delete": "删除",
   "chartDetail.deleteDialogTitle": "删除航图",
@@ -15877,12 +15880,12 @@ const enUS = {
   "chartType.sid": "SID",
   "chartType.star": "STAR",
   "chartType.approach": "Approach",
-  "chartDetail.title": "Chart Detail",
-  "chartDetail.saveReference": "Save Registration",
-  "chartDetail.mapPickerTitle": "Map Point Capture",
+  "chartDetail.title": "Chart Point Picking",
+  "chartDetail.saveReference": "Coordinate Binding",
+  "chartDetail.mapPickerTitle": "Map Point Picking",
   "chartDetail.captureFromAircraft": "Capture aircraft position",
   "chartDetail.clearMapPoints": "Clear map points",
-  "chartDetail.viewerTitle": "Chart Viewer",
+  "chartDetail.viewerTitle": "Chart Point Picking",
   "chartDetail.clearChartPoints": "Clear chart points",
   "chartDetail.metaTitle": "Metadata",
   "chartDetail.modeManual": "Custom title",
@@ -15907,8 +15910,8 @@ const enUS = {
   "chartDetail.procedureRequired": "Please choose an approach procedure.",
   "chartDetail.saveMeta": "Save Metadata",
   "chartDetail.editMeta": "Edit chart metadata",
-  "chartDetail.countMap": "Map {{count}}/2",
-  "chartDetail.countChart": "Chart {{count}}/2",
+  "chartDetail.countMap": "Map Point Picking {{count}}/2",
+  "chartDetail.countChart": "Chart Point Picking {{count}}/2",
   "chartDetail.countSaved": "Saved {{count}}/2",
   "chartDetail.delete": "Delete",
   "chartDetail.deleteDialogTitle": "Delete Chart",
@@ -54083,12 +54086,6 @@ function createMapDot(label) {
     iconAnchor: [14, 38]
   });
 }
-function isAircraftPositionUsable$1(aircraft) {
-  if (!aircraft.connected) return false;
-  if (!Number.isFinite(aircraft.lat) || !Number.isFinite(aircraft.lon)) return false;
-  if (Math.abs(aircraft.lat) > 90 || Math.abs(aircraft.lon) > 180) return false;
-  return !(aircraft.lat === 0 && aircraft.lon === 0 && aircraft.altitudeFt === 0);
-}
 function ClickCaptureLayer({
   onAddPoint
 }) {
@@ -54144,11 +54141,9 @@ function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }) {
   const appClient2 = getAppClient();
   const runtime = appClient2.getRuntime();
   const { t } = useTranslation();
-  const aircraft = useAppStore((state) => state.aircraft);
   const settings = useAppStore((state) => state.settings);
   const { chart, asset, points, setChart, setPoints } = useChartDetailData(chartId);
   const tileConfig = getMapTileConfig(settings?.mapTileProvider);
-  const aircraftPositionUsable = aircraft ? isAircraftPositionUsable$1(aircraft) : false;
   const [navStatus, setNavStatus] = reactExports.useState(null);
   const [titleMode, setTitleMode] = reactExports.useState("manual");
   const [manualTitle, setManualTitle] = reactExports.useState("");
@@ -54167,9 +54162,9 @@ function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }) {
   const [isMetaModalOpen, setIsMetaModalOpen] = reactExports.useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = reactExports.useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = reactExports.useState("");
-  const navDataReady = Boolean(navStatus?.exists && navStatus?.activePath);
-  const mapCenterLat = aircraftPositionUsable ? aircraft?.lat ?? 31.2304 : 31.2304;
-  const mapCenterLon = aircraftPositionUsable ? aircraft?.lon ?? 121.4737 : 121.4737;
+  const navDataReady = Boolean(navStatus?.activePath);
+  const mapCenterLat = 31.2304;
+  const mapCenterLon = 121.4737;
   const chartTypeLabel = {
     general: t("chartType.general"),
     airport: t("chartType.airport"),
@@ -54177,14 +54172,22 @@ function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }) {
     star: t("chartType.star"),
     approach: t("chartType.approach")
   };
-  reactExports.useEffect(() => {
-    if (!chart) return;
-    setManualTitle(chart.title);
-    setAirportCode(chart.airportCode ?? "");
-    setChartType(chart.chartType);
-    setTitleMode(chart.titleMode);
-    setBoundApproachProcedureId(chart.boundApproachProcedureId ?? "");
+  const resetMetadataDraft = (sourceChart) => {
+    if (!sourceChart) return;
+    setManualTitle(sourceChart.title);
+    setAirportCode(sourceChart.airportCode ?? "");
+    setChartType(sourceChart.chartType);
+    setTitleMode(sourceChart.titleMode);
+    setBoundApproachProcedureId(sourceChart.boundApproachProcedureId ?? "");
     setBoundApproachRunway("");
+    setNavProceduresError("");
+  };
+  const closeMetaModal = () => {
+    resetMetadataDraft(chart);
+    setIsMetaModalOpen(false);
+  };
+  reactExports.useEffect(() => {
+    resetMetadataDraft(chart);
   }, [chart]);
   reactExports.useEffect(() => {
     const refreshNavStatus = () => {
@@ -54198,14 +54201,11 @@ function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }) {
       offSettings();
     };
   }, [appClient2]);
+  const normalizedAirportCode = airportCode.trim().toUpperCase();
+  const isProcedureModeActive = titleMode === "approach-procedure";
+  const hasProcedureLookupContext = Boolean(normalizedAirportCode) && (chartType === "approach" || isProcedureModeActive);
   reactExports.useEffect(() => {
-    if (!navDataReady) {
-      setNavProcedures(EMPTY_PROCEDURES$2);
-      setNavProceduresError("");
-      setNavProceduresLoading(false);
-      return;
-    }
-    if (!airportCode.trim() || chartType !== "approach") {
+    if (!hasProcedureLookupContext) {
       setNavProcedures(EMPTY_PROCEDURES$2);
       setNavProceduresError("");
       setNavProceduresLoading(false);
@@ -54214,7 +54214,7 @@ function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }) {
     let active = true;
     setNavProceduresLoading(true);
     setNavProceduresError("");
-    void appClient2.getNavAirportProcedures(airportCode.trim().toUpperCase()).then((procedures) => {
+    void appClient2.getNavAirportProcedures(normalizedAirportCode).then((procedures) => {
       if (!active) return;
       setNavProcedures(procedures);
     }).catch((error) => {
@@ -54229,37 +54229,10 @@ function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }) {
     return () => {
       active = false;
     };
-  }, [appClient2, airportCode, chartType, navDataReady, t]);
-  reactExports.useEffect(() => {
-    if (chartType !== "approach" && titleMode !== "manual") {
-      setTitleMode("manual");
-      setBoundApproachProcedureId("");
-      setBoundApproachRunway("");
-    }
-  }, [chartType, titleMode]);
-  reactExports.useEffect(() => {
-    if (titleMode !== "approach-procedure") {
-      return;
-    }
-    const selectedProcedure = navProcedures.approaches.find((procedure) => procedure.id === boundApproachProcedureId);
-    if (!selectedProcedure) {
-      if (boundApproachRunway) {
-        setBoundApproachRunway("");
-      }
-      return;
-    }
-    if (selectedProcedure.runwayName?.trim() && selectedProcedure.runwayName !== boundApproachRunway) {
-      setBoundApproachRunway(selectedProcedure.runwayName);
-    }
-  }, [boundApproachProcedureId, boundApproachRunway, navProcedures.approaches, titleMode]);
+  }, [appClient2, hasProcedureLookupContext, normalizedAirportCode, t]);
   const filteredApproachProcedures = reactExports.useMemo(
     () => filterProceduresByRunway(navProcedures.approaches, boundApproachRunway),
     [boundApproachRunway, navProcedures.approaches]
-  );
-  const normalizedAirportCode = airportCode.trim().toUpperCase();
-  const selectedApproachProcedure = reactExports.useMemo(
-    () => navProcedures.approaches.find((procedure) => procedure.id === boundApproachProcedureId) ?? null,
-    [boundApproachProcedureId, navProcedures.approaches]
   );
   reactExports.useEffect(() => {
     if (titleMode !== "approach-procedure") {
@@ -54285,8 +54258,8 @@ function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }) {
     normalizedAirportCode,
     titleMode
   ]);
-  const canUseProcedureMode = chartType === "approach" && Boolean(airportCode.trim()) && (navDataReady || Boolean(boundApproachProcedureId));
-  const displayTitle = titleMode === "approach-procedure" ? selectedApproachProcedure?.name ?? manualTitle : manualTitle;
+  const canOpenProcedureModeTab = navDataReady;
+  const canUseProcedureMode = Boolean(normalizedAirportCode) && navDataReady;
   reactExports.useEffect(() => {
     setDraftMapPoints([]);
     setDraftChartPoints([]);
@@ -54319,6 +54292,7 @@ function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }) {
     const nextManualTitle = manualTitle.trim();
     const nextTitleMode = canUseProcedureMode && titleMode === "approach-procedure" ? "approach-procedure" : "manual";
     const nextBoundProcedureId = nextTitleMode === "approach-procedure" ? boundApproachProcedureId || null : null;
+    const nextChartType = nextTitleMode === "approach-procedure" ? "approach" : chartType;
     const selectedProcedureForSave = nextTitleMode === "approach-procedure" && nextBoundProcedureId ? navProcedures.approaches.find((procedure) => procedure.id === nextBoundProcedureId) ?? (chart.boundApproachProcedureId === nextBoundProcedureId ? { id: nextBoundProcedureId, name: chart.title } : null) : null;
     if (nextTitleMode === "manual" && !nextManualTitle) {
       toast.error(t("chartDetail.titleRequired"));
@@ -54334,7 +54308,7 @@ function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }) {
         id: chart.id,
         title: titleToSave,
         airportCode: airportCode || null,
-        chartType,
+        chartType: nextChartType,
         titleMode: nextTitleMode,
         boundApproachProcedureId: nextBoundProcedureId
       });
@@ -54395,7 +54369,10 @@ function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }) {
             variant: "outline",
             size: "icon",
             disabled: !runtime.canWrite,
-            onClick: () => setIsMetaModalOpen(true),
+            onClick: () => {
+              resetMetadataDraft(chart);
+              setIsMetaModalOpen(true);
+            },
             "aria-label": t("chartDetail.editMeta"),
             children: /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { viewBox: "0 0 24 24", "aria-hidden": "true", children: [
               /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M4 16.5V20H7.5L17.81 9.69L14.31 6.19L4 16.5Z" }),
@@ -54435,34 +54412,15 @@ function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }) {
       /* @__PURE__ */ jsxRuntimeExports.jsxs("section", { className: "chart-editor-pane chart-editor-map-pane", children: [
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "chart-editor-pane-head", children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { children: t("chartDetail.mapPickerTitle") }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "button-row", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx(
-              Button,
-              {
-                type: "button",
-                variant: "secondary",
-                onClick: () => setDraftMapPoints(
-                  (current) => [
-                    ...current.slice(-1),
-                    {
-                      lat: mapCenterLat,
-                      lon: mapCenterLon
-                    }
-                  ].slice(0, 2)
-                ),
-                children: t("chartDetail.captureFromAircraft")
-              }
-            ),
-            /* @__PURE__ */ jsxRuntimeExports.jsx(
-              Button,
-              {
-                type: "button",
-                variant: "secondary",
-                onClick: () => setDraftMapPoints([]),
-                children: t("chartDetail.clearMapPoints")
-              }
-            )
-          ] })
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "button-row", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+            Button,
+            {
+              type: "button",
+              variant: "secondary",
+              onClick: () => setDraftMapPoints([]),
+              children: t("chartDetail.clearMapPoints")
+            }
+          ) })
         ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "chart-editor-map-stage", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
           MapContainer,
@@ -54512,14 +54470,6 @@ function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }) {
                 },
                 `${point.lat}-${point.lon}`
               )),
-              aircraftPositionUsable ? /* @__PURE__ */ jsxRuntimeExports.jsx(
-                Marker,
-                {
-                  position: [mapCenterLat, mapCenterLon],
-                  icon: createMapDot("A"),
-                  interactive: false
-                }
-              ) : null,
               /* @__PURE__ */ jsxRuntimeExports.jsx(AutoFitMapPoints, { points: draftMapPoints, fitKey: mapAutoFitKey })
             ]
           }
@@ -54544,7 +54494,7 @@ function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }) {
             chartTitle: chart?.title ?? "chart",
             asset,
             points,
-            aircraft,
+            aircraft: null,
             draftChartPoints,
             autoFocusKey: chartAutoFitKey,
             onChartClick: (point) => setDraftChartPoints((current) => [...current.slice(-1), point].slice(0, 2)),
@@ -54562,7 +54512,7 @@ function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }) {
       {
         className: "chart-meta-modal-backdrop",
         role: "presentation",
-        onClick: () => setIsMetaModalOpen(false),
+        onClick: closeMetaModal,
         children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
           "section",
           {
@@ -54580,7 +54530,7 @@ function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }) {
                     type: "button",
                     variant: "outline",
                     size: "icon",
-                    onClick: () => setIsMetaModalOpen(false),
+                    onClick: closeMetaModal,
                     "aria-label": t("common.close"),
                     children: /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { viewBox: "0 0 24 24", "aria-hidden": "true", children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M6 6L18 18M18 6L6 18" }) })
                   }
@@ -54590,12 +54540,18 @@ function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }) {
                 Tabs,
                 {
                   value: titleMode,
-                  onValueChange: (value) => setTitleMode(value),
+                  onValueChange: (value) => {
+                    const nextMode = value;
+                    setTitleMode(nextMode);
+                    if (nextMode === "approach-procedure" && chartType !== "approach") {
+                      setChartType("approach");
+                    }
+                  },
                   className: "chart-meta-tabs",
                   children: [
                     /* @__PURE__ */ jsxRuntimeExports.jsxs(TabsList, { className: "chart-meta-tabs-list", children: [
                       /* @__PURE__ */ jsxRuntimeExports.jsx(TabsTrigger, { value: "manual", children: t("chartDetail.modeManual") }),
-                      /* @__PURE__ */ jsxRuntimeExports.jsx(TabsTrigger, { value: "approach-procedure", disabled: !canUseProcedureMode, children: t("chartDetail.modeProcedure") })
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(TabsTrigger, { value: "approach-procedure", disabled: !canOpenProcedureModeTab, children: t("chartDetail.modeProcedure") })
                     ] }),
                     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "chart-meta-grid", children: [
                       /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: "settings-field", children: [
@@ -54635,10 +54591,6 @@ function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }) {
                       )
                     ] }) }),
                     /* @__PURE__ */ jsxRuntimeExports.jsxs(TabsContent, { value: "approach-procedure", className: "chart-meta-tab-panel", children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "settings-note settings-note-card", children: [
-                        /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: t("chartDetail.procedureModeTitle") }),
-                        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: canUseProcedureMode ? t("chartDetail.procedureModeHint") : t("chartDetail.procedureModeBlocked") })
-                      ] }),
                       /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: "settings-field", children: [
                         /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: t("chartDetail.procedureRunway") }),
                         /* @__PURE__ */ jsxRuntimeExports.jsxs(
@@ -54675,10 +54627,6 @@ function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }) {
                           }
                         )
                       ] }),
-                      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "chart-meta-derived-title", children: [
-                        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: t("chartDetail.procedureDerivedTitle") }),
-                        /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: displayTitle || t("chartDetail.procedureDerivedEmpty") })
-                      ] }),
                       navProceduresLoading ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "chart-meta-hint", children: t("chartDetail.procedureLoading") }) : null,
                       navProceduresError ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "chart-meta-hint danger-copy", children: navProceduresError }) : null
                     ] })
@@ -54686,7 +54634,7 @@ function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }) {
                 }
               ) }),
               /* @__PURE__ */ jsxRuntimeExports.jsxs("footer", { className: "chart-meta-modal-foot", children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "button", variant: "secondary", onClick: () => setIsMetaModalOpen(false), children: t("common.cancel") }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "button", variant: "secondary", onClick: closeMetaModal, children: t("common.cancel") }),
                 /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "button", onClick: saveMetadata, children: t("chartDetail.saveMeta") })
               ] })
             ]
@@ -55363,8 +55311,7 @@ function FlightPlanDrawer({
     setIsLoading(true);
     try {
       const result = await appClient2.importSimBrief({
-        username: settings?.simbrief.username,
-        userId: settings?.simbrief.userId
+        username: settings?.simbrief.username
       });
       const [importedDepProcedures, importedDestProcedures] = await Promise.all([
         result.departureAirport ? appClient2.getNavAirportProcedures(result.departureAirport) : Promise.resolve(EMPTY_PROCEDURES$1),
@@ -55434,10 +55381,7 @@ function FlightPlanDrawer({
             onClick: onOpenSettings,
             "aria-label": t("flightPlan.openSettings"),
             title: t("flightPlan.openSettings"),
-            children: /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { viewBox: "0 0 24 24", "aria-hidden": "true", children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("circle", { cx: "12", cy: "12", r: "3" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M19 12a7 7 0 0 0-.05-.82l2.02-1.57-1.99-3.45-2.42.82a7 7 0 0 0-1.42-.82L14.7 4h-3.4l-.44 2.16a7 7 0 0 0-1.42.82l-2.42-.82-1.99 3.45 2.02 1.57A7 7 0 0 0 7 12a7 7 0 0 0 .05.82l-2.02 1.57 1.99 3.45 2.42-.82a7 7 0 0 0 1.42.82L11.3 20h3.4l.44-2.16a7 7 0 0 0 1.42-.82l2.42.82 1.99-3.45-2.02-1.57c.03-.27.05-.54.05-.82Z" })
-            ] })
+            children: /* @__PURE__ */ jsxRuntimeExports.jsx(SettingsIcon, {})
           }
         ),
         /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "button", variant: "outline", size: "icon", onClick: onClose, "aria-label": t("flightPlan.close"), children: /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { viewBox: "0 0 24 24", "aria-hidden": "true", children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M6 6L18 18M18 6L6 18" }) }) })
@@ -58976,7 +58920,6 @@ function SettingsPanel() {
   const [portDraft, setPortDraft] = reactExports.useState("31831");
   const [navPathDraft, setNavPathDraft] = reactExports.useState("");
   const [simbriefUsernameDraft, setSimbriefUsernameDraft] = reactExports.useState("");
-  const [simbriefUserIdDraft, setSimbriefUserIdDraft] = reactExports.useState("");
   const [qrCodeUrl, setQrCodeUrl] = reactExports.useState(null);
   reactExports.useEffect(() => {
     const refreshRemoteAccessStatus = () => {
@@ -59001,8 +58944,7 @@ function SettingsPanel() {
   reactExports.useEffect(() => {
     setNavPathDraft(settings?.navData.sqlitePath ?? "");
     setSimbriefUsernameDraft(settings?.simbrief.username ?? "");
-    setSimbriefUserIdDraft(settings?.simbrief.userId ?? "");
-  }, [settings?.navData.sqlitePath, settings?.simbrief.userId, settings?.simbrief.username]);
+  }, [settings?.navData.sqlitePath, settings?.simbrief.username]);
   reactExports.useEffect(() => {
     const accessUrl = remoteAccessStatus?.primaryAccessUrl;
     if (!accessUrl) {
@@ -59067,7 +59009,7 @@ function SettingsPanel() {
     const nextSettings = await appClient2.updateSettings({
       simbrief: {
         username: simbriefUsernameDraft.trim(),
-        userId: simbriefUserIdDraft.trim()
+        userId: ""
       }
     });
     setSettings(nextSettings);
@@ -59094,7 +59036,7 @@ function SettingsPanel() {
         }
       )
     ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "settings-field", children: [
+    runtime.isDev ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "settings-field", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx("label", { htmlFor: "provider-select", children: t("settings.provider") }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs(
         Select,
@@ -59113,7 +59055,7 @@ function SettingsPanel() {
           ]
         }
       )
-    ] }),
+    ] }) : null,
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "settings-field", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx("label", { htmlFor: "map-tile-provider-select", children: t("settings.mapTileProvider") }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs(
@@ -59227,14 +59169,6 @@ function SettingsPanel() {
             value: simbriefUsernameDraft,
             onChange: (event) => setSimbriefUsernameDraft(event.target.value),
             placeholder: t("settings.simbriefUsername")
-          }
-        ),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          Input,
-          {
-            value: simbriefUserIdDraft,
-            onChange: (event) => setSimbriefUserIdDraft(event.target.value),
-            placeholder: t("settings.simbriefUserId")
           }
         ),
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "settings-inline-row", children: /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "button", variant: "secondary", onClick: saveSimBriefSettings, children: t("settings.simbriefSave") }) })

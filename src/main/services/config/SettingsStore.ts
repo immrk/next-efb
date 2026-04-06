@@ -20,7 +20,7 @@ const DEFAULT_SETTINGS_BASE: AppSettings = {
     userId: ''
   },
   lanAccess: {
-    enabled: false,
+    enabled: true,
     port: 31831,
     authEnabled: false,
     authToken: createAuthToken(),
