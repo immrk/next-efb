@@ -32,6 +32,7 @@ const IPC_CHANNELS = {
   navAirportsSearch: "nav-data:airports:search",
   navAirportProcedures: "nav-data:airport:procedures",
   navBuildPlan: "nav-data:plan:build",
+  navMapFeatures: "nav-data:map:features",
   simbriefImport: "simbrief:import",
   remoteAccessStatus: "remote-access:status",
   openExternal: "system:open-external",
@@ -88,6 +89,10 @@ function registerIpc(options) {
   electron.ipcMain.handle(
     IPC_CHANNELS.navBuildPlan,
     (_event, input) => navDataService.buildFlightPlan(settingsStore.get(), input)
+  );
+  electron.ipcMain.handle(
+    IPC_CHANNELS.navMapFeatures,
+    (_event, input) => navDataService.getMapFeatures(settingsStore.get(), input)
   );
   electron.ipcMain.handle(
     IPC_CHANNELS.simbriefImport,
@@ -418,6 +423,80 @@ class SettingsStore {
 function createAuthToken() {
   return node_crypto.randomBytes(24).toString("hex");
 }
+class MockAircraftProvider {
+  constructor() {
+    this.aircraftState = {
+      connected: true,
+      source: "mock",
+      lat: 31.2304,
+      lon: 121.4737,
+      altitudeFt: 3200,
+      headingDeg: 90,
+      groundSpeedKts: 120,
+      onGround: false,
+      updatedAt: Date.now()
+    };
+    this.connectionState = {
+      connected: true,
+      source: "mock",
+      messageCode: "MOCK_READY",
+      updatedAt: Date.now()
+    };
+    this.timer = null;
+    this.aircraftListeners = /* @__PURE__ */ new Set();
+    this.connectionListeners = /* @__PURE__ */ new Set();
+  }
+  start() {
+    this.emitConnection();
+    if (this.timer) return;
+    this.timer = setInterval(() => {
+      const nextHeading = (this.aircraftState.headingDeg + 4) % 360;
+      const radians = nextHeading * Math.PI / 180;
+      this.aircraftState = {
+        ...this.aircraftState,
+        lat: this.aircraftState.lat + Math.sin(radians) * 0.02,
+        lon: this.aircraftState.lon + Math.cos(radians) * 0.02,
+        altitudeFt: 3e3 + Math.sin(Date.now() / 2e3) * 600,
+        headingDeg: nextHeading,
+        groundSpeedKts: 118 + Math.cos(Date.now() / 1500) * 6,
+        updatedAt: Date.now()
+      };
+      this.emitAircraft();
+    }, 500);
+  }
+  stop() {
+    if (this.timer) {
+      clearInterval(this.timer);
+      this.timer = null;
+    }
+  }
+  getAircraftState() {
+    return this.aircraftState;
+  }
+  getConnectionState() {
+    return this.connectionState;
+  }
+  onAircraftState(listener) {
+    this.aircraftListeners.add(listener);
+    listener(this.aircraftState);
+    return () => this.aircraftListeners.delete(listener);
+  }
+  onConnectionState(listener) {
+    this.connectionListeners.add(listener);
+    listener(this.connectionState);
+    return () => this.connectionListeners.delete(listener);
+  }
+  emitAircraft() {
+    for (const listener of this.aircraftListeners) {
+      listener(this.aircraftState);
+    }
+  }
+  emitConnection() {
+    for (const listener of this.connectionListeners) {
+      listener(this.connectionState);
+    }
+  }
+}
 const RETRY_MS = 5e3;
 class NodeSimConnectProvider {
   constructor() {
@@ -648,9 +727,11 @@ class SimConnectService {
     this.provider.start();
   }
   createProvider(_settings) {
-    {
+    const isDev = process.env.NODE_ENV === "development";
+    if (!isDev || _settings.providerMode === "simconnect") {
       return new NodeSimConnectProvider();
     }
+    return new MockAircraftProvider();
   }
   bindProvider() {
     this.unsubscribeAircraft = this.provider.onAircraftState((state) => {
@@ -1058,6 +1139,11 @@ class LanServer {
       if (url.pathname === "/api/nav/plan" && request.method === "POST") {
         const input = await this.readJsonBody(request);
         this.sendJson(response, this.navDataService.buildFlightPlan(this.settingsStore.get(), input));
+        return;
+      }
+      if (url.pathname === "/api/nav/map-features" && request.method === "POST") {
+        const input = await this.readJsonBody(request);
+        this.sendJson(response, this.navDataService.getMapFeatures(this.settingsStore.get(), input));
         return;
       }
       if (url.pathname === "/api/simbrief/import" && request.method === "POST") {
@@ -1648,6 +1734,43 @@ class NavDataService {
       summary: `${departureIdent || "----"} -> ${destinationIdent || "----"} | ${uniquePoints.length} points | ${procedureSummary}`
     };
   }
+  getMapFeatures(settings, input) {
+    const db = this.openDatabase(settings);
+    if (!db) {
+      return emptyMapFeatureCollection();
+    }
+    const normalizedInput = normalizeMapQueryInput(input);
+    if (!normalizedInput) {
+      db.close();
+      return emptyMapFeatureCollection();
+    }
+    const {
+      viewport,
+      layers
+    } = normalizedInput;
+    const overflow = {
+      airports: false,
+      waypoints: false,
+      vors: false,
+      ndbs: false,
+      airways: false
+    };
+    const airports = layers.airports ? this.queryAirports(db, viewport, overflow) : [];
+    const waypoints = layers.waypoints ? this.queryWaypoints(db, viewport, overflow) : [];
+    const vors = layers.vors ? this.queryVors(db, viewport, overflow) : [];
+    const ndbs = layers.ndbs ? this.queryNdbs(db, viewport, overflow) : [];
+    const airways = layers.airways ? this.queryAirways(db, viewport, overflow) : [];
+    db.close();
+    return {
+      airports,
+      waypoints,
+      vors,
+      ndbs,
+      airways,
+      overflow,
+      fetchedAt: Date.now()
+    };
+  }
   resolveProcedurePoint(db, procedureId) {
     if (!procedureId?.startsWith("approach:")) {
       return null;
@@ -1951,6 +2074,152 @@ class NavDataService {
       source: "airport"
     };
   }
+  queryAirports(db, viewport, overflow) {
+    const limit = getAirportLimit(viewport.zoom);
+    const rows = this.executeViewportQuery(
+      db,
+      `
+      SELECT airport_id, ident, name, type, longest_runway_length, num_approach, lonx, laty
+      FROM airport
+      WHERE {{lonPredicate}}
+        AND bottom_laty <= @north
+        AND top_laty >= @south
+        AND longest_runway_length >= @minRunwayLength
+      ORDER BY longest_runway_length DESC, ident
+      LIMIT @rowLimitPlusOne
+      `,
+      viewport,
+      {
+        minRunwayLength: getMinimumAirportRunwayLength(viewport.zoom),
+        rowLimitPlusOne: limit + 1
+      }
+    );
+    overflow.airports = rows.length > limit;
+    return rows.slice(0, limit).map((row) => ({
+      id: row.airport_id,
+      ident: row.ident,
+      name: row.name,
+      type: asFiniteOrNull(row.type),
+      lat: row.laty,
+      lon: row.lonx,
+      longestRunwayLengthFt: asFiniteOrNull(row.longest_runway_length),
+      numApproach: asFiniteOrNull(row.num_approach)
+    }));
+  }
+  queryWaypoints(db, viewport, overflow) {
+    const limit = getWaypointLimit(viewport.zoom);
+    const rows = this.executeViewportQuery(
+      db,
+      `
+      SELECT waypoint_id, ident, type, airport_ident, lonx, laty
+      FROM waypoint
+      WHERE {{lonPredicate}}
+        AND laty BETWEEN @south AND @north
+      ORDER BY ident
+      LIMIT @rowLimitPlusOne
+      `,
+      viewport,
+      {
+        rowLimitPlusOne: limit + 1
+      }
+    );
+    overflow.waypoints = rows.length > limit;
+    return rows.slice(0, limit).map((row) => ({
+      id: row.waypoint_id,
+      ident: row.ident,
+      type: row.type,
+      lat: row.laty,
+      lon: row.lonx,
+      airportIdent: row.airport_ident
+    }));
+  }
+  queryVors(db, viewport, overflow) {
+    const limit = getVorLimit(viewport.zoom);
+    const rows = this.executeViewportQuery(
+      db,
+      `
+      SELECT vor_id, ident, type, frequency, lonx, laty
+      FROM vor
+      WHERE {{lonPredicate}}
+        AND laty BETWEEN @south AND @north
+      ORDER BY ident
+      LIMIT @rowLimitPlusOne
+      `,
+      viewport,
+      {
+        rowLimitPlusOne: limit + 1
+      }
+    );
+    overflow.vors = rows.length > limit;
+    return rows.slice(0, limit).map((row) => ({
+      id: row.vor_id,
+      ident: row.ident,
+      type: row.type,
+      frequency: asFiniteOrNull(row.frequency),
+      lat: row.laty,
+      lon: row.lonx
+    }));
+  }
+  queryNdbs(db, viewport, overflow) {
+    const limit = getNdbLimit(viewport.zoom);
+    const rows = this.executeViewportQuery(
+      db,
+      `
+      SELECT ndb_id, ident, type, frequency, lonx, laty
+      FROM ndb
+      WHERE {{lonPredicate}}
+        AND laty BETWEEN @south AND @north
+      ORDER BY ident
+      LIMIT @rowLimitPlusOne
+      `,
+      viewport,
+      {
+        rowLimitPlusOne: limit + 1
+      }
+    );
+    overflow.ndbs = rows.length > limit;
+    return rows.slice(0, limit).map((row) => ({
+      id: row.ndb_id,
+      ident: row.ident,
+      type: row.type,
+      frequency: asFiniteOrNull(row.frequency),
+      lat: row.laty,
+      lon: row.lonx
+    }));
+  }
+  queryAirways(db, viewport, overflow) {
+    const limit = getAirwayLimit(viewport.zoom);
+    const rows = this.executeViewportQuery(
+      db,
+      `
+      SELECT airway_id, airway_name, airway_type, from_lonx, from_laty, to_lonx, to_laty
+      FROM airway
+      WHERE {{lonBoxPredicate}}
+        AND bottom_laty <= @north
+        AND top_laty >= @south
+      ORDER BY airway_name, airway_id
+      LIMIT @rowLimitPlusOne
+      `,
+      viewport,
+      {
+        rowLimitPlusOne: limit + 1
+      }
+    );
+    overflow.airways = rows.length > limit;
+    return rows.slice(0, limit).map((row) => ({
+      id: row.airway_id,
+      name: row.airway_name,
+      airwayType: row.airway_type,
+      fromLat: row.from_laty,
+      fromLon: row.from_lonx,
+      toLat: row.to_laty,
+      toLon: row.to_lonx
+    }));
+  }
+  executeViewportQuery(db, sql, viewport, params) {
+    const { querySql, queryParams } = compileViewportSql(sql, viewport, params);
+    return db.prepare(querySql).all(queryParams);
+  }
 }
 function stripMissedFlag(point) {
   const { isMissed: _isMissed, ...rest } = point;
@@ -2002,6 +2271,119 @@ function dedupeConsecutivePoints(points) {
     output.push(point);
   }
   return output;
+}
+function normalizeMapQueryInput(input) {
+  if (!input) return null;
+  const viewport = normalizeViewport(input.viewport);
+  if (!viewport) return null;
+  return {
+    viewport,
+    layers: {
+      airports: Boolean(input.layers?.airports),
+      waypoints: Boolean(input.layers?.waypoints),
+      vors: Boolean(input.layers?.vors),
+      ndbs: Boolean(input.layers?.ndbs),
+      airways: Boolean(input.layers?.airways)
+    }
+  };
+}
+function normalizeViewport(viewport) {
+  if (!viewport) return null;
+  const north = clampLatitude(viewport.north);
+  const south = clampLatitude(viewport.south);
+  const east = clampLongitude(viewport.east);
+  const west = clampLongitude(viewport.west);
+  const zoom = typeof viewport.zoom === "number" && Number.isFinite(viewport.zoom) ? viewport.zoom : 0;
+  if (north <= south) {
+    return null;
+  }
+  return {
+    north,
+    south,
+    east,
+    west,
+    zoom: Math.max(0, Math.min(24, zoom))
+  };
+}
+function clampLatitude(value) {
+  if (!Number.isFinite(value)) return 0;
+  return Math.max(-90, Math.min(90, value));
+}
+function clampLongitude(value) {
+  if (!Number.isFinite(value)) return 0;
+  let normalized = value;
+  while (normalized > 180) normalized -= 360;
+  while (normalized < -180) normalized += 360;
+  return normalized;
+}
+function compileViewportSql(sql, viewport, params) {
+  const crossesAntiMeridian = viewport.west > viewport.east;
+  const querySql = sql.replace(
+    "{{lonPredicate}}",
+    crossesAntiMeridian ? "(lonx >= @west OR lonx <= @east)" : "lonx BETWEEN @west AND @east"
+  ).replace(
+    "{{lonBoxPredicate}}",
+    crossesAntiMeridian ? "(right_lonx >= @west OR left_lonx <= @east)" : "right_lonx >= @west AND left_lonx <= @east"
+  );
+  return {
+    querySql,
+    queryParams: {
+      north: viewport.north,
+      south: viewport.south,
+      east: viewport.east,
+      west: viewport.west,
+      ...params
+    }
+  };
+}
+function getMinimumAirportRunwayLength(zoom) {
+  if (zoom <= 4) return 8e3;
+  if (zoom <= 5) return 6e3;
+  if (zoom <= 6) return 4e3;
+  if (zoom <= 7) return 2e3;
+  return 0;
+}
+function getAirportLimit(zoom) {
+  if (zoom <= 4) return 120;
+  if (zoom <= 6) return 180;
+  return 300;
+}
+function getWaypointLimit(zoom) {
+  if (zoom <= 8) return 180;
+  if (zoom <= 10) return 350;
+  return 700;
+}
+function getVorLimit(zoom) {
+  if (zoom <= 5) return 120;
+  if (zoom <= 8) return 180;
+  return 300;
+}
+function getNdbLimit(zoom) {
+  if (zoom <= 5) return 100;
+  if (zoom <= 8) return 160;
+  return 260;
+}
+function getAirwayLimit(zoom) {
+  if (zoom <= 5) return 180;
+  if (zoom <= 7) return 260;
+  return 450;
+}
+function emptyMapFeatureCollection() {
+  return {
+    airports: [],
+    waypoints: [],
+    vors: [],
+    ndbs: [],
+    airways: [],
+    overflow: {
+      airports: false,
+      waypoints: false,
+      vors: false,
+      ndbs: false,
+      airways: false
+    },
+    fetchedAt: Date.now()
+  };
 }
 function approximateDistanceSquared(lat, lon, referencePoint) {
   const latDelta = lat - referencePoint.lat;

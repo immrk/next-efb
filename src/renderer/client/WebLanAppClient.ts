@@ -23,6 +23,7 @@ import type {
   SimBriefImportInput,
   SimBriefImportResult
 } from '@shared/flight-plan-types'
+import type { NavMapFeatureCollection, NavMapQueryInput } from '@shared/nav-map-types'
 import type { AppClient } from './AppClient'
 import type { SnapshotPayload } from './AppClient'
 
@@ -99,6 +100,13 @@ export class WebLanAppClient implements AppClient {
 
   buildFlightPlan(input: BuildFlightPlanInput): Promise<BuildFlightPlanResult> {
     return this.fetchJson('/api/nav/plan', {
+      method: 'POST',
+      body: JSON.stringify(input)
+    })
+  }
+
+  getNavMapFeatures(input: NavMapQueryInput): Promise<NavMapFeatureCollection> {
+    return this.fetchJson('/api/nav/map-features', {
       method: 'POST',
       body: JSON.stringify(input)
     })

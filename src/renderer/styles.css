@@ -937,7 +937,30 @@ body {
   pointer-events: auto;
   display: flex;
   align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 10px;
+}
+
+.map-nav-layer-group {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  max-width: min(520px, calc(100vw - 140px));
+}
+
+.map-nav-layer-button {
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(8, 21, 34, 0.82);
+  backdrop-filter: blur(10px);
+}
+
+.map-nav-layer-button.button-default {
+  background: linear-gradient(135deg, rgba(33, 120, 189, 0.96), rgba(56, 164, 126, 0.9));
+  border-color: rgba(117, 214, 255, 0.4);
 }
 
 .map-provider-chip {
@@ -2601,6 +2624,10 @@ body {
     left: 10px;
     justify-content: flex-end;
     flex-wrap: wrap;
+  }
+
+  .map-nav-layer-group {
+    max-width: 100%;
   }
 
   .map-route-launcher {

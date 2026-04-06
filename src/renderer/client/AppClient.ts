@@ -26,6 +26,7 @@ import type {
   SimBriefImportInput,
   SimBriefImportResult
 } from '@shared/flight-plan-types'
+import type { NavMapFeatureCollection, NavMapQueryInput } from '@shared/nav-map-types'
 
 export interface AppClientRuntime {
   host: 'electron' | 'web'
@@ -48,6 +49,7 @@ export interface AppClient {
   searchNavAirports(query: string): Promise<NavAirportOption[]>
   getNavAirportProcedures(airportIdent: string): Promise<NavAirportProcedures>
   buildFlightPlan(input: BuildFlightPlanInput): Promise<BuildFlightPlanResult>
+  getNavMapFeatures(input: NavMapQueryInput): Promise<NavMapFeatureCollection>
   importSimBrief(input: SimBriefImportInput): Promise<SimBriefImportResult>
   getRemoteAccessStatus(): Promise<RemoteAccessStatus>
   getChart(chartId: string): Promise<ChartRecord | null>

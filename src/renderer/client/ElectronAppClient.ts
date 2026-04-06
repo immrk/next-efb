@@ -38,6 +38,10 @@ export class ElectronAppClient implements AppClient {
     return window.msfsApi.buildFlightPlan(input)
   }
 
+  getNavMapFeatures(input: Parameters<typeof window.msfsApi.getNavMapFeatures>[0]) {
+    return window.msfsApi.getNavMapFeatures(input)
+  }
+
   importSimBrief(input: Parameters<typeof window.msfsApi.importSimBrief>[0]) {
     return window.msfsApi.importSimBrief(input)
   }

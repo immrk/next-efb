@@ -50,7 +50,8 @@ export class SimConnectService {
   }
 
   private createProvider(_settings: AppSettings): AircraftDataProvider {
-    if (!import.meta.env.DEV || _settings.providerMode === 'simconnect') {
+    const isDev = process.env.NODE_ENV === 'development'
+    if (!isDev || _settings.providerMode === 'simconnect') {
       return new NodeSimConnectProvider()
     }
 

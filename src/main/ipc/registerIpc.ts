@@ -11,6 +11,7 @@ import type {
   SimBriefImportInput,
   SimBriefImportResult
 } from '@shared/flight-plan-types'
+import type { NavMapFeatureCollection, NavMapQueryInput } from '@shared/nav-map-types'
 import type {
   ChartAssetPayload,
   ChartImportResult,
@@ -94,6 +95,11 @@ export function registerIpc(options: RegisterIpcOptions): void {
     IPC_CHANNELS.navBuildPlan,
     (_event, input: BuildFlightPlanInput): BuildFlightPlanResult =>
       navDataService.buildFlightPlan(settingsStore.get(), input)
+  )
+  ipcMain.handle(
+    IPC_CHANNELS.navMapFeatures,
+    (_event, input: NavMapQueryInput): NavMapFeatureCollection =>
+      navDataService.getMapFeatures(settingsStore.get(), input)
   )
   ipcMain.handle(
     IPC_CHANNELS.simbriefImport,

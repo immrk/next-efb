@@ -17,6 +17,17 @@ import type {
   SimBriefImportInput,
   SimBriefImportResult
 } from '@shared/flight-plan-types'
+import type {
+  NavMapAirwayFeature,
+  NavMapAirportFeature,
+  NavMapFeatureCollection,
+  NavMapFeatureOverflow,
+  NavMapLayerVisibility,
+  NavMapNdbFeature,
+  NavMapQueryInput,
+  NavMapVorFeature,
+  NavMapWaypointFeature
+} from '@shared/nav-map-types'
 
 type AirportRow = {
   airport_id: number
@@ -79,6 +90,54 @@ type ApproachLegRow = {
   fix_ident: string | null
   fix_laty: number | null
   fix_lonx: number | null
+}
+
+type MapAirportRow = {
+  airport_id: number
+  ident: string
+  name: string | null
+  type: number | null
+  longest_runway_length: number | null
+  num_approach: number | null
+  lonx: number
+  laty: number
+}
+
+type MapWaypointRow = {
+  waypoint_id: number
+  ident: string
+  type: string | null
+  airport_ident: string | null
+  lonx: number
+  laty: number
+}
+
+type MapVorRow = {
+  vor_id: number
+  ident: string | null
+  type: string | null
+  frequency: number | null
+  lonx: number
+  laty: number
+}
+
+type MapNdbRow = {
+  ndb_id: number
+  ident: string | null
+  type: string | null
+  frequency: number | null
+  lonx: number
+  laty: number
+}
+
+type MapAirwayRow = {
+  airway_id: number
+  airway_name: string
+  airway_type: string
+  from_lonx: number
+  from_laty: number
+  to_lonx: number
+  to_laty: number
 }
 
 export class NavDataService {
@@ -475,6 +534,59 @@ export class NavDataService {
     }
   }
 
+  getMapFeatures(settings: AppSettings, input: NavMapQueryInput): NavMapFeatureCollection {
+    const db = this.openDatabase(settings)
+    if (!db) {
+      return emptyMapFeatureCollection()
+    }
+
+    const normalizedInput = normalizeMapQueryInput(input)
+    if (!normalizedInput) {
+      db.close()
+      return emptyMapFeatureCollection()
+    }
+
+    const {
+      viewport,
+      layers
+    } = normalizedInput
+    const overflow: NavMapFeatureOverflow = {
+      airports: false,
+      waypoints: false,
+      vors: false,
+      ndbs: false,
+      airways: false
+    }
+
+    const airports = layers.airports
+      ? this.queryAirports(db, viewport, overflow)
+      : []
+    const waypoints = layers.waypoints
+      ? this.queryWaypoints(db, viewport, overflow)
+      : []
+    const vors = layers.vors
+      ? this.queryVors(db, viewport, overflow)
+      : []
+    const ndbs = layers.ndbs
+      ? this.queryNdbs(db, viewport, overflow)
+      : []
+    const airways = layers.airways
+      ? this.queryAirways(db, viewport, overflow)
+      : []
+
+    db.close()
+
+    return {
+      airports,
+      waypoints,
+      vors,
+      ndbs,
+      airways,
+      overflow,
+      fetchedAt: Date.now()
+    }
+  }
+
   private resolveProcedurePoint(db: Database.Database, procedureId: string | null): FlightPlanPoint | null {
     if (!procedureId?.startsWith('approach:')) {
       return null
@@ -868,6 +980,193 @@ export class NavDataService {
       source: 'airport'
     }
   }
+
+  private queryAirports(
+    db: Database.Database,
+    viewport: NormalizedMapViewport,
+    overflow: NavMapFeatureOverflow
+  ): NavMapAirportFeature[] {
+    const limit = getAirportLimit(viewport.zoom)
+    const rows = this.executeViewportQuery<MapAirportRow>(
+      db,
+      `
+      SELECT airport_id, ident, name, type, longest_runway_length, num_approach, lonx, laty
+      FROM airport
+      WHERE {{lonPredicate}}
+        AND bottom_laty <= @north
+        AND top_laty >= @south
+        AND longest_runway_length >= @minRunwayLength
+      ORDER BY longest_runway_length DESC, ident
+      LIMIT @rowLimitPlusOne
+      `,
+      viewport,
+      {
+        minRunwayLength: getMinimumAirportRunwayLength(viewport.zoom),
+        rowLimitPlusOne: limit + 1
+      }
+    )
+
+    overflow.airports = rows.length > limit
+
+    return rows.slice(0, limit).map((row) => ({
+      id: row.airport_id,
+      ident: row.ident,
+      name: row.name,
+      type: asFiniteOrNull(row.type),
+      lat: row.laty,
+      lon: row.lonx,
+      longestRunwayLengthFt: asFiniteOrNull(row.longest_runway_length),
+      numApproach: asFiniteOrNull(row.num_approach)
+    }))
+  }
+
+  private queryWaypoints(
+    db: Database.Database,
+    viewport: NormalizedMapViewport,
+    overflow: NavMapFeatureOverflow
+  ): NavMapWaypointFeature[] {
+    const limit = getWaypointLimit(viewport.zoom)
+    const rows = this.executeViewportQuery<MapWaypointRow>(
+      db,
+      `
+      SELECT waypoint_id, ident, type, airport_ident, lonx, laty
+      FROM waypoint
+      WHERE {{lonPredicate}}
+        AND laty BETWEEN @south AND @north
+      ORDER BY ident
+      LIMIT @rowLimitPlusOne
+      `,
+      viewport,
+      {
+        rowLimitPlusOne: limit + 1
+      }
+    )
+
+    overflow.waypoints = rows.length > limit
+
+    return rows.slice(0, limit).map((row) => ({
+      id: row.waypoint_id,
+      ident: row.ident,
+      type: row.type,
+      lat: row.laty,
+      lon: row.lonx,
+      airportIdent: row.airport_ident
+    }))
+  }
+
+  private queryVors(
+    db: Database.Database,
+    viewport: NormalizedMapViewport,
+    overflow: NavMapFeatureOverflow
+  ): NavMapVorFeature[] {
+    const limit = getVorLimit(viewport.zoom)
+    const rows = this.executeViewportQuery<MapVorRow>(
+      db,
+      `
+      SELECT vor_id, ident, type, frequency, lonx, laty
+      FROM vor
+      WHERE {{lonPredicate}}
+        AND laty BETWEEN @south AND @north
+      ORDER BY ident
+      LIMIT @rowLimitPlusOne
+      `,
+      viewport,
+      {
+        rowLimitPlusOne: limit + 1
+      }
+    )
+
+    overflow.vors = rows.length > limit
+
+    return rows.slice(0, limit).map((row) => ({
+      id: row.vor_id,
+      ident: row.ident,
+      type: row.type,
+      frequency: asFiniteOrNull(row.frequency),
+      lat: row.laty,
+      lon: row.lonx
+    }))
+  }
+
+  private queryNdbs(
+    db: Database.Database,
+    viewport: NormalizedMapViewport,
+    overflow: NavMapFeatureOverflow
+  ): NavMapNdbFeature[] {
+    const limit = getNdbLimit(viewport.zoom)
+    const rows = this.executeViewportQuery<MapNdbRow>(
+      db,
+      `
+      SELECT ndb_id, ident, type, frequency, lonx, laty
+      FROM ndb
+      WHERE {{lonPredicate}}
+        AND laty BETWEEN @south AND @north
+      ORDER BY ident
+      LIMIT @rowLimitPlusOne
+      `,
+      viewport,
+      {
+        rowLimitPlusOne: limit + 1
+      }
+    )
+
+    overflow.ndbs = rows.length > limit
+
+    return rows.slice(0, limit).map((row) => ({
+      id: row.ndb_id,
+      ident: row.ident,
+      type: row.type,
+      frequency: asFiniteOrNull(row.frequency),
+      lat: row.laty,
+      lon: row.lonx
+    }))
+  }
+
+  private queryAirways(
+    db: Database.Database,
+    viewport: NormalizedMapViewport,
+    overflow: NavMapFeatureOverflow
+  ): NavMapAirwayFeature[] {
+    const limit = getAirwayLimit(viewport.zoom)
+    const rows = this.executeViewportQuery<MapAirwayRow>(
+      db,
+      `
+      SELECT airway_id, airway_name, airway_type, from_lonx, from_laty, to_lonx, to_laty
+      FROM airway
+      WHERE {{lonBoxPredicate}}
+        AND bottom_laty <= @north
+        AND top_laty >= @south
+      ORDER BY airway_name, airway_id
+      LIMIT @rowLimitPlusOne
+      `,
+      viewport,
+      {
+        rowLimitPlusOne: limit + 1
+      }
+    )
+
+    overflow.airways = rows.length > limit
+
+    return rows.slice(0, limit).map((row) => ({
+      id: row.airway_id,
+      name: row.airway_name,
+      airwayType: row.airway_type,
+      fromLat: row.from_laty,
+      fromLon: row.from_lonx,
+      toLat: row.to_laty,
+      toLon: row.to_lonx
+    }))
+  }
+
+  private executeViewportQuery<Row extends object>(
+    db: Database.Database,
+    sql: string,
+    viewport: NormalizedMapViewport,
+    params: Record<string, unknown>
+  ): Row[] {
+    const { querySql, queryParams } = compileViewportSql(sql, viewport, params)
+    return db.prepare(querySql).all(queryParams) as Row[]
+  }
 }
 
 function stripMissedFlag(point: FlightPlanPoint & { isMissed?: boolean }): FlightPlanPoint {
@@ -943,6 +1242,159 @@ function dedupeConsecutivePoints(points: FlightPlanPoint[]): FlightPlanPoint[] {
   }
 
   return output
+}
+
+interface NormalizedMapViewport {
+  north: number
+  south: number
+  east: number
+  west: number
+  zoom: number
+}
+
+function normalizeMapQueryInput(input: NavMapQueryInput | null | undefined): {
+  viewport: NormalizedMapViewport
+  layers: NavMapLayerVisibility
+} | null {
+  if (!input) return null
+  const viewport = normalizeViewport(input.viewport)
+  if (!viewport) return null
+
+  return {
+    viewport,
+    layers: {
+      airports: Boolean(input.layers?.airports),
+      waypoints: Boolean(input.layers?.waypoints),
+      vors: Boolean(input.layers?.vors),
+      ndbs: Boolean(input.layers?.ndbs),
+      airways: Boolean(input.layers?.airways)
+    }
+  }
+}
+
+function normalizeViewport(viewport: NavMapQueryInput['viewport'] | null | undefined): NormalizedMapViewport | null {
+  if (!viewport) return null
+  const north = clampLatitude(viewport.north)
+  const south = clampLatitude(viewport.south)
+  const east = clampLongitude(viewport.east)
+  const west = clampLongitude(viewport.west)
+  const zoom = typeof viewport.zoom === 'number' && Number.isFinite(viewport.zoom) ? viewport.zoom : 0
+
+  if (north <= south) {
+    return null
+  }
+
+  return {
+    north,
+    south,
+    east,
+    west,
+    zoom: Math.max(0, Math.min(24, zoom))
+  }
+}
+
+function clampLatitude(value: number): number {
+  if (!Number.isFinite(value)) return 0
+  return Math.max(-90, Math.min(90, value))
+}
+
+function clampLongitude(value: number): number {
+  if (!Number.isFinite(value)) return 0
+  let normalized = value
+  while (normalized > 180) normalized -= 360
+  while (normalized < -180) normalized += 360
+  return normalized
+}
+
+function compileViewportSql(
+  sql: string,
+  viewport: NormalizedMapViewport,
+  params: Record<string, unknown>
+): {
+  querySql: string
+  queryParams: Record<string, unknown>
+} {
+  const crossesAntiMeridian = viewport.west > viewport.east
+  const querySql = sql
+    .replace(
+      '{{lonPredicate}}',
+      crossesAntiMeridian
+        ? '(lonx >= @west OR lonx <= @east)'
+        : 'lonx BETWEEN @west AND @east'
+    )
+    .replace(
+      '{{lonBoxPredicate}}',
+      crossesAntiMeridian
+        ? '(right_lonx >= @west OR left_lonx <= @east)'
+        : 'right_lonx >= @west AND left_lonx <= @east'
+    )
+
+  return {
+    querySql,
+    queryParams: {
+      north: viewport.north,
+      south: viewport.south,
+      east: viewport.east,
+      west: viewport.west,
+      ...params
+    }
+  }
+}
+
+function getMinimumAirportRunwayLength(zoom: number): number {
+  if (zoom <= 4) return 8000
+  if (zoom <= 5) return 6000
+  if (zoom <= 6) return 4000
+  if (zoom <= 7) return 2000
+  return 0
+}
+
+function getAirportLimit(zoom: number): number {
+  if (zoom <= 4) return 120
+  if (zoom <= 6) return 180
+  return 300
+}
+
+function getWaypointLimit(zoom: number): number {
+  if (zoom <= 8) return 180
+  if (zoom <= 10) return 350
+  return 700
+}
+
+function getVorLimit(zoom: number): number {
+  if (zoom <= 5) return 120
+  if (zoom <= 8) return 180
+  return 300
+}
+
+function getNdbLimit(zoom: number): number {
+  if (zoom <= 5) return 100
+  if (zoom <= 8) return 160
+  return 260
+}
+
+function getAirwayLimit(zoom: number): number {
+  if (zoom <= 5) return 180
+  if (zoom <= 7) return 260
+  return 450
+}
+
+function emptyMapFeatureCollection(): NavMapFeatureCollection {
+  return {
+    airports: [],
+    waypoints: [],
+    vors: [],
+    ndbs: [],
+    airways: [],
+    overflow: {
+      airports: false,
+      waypoints: false,
+      vors: false,
+      ndbs: false,
+      airways: false
+    },
+    fetchedAt: Date.now()
+  }
 }
 
 function approximateDistanceSquared(

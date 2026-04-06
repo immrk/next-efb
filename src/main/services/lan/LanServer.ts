@@ -21,6 +21,7 @@ import type {
   BuildFlightPlanInput,
   SimBriefImportInput
 } from '@shared/flight-plan-types'
+import type { NavMapQueryInput } from '@shared/nav-map-types'
 import { WebSocket, WebSocketServer } from 'ws'
 import { SettingsStore } from '../config/SettingsStore'
 import { SimConnectService } from '../simconnect/SimConnectService'
@@ -248,6 +249,12 @@ export class LanServer {
       if (url.pathname === '/api/nav/plan' && request.method === 'POST') {
         const input = (await this.readJsonBody(request)) as BuildFlightPlanInput
         this.sendJson(response, this.navDataService.buildFlightPlan(this.settingsStore.get(), input))
+        return
+      }
+
+      if (url.pathname === '/api/nav/map-features' && request.method === 'POST') {
+        const input = (await this.readJsonBody(request)) as NavMapQueryInput
+        this.sendJson(response, this.navDataService.getMapFeatures(this.settingsStore.get(), input))
         return
       }
 

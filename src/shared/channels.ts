@@ -22,6 +22,7 @@ export const IPC_CHANNELS = {
   navAirportsSearch: 'nav-data:airports:search',
   navAirportProcedures: 'nav-data:airport:procedures',
   navBuildPlan: 'nav-data:plan:build',
+  navMapFeatures: 'nav-data:map:features',
   simbriefImport: 'simbrief:import',
   remoteAccessStatus: 'remote-access:status',
   openExternal: 'system:open-external',
