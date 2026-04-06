@@ -59427,9 +59427,67 @@ function Toaster2() {
     }
   );
 }
+installExternalLinkInterceptor();
 ReactDOM$1.createRoot(document.getElementById("root")).render(
   /* @__PURE__ */ jsxRuntimeExports.jsxs(React.StrictMode, { children: [
     /* @__PURE__ */ jsxRuntimeExports.jsx(App, {}),
     /* @__PURE__ */ jsxRuntimeExports.jsx(Toaster2, {})
   ] })
 );
+function installExternalLinkInterceptor() {
+  if (typeof document === "undefined") {
+    return;
+  }
+  const openExternal = (url) => {
+    void getAppClient().openExternal(url);
+  };
+  const interceptClick = (event) => {
+    if (event.defaultPrevented || event.button !== 0) {
+      return;
+    }
+    const anchor = event.target?.closest("a[href]");
+    if (!(anchor instanceof HTMLAnchorElement)) {
+      return;
+    }
+    if (anchor.hasAttribute("download")) {
+      return;
+    }
+    const href = anchor.href;
+    if (!isExternalLink(href)) {
+      return;
+    }
+    event.preventDefault();
+    openExternal(href);
+  };
+  const interceptAuxClick = (event) => {
+    if (event.defaultPrevented || event.button !== 1) {
+      return;
+    }
+    const anchor = event.target?.closest("a[href]");
+    if (!(anchor instanceof HTMLAnchorElement)) {
+      return;
+    }
+    const href = anchor.href;
+    if (!isExternalLink(href)) {
+      return;
+    }
+    event.preventDefault();
+    openExternal(href);
+  };
+  document.addEventListener("click", interceptClick, true);
+  document.addEventListener("auxclick", interceptAuxClick, true);
+}
+function isExternalLink(url) {
+  try {
+    const target = new URL(url, window.location.href);
+    if (!["http:", "https:", "mailto:", "tel:"].includes(target.protocol)) {
+      return false;
+    }
+    if (window.location.protocol === "file:") {
+      return target.protocol !== "file:";
+    }
+    return target.origin !== window.location.origin;
+  } catch {
+    return false;
+  }
+}
