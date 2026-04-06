@@ -1,4 +1,4 @@
-import { Menu, Tray, app, nativeImage, BrowserWindow, session, dialog } from 'electron'
+import { Menu, Tray, app, nativeImage, BrowserWindow, session, dialog, shell } from 'electron'
 import { join } from 'node:path'
 import { IPC_CHANNELS } from '@shared/channels'
 import { APP_NAME } from '@shared/branding'
@@ -94,6 +94,27 @@ async function createWindow(): Promise<void> {
       contextIsolation: true,
       nodeIntegration: false
     }
+  })
+
+  const appUrl = process.env.ELECTRON_RENDERER_URL
+    ? process.env.ELECTRON_RENDERER_URL
+    : `file://${join(__dirname, '../../renderer/index.html').replace(/\\/g, '/')}`
+
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (isExternalUrl(url, appUrl)) {
+      void shell.openExternal(url)
+    }
+
+    return { action: 'deny' }
+  })
+
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    if (!isExternalUrl(url, appUrl)) {
+      return
+    }
+
+    event.preventDefault()
+    void shell.openExternal(url)
   })
 
   mainWindow.on('close', (event) => {
@@ -261,4 +282,32 @@ function createTrayIcon() {
 
 function getBrandingAssetPath(fileName: string): string {
   return join(app.getAppPath(), 'assets', 'branding', fileName)
+}
+
+function isExternalUrl(targetUrl: string, appUrl: string): boolean {
+  if (!isSupportedExternalUrl(targetUrl)) {
+    return false
+  }
+
+  try {
+    const target = new URL(targetUrl)
+    const appLocation = new URL(appUrl)
+
+    if (appLocation.protocol === 'file:') {
+      return target.protocol !== 'file:'
+    }
+
+    return target.origin !== appLocation.origin
+  } catch {
+    return false
+  }
+}
+
+function isSupportedExternalUrl(url: string): boolean {
+  try {
+    const { protocol } = new URL(url)
+    return protocol === 'http:' || protocol === 'https:' || protocol === 'mailto:' || protocol === 'tel:'
+  } catch {
+    return false
+  }
 }
