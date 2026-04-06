@@ -899,22 +899,21 @@ body {
 
 .aircraft-arrow-shape,
 .chart-aircraft-arrow {
-  width: 0;
-  height: 0;
-  margin-left: 2px;
-  border-left: 12px solid transparent;
-  border-right: 12px solid transparent;
-  border-bottom: 26px solid #ff5fa9;
+  width: 26px;
+  height: 26px;
+  margin-left: 1px;
+  background: #ff5fa9;
+  clip-path: polygon(50% 0%, 100% 100%, 66% 82%, 50% 92%, 34% 82%, 0% 100%);
   filter: drop-shadow(0 0 14px rgba(255, 95, 169, 0.78));
 }
 
 .chart-aircraft-arrow {
   position: absolute;
   margin-left: 0;
-  border-left-width: 9px;
-  border-right-width: 9px;
-  border-bottom-width: 20px;
+  width: 20px;
+  height: 20px;
   z-index: 6;
+  pointer-events: none;
 }
 
 .map-coordinates {

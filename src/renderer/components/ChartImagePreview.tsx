@@ -11,7 +11,7 @@ import { useTranslation } from 'react-i18next'
 import type { ChartAssetPayload, GeoReferencePoint } from '@shared/chart-types'
 import type { AircraftState } from '@shared/types'
 import { useChartRasterAsset } from '../hooks/useChartRasterAsset'
-import { projectAircraftToChart } from '../utils/chartMath'
+import { getChartRotationDeg, projectAircraftToChart } from '../utils/chartMath'
 import { ChartAircraftArrow } from './AircraftArrow'
 import { Button } from './ui/button'
 
@@ -87,16 +87,17 @@ export function ChartImagePreview({
   const { rasterUrl, width: rasterWidth, height: rasterHeight, error: rasterError } =
     useChartRasterAsset(asset)
   const projected = useMemo(() => projectAircraftToChart(aircraft, points), [aircraft, points])
+  const chartRotationDeg = useMemo(() => getChartRotationDeg(points), [points])
   const naturalWidth = rasterWidth ?? 0
   const naturalHeight = rasterHeight ?? 0
 
-  const projectedPercent = useMemo(() => {
-    if (!projected || !naturalWidth || !naturalHeight) return null
+  const projectedScreenPoint = useMemo(() => {
+    if (!projected) return null
     return {
-      left: `${(projected.x / naturalWidth) * 100}%`,
-      top: `${(projected.y / naturalHeight) * 100}%`
+      left: pan.x + projected.x * zoom,
+      top: pan.y + projected.y * zoom
     }
-  }, [naturalHeight, naturalWidth, projected])
+  }, [pan.x, pan.y, projected, zoom])
 
   const chartPins = useMemo(
     () =>
@@ -417,14 +418,14 @@ export function ChartImagePreview({
             className="chart-image chart-image-zoomed"
             draggable={false}
           />
-          {projectedPercent ? (
-            <ChartAircraftArrow
-              x={projectedPercent.left}
-              y={projectedPercent.top}
-              headingDeg={aircraft?.headingDeg ?? 0}
-            />
-          ) : null}
         </div>
+        {projectedScreenPoint ? (
+          <ChartAircraftArrow
+            x={projectedScreenPoint.left}
+            y={projectedScreenPoint.top}
+            headingDeg={(aircraft?.headingDeg ?? 0) + chartRotationDeg}
+          />
+        ) : null}
         {chartPins.map((pin) => (
           <div
             key={pin.key}

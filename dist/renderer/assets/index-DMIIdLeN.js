@@ -52686,16 +52686,11 @@ function mapToLocal(lat, lon, refLat) {
     y: -lat
   };
 }
-function projectAircraftToChart(aircraft, points) {
-  if (!aircraft || points.length !== 2) return null;
-  if (!aircraft.connected) return null;
-  if (!Number.isFinite(aircraft.lat) || !Number.isFinite(aircraft.lon)) return null;
-  if (Math.abs(aircraft.lat) > 90 || Math.abs(aircraft.lon) > 180) return null;
-  if (aircraft.lat === 0 && aircraft.lon === 0 && aircraft.altitudeFt === 0) return null;
+function getChartTransform(points) {
+  if (points.length !== 2) return null;
   const [p1, p2] = points;
   const mapA = mapToLocal(p1.mapLat, p1.mapLon, p1.mapLat);
   const mapB = mapToLocal(p2.mapLat, p2.mapLon, p1.mapLat);
-  const mapP = mapToLocal(aircraft.lat, aircraft.lon, p1.mapLat);
   const vMap = {
     x: mapB.x - mapA.x,
     y: mapB.y - mapA.y
@@ -52707,21 +52702,39 @@ function projectAircraftToChart(aircraft, points) {
   const mapLen = Math.hypot(vMap.x, vMap.y);
   const chartLen = Math.hypot(vChart.x, vChart.y);
   if (mapLen === 0 || chartLen === 0) return null;
-  const scale = chartLen / mapLen;
-  const mapAngle = Math.atan2(vMap.y, vMap.x);
-  const chartAngle = Math.atan2(vChart.y, vChart.x);
-  const angle = chartAngle - mapAngle;
+  return {
+    scale: chartLen / mapLen,
+    angleRad: Math.atan2(vChart.y, vChart.x) - Math.atan2(vMap.y, vMap.x),
+    chartOrigin: { x: p1.chartX, y: p1.chartY },
+    mapOrigin: mapA
+  };
+}
+function getChartRotationDeg(points) {
+  const transform = getChartTransform(points);
+  if (!transform) return 0;
+  return transform.angleRad * 180 / Math.PI;
+}
+function projectAircraftToChart(aircraft, points) {
+  if (!aircraft || points.length !== 2) return null;
+  if (!aircraft.connected) return null;
+  if (!Number.isFinite(aircraft.lat) || !Number.isFinite(aircraft.lon)) return null;
+  if (Math.abs(aircraft.lat) > 90 || Math.abs(aircraft.lon) > 180) return null;
+  if (aircraft.lat === 0 && aircraft.lon === 0 && aircraft.altitudeFt === 0) return null;
+  const [p1] = points;
+  const transform = getChartTransform(points);
+  if (!transform) return null;
+  const mapP = mapToLocal(aircraft.lat, aircraft.lon, p1.mapLat);
   const relative = {
-    x: mapP.x - mapA.x,
-    y: mapP.y - mapA.y
+    x: mapP.x - transform.mapOrigin.x,
+    y: mapP.y - transform.mapOrigin.y
   };
   const rotated = {
-    x: (relative.x * Math.cos(angle) - relative.y * Math.sin(angle)) * scale,
-    y: (relative.x * Math.sin(angle) + relative.y * Math.cos(angle)) * scale
+    x: (relative.x * Math.cos(transform.angleRad) - relative.y * Math.sin(transform.angleRad)) * transform.scale,
+    y: (relative.x * Math.sin(transform.angleRad) + relative.y * Math.cos(transform.angleRad)) * transform.scale
   };
   return {
-    x: p1.chartX + rotated.x,
-    y: p1.chartY + rotated.y
+    x: transform.chartOrigin.x + rotated.x,
+    y: transform.chartOrigin.y + rotated.y
   };
 }
 function createAircraftLeafletIcon(headingDeg) {
@@ -52788,15 +52801,16 @@ function ChartImagePreview({
   const [draggingPinIndex, setDraggingPinIndex] = reactExports.useState(null);
   const { rasterUrl, width: rasterWidth, height: rasterHeight, error: rasterError } = useChartRasterAsset(asset);
   const projected = reactExports.useMemo(() => projectAircraftToChart(aircraft, points), [aircraft, points]);
+  const chartRotationDeg = reactExports.useMemo(() => getChartRotationDeg(points), [points]);
   const naturalWidth = rasterWidth ?? 0;
   const naturalHeight = rasterHeight ?? 0;
-  const projectedPercent = reactExports.useMemo(() => {
-    if (!projected || !naturalWidth || !naturalHeight) return null;
+  const projectedScreenPoint = reactExports.useMemo(() => {
+    if (!projected) return null;
     return {
-      left: `${projected.x / naturalWidth * 100}%`,
-      top: `${projected.y / naturalHeight * 100}%`
+      left: pan.x + projected.x * zoom,
+      top: pan.y + projected.y * zoom
     };
-  }, [naturalHeight, naturalWidth, projected]);
+  }, [pan.x, pan.y, projected, zoom]);
   const chartPins = reactExports.useMemo(
     () => draftChartPoints.map((point, index2) => ({
       index: index2,
@@ -53069,7 +53083,7 @@ function ChartImagePreview({
         onPointerCancel: finishDrag,
         onClick: handleChartClick,
         children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
             "div",
             {
               className: "chart-surface chart-pan-stage",
@@ -53079,28 +53093,26 @@ function ChartImagePreview({
                 transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`
               },
               onDragStart: (event) => event.preventDefault(),
-              children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  "img",
-                  {
-                    ref: imageRef,
-                    src: rasterUrl,
-                    alt: chartTitle,
-                    className: "chart-image chart-image-zoomed",
-                    draggable: false
-                  }
-                ),
-                projectedPercent ? /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  ChartAircraftArrow,
-                  {
-                    x: projectedPercent.left,
-                    y: projectedPercent.top,
-                    headingDeg: aircraft?.headingDeg ?? 0
-                  }
-                ) : null
-              ]
+              children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "img",
+                {
+                  ref: imageRef,
+                  src: rasterUrl,
+                  alt: chartTitle,
+                  className: "chart-image chart-image-zoomed",
+                  draggable: false
+                }
+              )
             }
           ),
+          projectedScreenPoint ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+            ChartAircraftArrow,
+            {
+              x: projectedScreenPoint.left,
+              y: projectedScreenPoint.top,
+              headingDeg: (aircraft?.headingDeg ?? 0) + chartRotationDeg
+            }
+          ) : null,
           chartPins.map((pin) => /* @__PURE__ */ jsxRuntimeExports.jsx(
             "div",
             {
