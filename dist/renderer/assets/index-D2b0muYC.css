@@ -1598,7 +1598,37 @@ body {
   pointer-events: auto;
   display: flex;
   align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 10px;
+}
+
+.map-nav-layer-group {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  max-width: min(520px, calc(100vw - 140px));
+}
+
+.map-toolbar-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.map-nav-layer-button {
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(8, 21, 34, 0.82);
+  backdrop-filter: blur(10px);
+}
+
+.map-nav-layer-button.button-default {
+  background: linear-gradient(135deg, rgba(33, 120, 189, 0.96), rgba(56, 164, 126, 0.9));
+  border-color: rgba(117, 214, 255, 0.4);
 }
 
 .map-provider-chip {
@@ -1609,6 +1639,19 @@ body {
   border-radius: 10px;
   background: rgba(11, 16, 24, 0.92);
   box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35);
+}
+
+.map-toolbar-inline .map-provider-trigger-icon {
+  flex: 0 0 auto;
+}
+
+.map-toolbar-inline .map-nav-layer-group {
+  flex-wrap: nowrap;
+  max-width: none;
+}
+
+.map-floating-toolbar > .connection-badge {
+  flex: 0 0 auto;
 }
 
 .map-provider-chip .select-trigger {
@@ -2693,11 +2736,29 @@ body {
 }
 
 .chart-editor-map-stage {
+  position: relative;
   min-height: 0;
 }
 
 .chart-editor-map-stage .detail-leaflet-map {
   height: 100%;
+}
+
+.chart-editor-map-toolbar {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  z-index: 1400;
+  pointer-events: none;
+}
+
+.chart-editor-map-toolbar-inner {
+  pointer-events: auto;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
 }
 
 .chart-meta-modal-backdrop {
@@ -3262,6 +3323,22 @@ body {
     left: 10px;
     justify-content: flex-end;
     flex-wrap: wrap;
+  }
+
+  .map-nav-layer-group {
+    max-width: 100%;
+  }
+
+  .map-toolbar-inline {
+    width: 100%;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+
+  .map-toolbar-inline .map-nav-layer-group {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    max-width: 100%;
   }
 
   .map-route-launcher {

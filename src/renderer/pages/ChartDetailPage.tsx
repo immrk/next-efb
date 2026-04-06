@@ -5,7 +5,10 @@ import { useTranslation } from 'react-i18next'
 import type { ChartTitleMode, ChartType, GeoReferencePoint } from '@shared/chart-types'
 import type { NavAirportProcedures, NavDataStatus } from '@shared/flight-plan-types'
 import { getAppClient } from '../client'
+import { MapDisplayToolbar } from '../components/MapDisplayToolbar'
+import { NavDataOverlay } from '../components/NavDataOverlay'
 import { useAppStore } from '../store/useAppStore'
+import { usePersistentMapDisplaySettings } from '../hooks/usePersistentMapDisplaySettings'
 import { ChartImagePreview } from '../components/ChartImagePreview'
 import { useChartDetailData } from '../hooks/useChartDetailData'
 import { getMapTileConfig } from '../utils/mapTileProviders'
@@ -111,6 +114,7 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
   const { t } = useTranslation()
   const settings = useAppStore((state) => state.settings)
   const { chart, asset, points, setChart, setPoints } = useChartDetailData(chartId)
+  const { navLayerVisibility, toggleNavLayer } = usePersistentMapDisplaySettings()
   const tileConfig = getMapTileConfig(settings?.mapTileProvider)
   const [navStatus, setNavStatus] = useState<NavDataStatus | null>(null)
   const [titleMode, setTitleMode] = useState<ChartTitleMode>('manual')
@@ -440,6 +444,13 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
           </div>
 
           <div className="chart-editor-map-stage">
+            <div className="chart-editor-map-toolbar">
+              <MapDisplayToolbar
+                className="chart-editor-map-toolbar-inner"
+                navLayerVisibility={navLayerVisibility}
+                onToggleLayer={toggleNavLayer}
+              />
+            </div>
             <MapContainer
               center={[mapCenterLat, mapCenterLon]}
               zoom={10}
@@ -451,6 +462,7 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
                 referrerPolicy="strict-origin-when-cross-origin"
                 {...(tileConfig.subdomains ? { subdomains: tileConfig.subdomains } : {})}
               />
+              <NavDataOverlay layerVisibility={navLayerVisibility} />
               <ClickCaptureLayer
                 onAddPoint={(point) => {
                   setDraftMapPoints((current) => [...current.slice(-1), point].slice(0, 2))
