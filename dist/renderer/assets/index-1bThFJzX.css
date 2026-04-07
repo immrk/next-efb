@@ -669,6 +669,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
   --ui-muted: #94a3b8;
   --ui-accent: #1d4f7a;
   --ui-accent-border: #3f79ab;
+  --app-viewport-height: 100vh;
+  --app-viewport-offset-top: 0px;
+  --app-viewport-offset-bottom: 0px;
+  --app-webapp-safe-area-top: 0px;
+  --app-safe-area-top: max(env(safe-area-inset-top), var(--app-viewport-offset-top));
+  --app-safe-area-bottom: max(env(safe-area-inset-bottom), var(--app-viewport-offset-bottom));
+  --app-standalone-safe-area-top: max(env(safe-area-inset-top), var(--app-webapp-safe-area-top));
   font-family: "Segoe UI", "PingFang SC", sans-serif;
   color: #f4f7fb;
   background:
@@ -691,8 +698,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
 }
 
 html {
-  height: 100%;
-  height: -webkit-fill-available;
+  height: var(--app-viewport-height);
+  min-height: var(--app-viewport-height);
   background:
     radial-gradient(circle at top left, rgba(52, 152, 219, 0.35), transparent 35%),
     radial-gradient(circle at bottom right, rgba(46, 204, 113, 0.18), transparent 30%),
@@ -702,27 +709,21 @@ html {
 
 body {
   margin: 0;
-  height: 100%;
-  min-height: 100vh;
-  min-height: 100dvh;
-  min-height: -webkit-fill-available;
-  min-height: 100vh;
+  height: var(--app-viewport-height);
+  min-height: var(--app-viewport-height);
   overflow: hidden;
   overscroll-behavior: none;
   background: transparent;
 }
 
 #root {
-  height: 100%;
-  min-height: 100vh;
-  min-height: 100dvh;
-  min-height: -webkit-fill-available;
+  height: var(--app-viewport-height);
+  min-height: var(--app-viewport-height);
 }
 
 .desktop-shell {
-  height: 100%;
-  min-height: 100vh;
-  min-height: 100dvh;
+  height: var(--app-viewport-height);
+  min-height: var(--app-viewport-height);
 }
 
 .desktop-shell-with-titlebar {
@@ -895,13 +896,12 @@ body {
 }
 
 .app-shell {
-  min-height: 100vh;
-  min-height: 100dvh;
+  min-height: var(--app-viewport-height);
   height: 100%;
   padding:
-    calc(32px + env(safe-area-inset-top))
+    calc(32px + var(--app-safe-area-top))
     calc(32px + env(safe-area-inset-right))
-    calc(32px + env(safe-area-inset-bottom))
+    calc(32px + var(--app-safe-area-bottom))
     calc(32px + env(safe-area-inset-left));
   overflow: auto;
   min-width: 0;
@@ -913,11 +913,15 @@ body {
 
 .app-shell-fullbleed {
   padding:
-    env(safe-area-inset-top)
+    0
     env(safe-area-inset-right)
-    env(safe-area-inset-bottom)
+    var(--app-safe-area-bottom)
     env(safe-area-inset-left);
   overflow: hidden;
+}
+
+.app-shell-map {
+  padding-top: 0;
 }
 
 .route-view {
@@ -929,11 +933,16 @@ body {
   display: block;
 }
 
+.route-view-with-safe-area.active {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: 0;
+}
+
 .product-shell {
   --sidebar-width: 260px;
   height: 100%;
-  min-height: 100vh;
-  min-height: 100dvh;
+  min-height: var(--app-viewport-height);
   min-height: 0;
   display: grid;
   grid-template-columns: var(--sidebar-width) 1fr;
@@ -953,6 +962,22 @@ body {
   gap: 12px;
   min-height: 0;
   overflow: auto;
+}
+
+.safe-area-top-inset {
+  height: var(--app-standalone-safe-area-top);
+  min-height: var(--app-standalone-safe-area-top);
+  flex: 0 0 auto;
+  pointer-events: none;
+  background: transparent;
+}
+
+.route-safe-area-top {
+  width: 100%;
+}
+
+.sidebar-safe-area-top {
+  width: 100%;
 }
 
 .sidebar-brand {
@@ -1596,10 +1621,16 @@ body {
   z-index: 1300;
   pointer-events: auto;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
+  align-content: flex-end;
   justify-content: flex-end;
   flex-wrap: wrap;
   gap: 10px;
+}
+
+.map-safe-area-top {
+  flex-basis: 100%;
+  width: 100%;
 }
 
 .map-nav-layer-group {
@@ -2401,6 +2432,8 @@ body {
   left: 18px;
   z-index: 1300;
   pointer-events: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 .map-route-launcher-button {
@@ -3278,17 +3311,17 @@ body {
 
   .app-shell {
     padding:
-      calc(18px + env(safe-area-inset-top))
+      calc(18px + var(--app-safe-area-top))
       calc(18px + env(safe-area-inset-right))
-      calc(18px + env(safe-area-inset-bottom))
+      calc(18px + var(--app-safe-area-bottom))
       calc(18px + env(safe-area-inset-left));
   }
 
   .app-shell-fullbleed {
     padding:
-      env(safe-area-inset-top)
+      0
       env(safe-area-inset-right)
-      env(safe-area-inset-bottom)
+      var(--app-safe-area-bottom)
       env(safe-area-inset-left);
   }
 

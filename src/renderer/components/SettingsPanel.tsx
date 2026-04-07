@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import QRCode from 'qrcode'
 import { getAppClient } from '../client'
 import i18n from '../i18n'
-import type { AppLanguage, AircraftSource, MapTileProvider, RemoteAccessStatus } from '@shared/types'
+import type { AppLanguage, AircraftSource, RemoteAccessStatus } from '@shared/types'
 import type { NavDataStatus } from '@shared/flight-plan-types'
 import { useAppStore } from '../store/useAppStore'
 import { toast } from './ui/use-toast'
@@ -29,6 +29,7 @@ export function SettingsPanel() {
   const [navPathDraft, setNavPathDraft] = useState('')
   const [simbriefUsernameDraft, setSimbriefUsernameDraft] = useState('')
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null)
+  const [isMobileAccess, setIsMobileAccess] = useState(false)
 
   useEffect(() => {
     const refreshRemoteAccessStatus = () => {
@@ -80,6 +81,39 @@ export function SettingsPanel() {
     }
   }, [remoteAccessStatus?.primaryAccessUrl])
 
+  useEffect(() => {
+    if (typeof window === 'undefined' || runtime.host === 'electron') {
+      return
+    }
+
+    const widthQuery = window.matchMedia('(max-width: 900px)')
+    const pointerQuery = window.matchMedia('(pointer: coarse)')
+    const mobileUserAgentPattern =
+      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i
+
+    const syncMobileAccess = () => {
+      const viewportWidth = window.visualViewport?.width ?? window.innerWidth
+      const isMobileViewport = viewportWidth <= 900 || widthQuery.matches
+      const isTouchFirstDevice = pointerQuery.matches
+      const isMobileUserAgent = mobileUserAgentPattern.test(window.navigator.userAgent)
+
+      setIsMobileAccess(isMobileViewport || isTouchFirstDevice || isMobileUserAgent)
+    }
+
+    syncMobileAccess()
+    widthQuery.addEventListener('change', syncMobileAccess)
+    pointerQuery.addEventListener('change', syncMobileAccess)
+    window.addEventListener('resize', syncMobileAccess)
+    window.visualViewport?.addEventListener('resize', syncMobileAccess)
+
+    return () => {
+      widthQuery.removeEventListener('change', syncMobileAccess)
+      pointerQuery.removeEventListener('change', syncMobileAccess)
+      window.removeEventListener('resize', syncMobileAccess)
+      window.visualViewport?.removeEventListener('resize', syncMobileAccess)
+    }
+  }, [runtime.host])
+
   const updateLanguage = async (language: AppLanguage): Promise<void> => {
     const nextSettings = await appClient.updateSettings({ language })
     setSettings(nextSettings)
@@ -88,11 +122,6 @@ export function SettingsPanel() {
 
   const updateProviderMode = async (providerMode: AircraftSource): Promise<void> => {
     const nextSettings = await appClient.updateSettings({ providerMode })
-    setSettings(nextSettings)
-  }
-
-  const updateMapTileProvider = async (mapTileProvider: MapTileProvider): Promise<void> => {
-    const nextSettings = await appClient.updateSettings({ mapTileProvider })
     setSettings(nextSettings)
   }
 
@@ -159,7 +188,7 @@ export function SettingsPanel() {
         </Select>
       </div>
 
-      {runtime.isDev ? (
+      {runtime.isDev && !isMobileAccess ? (
         <div className="settings-field">
           <label htmlFor="provider-select">{t('settings.provider')}</label>
           <Select
@@ -179,30 +208,6 @@ export function SettingsPanel() {
           </Select>
         </div>
       ) : null}
-
-      <div className="settings-field">
-        <label htmlFor="map-tile-provider-select">{t('settings.mapTileProvider')}</label>
-        <Select
-          value={settings?.mapTileProvider ?? 'osm'}
-          disabled={!runtime.canWrite}
-          onValueChange={(value) => {
-            void updateMapTileProvider(value as MapTileProvider)
-          }}
-        >
-          <SelectTrigger id="map-tile-provider-select">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="esriWorldStreet">{t('settings.mapTileProviderEsriWorldStreet')}</SelectItem>
-            <SelectItem value="osm">{t('settings.mapTileProviderOsm')}</SelectItem>
-            <SelectItem value="osmHot">{t('settings.mapTileProviderOsmHot')}</SelectItem>
-            <SelectItem value="cartoLight">{t('settings.mapTileProviderCartoLight')}</SelectItem>
-            <SelectItem value="cartoVoyager">{t('settings.mapTileProviderCartoVoyager')}</SelectItem>
-            <SelectItem value="osmfr">{t('settings.mapTileProviderOsmFr')}</SelectItem>
-          </SelectContent>
-        </Select>
-        <span className="settings-note-inline">{t('settings.mapTileProviderHint')}</span>
-      </div>
 
       <div className="settings-field">
         <label htmlFor="chart-opacity-range">{t('settings.chartOpacity')}</label>
@@ -227,53 +232,55 @@ export function SettingsPanel() {
         </div>
       </div>
 
-      <div className="settings-field">
-        <label>{t('settings.navDataTitle')}</label>
-        <div className="settings-note settings-note-card">
-          <span>{t('settings.navDataDefaultPath', { path: navDataStatus?.defaultPath ?? '-' })}</span>
-          <span>
-            {t('settings.navDataActivePath', { path: navDataStatus?.activePath ?? t('settings.navDataMissing') })}
-          </span>
-          <div className="settings-inline-row">
-            <Input
-              value={navPathDraft}
-              onChange={(event) => setNavPathDraft(event.target.value)}
-              placeholder={t('settings.navDataPathPlaceholder')}
-            />
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={async () => {
-                const picked = await appClient.pickNavSqliteFile()
-                if (!picked) return
-                setNavPathDraft(picked)
-                await saveNavDataPath(picked)
-              }}
-            >
-              {t('settings.navDataBrowse')}
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => {
-                void saveNavDataPath(navPathDraft)
-              }}
-            >
-              {t('settings.navDataSave')}
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => {
-                setNavPathDraft('')
-                void saveNavDataPath('')
-              }}
-            >
-              {t('settings.navDataClear')}
-            </Button>
+      {!isMobileAccess ? (
+        <div className="settings-field">
+          <label>{t('settings.navDataTitle')}</label>
+          <div className="settings-note settings-note-card">
+            <span>{t('settings.navDataDefaultPath', { path: navDataStatus?.defaultPath ?? '-' })}</span>
+            <span>
+              {t('settings.navDataActivePath', { path: navDataStatus?.activePath ?? t('settings.navDataMissing') })}
+            </span>
+            <div className="settings-inline-row">
+              <Input
+                value={navPathDraft}
+                onChange={(event) => setNavPathDraft(event.target.value)}
+                placeholder={t('settings.navDataPathPlaceholder')}
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={async () => {
+                  const picked = await appClient.pickNavSqliteFile()
+                  if (!picked) return
+                  setNavPathDraft(picked)
+                  await saveNavDataPath(picked)
+                }}
+              >
+                {t('settings.navDataBrowse')}
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => {
+                  void saveNavDataPath(navPathDraft)
+                }}
+              >
+                {t('settings.navDataSave')}
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => {
+                  setNavPathDraft('')
+                  void saveNavDataPath('')
+                }}
+              >
+                {t('settings.navDataClear')}
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
+      ) : null}
 
       <div className="settings-field">
         <label>{t('settings.simbriefTitle')}</label>
@@ -291,94 +298,96 @@ export function SettingsPanel() {
         </div>
       </div>
 
-      <div className="settings-field">
-        <label>{t('settings.remoteAccess')}</label>
-        <div className="settings-note settings-note-card">
-          <strong>
-            {remoteAccessStatus?.running
-              ? t('settings.remoteAccessEnabled')
-              : t('settings.remoteAccessDisabled')}
-          </strong>
-          {remoteAccessStatus?.primaryAccessUrl ? (
-            <div className="settings-remote-card">
-              <div className="settings-remote-main">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="settings-link-button"
-                  onClick={() => {
-                    void appClient.openExternal(remoteAccessStatus.primaryAccessUrl!)
-                  }}
-                >
-                  {remoteAccessStatus.primaryAccessUrl}
-                </Button>
-                <span>{t('settings.remoteAccessOpenHint')}</span>
-              </div>
-              {qrCodeUrl ? (
-                <div className="settings-qr-panel" aria-label={t('settings.remoteAccessQr')}>
-                  <img src={qrCodeUrl} alt={t('settings.remoteAccessQr')} className="settings-qr-image" />
+      {!isMobileAccess ? (
+        <div className="settings-field">
+          <label>{t('settings.remoteAccess')}</label>
+          <div className="settings-note settings-note-card">
+            <strong>
+              {remoteAccessStatus?.running
+                ? t('settings.remoteAccessEnabled')
+                : t('settings.remoteAccessDisabled')}
+            </strong>
+            {remoteAccessStatus?.primaryAccessUrl ? (
+              <div className="settings-remote-card">
+                <div className="settings-remote-main">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="settings-link-button"
+                    onClick={() => {
+                      void appClient.openExternal(remoteAccessStatus.primaryAccessUrl!)
+                    }}
+                  >
+                    {remoteAccessStatus.primaryAccessUrl}
+                  </Button>
+                  <span>{t('settings.remoteAccessOpenHint')}</span>
                 </div>
-              ) : null}
-            </div>
-          ) : null}
-          {runtime.host === 'electron' && settings?.lanAccess ? (
-            <>
-              <label className="settings-toggle">
-                <input
-                  type="checkbox"
-                  checked={settings.lanAccess.enabled}
-                  onChange={(event) => {
-                    void updateLanAccess({ enabled: event.target.checked })
-                  }}
-                />
-                <span>{t('settings.remoteAccessEnabledToggle')}</span>
-              </label>
-              <label className="settings-toggle">
-                <input
-                  type="checkbox"
-                  checked={settings.lanAccess.authEnabled}
-                  onChange={(event) => {
-                    void updateLanAccess({ authEnabled: event.target.checked })
-                  }}
-                />
-                <span>{t('settings.remoteAccessAuthToggle')}</span>
-              </label>
-              <div className="settings-inline-row">
-                <Input
-                  className="settings-port-input"
-                  type="number"
-                  min={1024}
-                  max={65535}
-                  value={portDraft}
-                  onChange={(event) => setPortDraft(event.target.value)}
-                />
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => {
-                    const nextPort = Number(portDraft)
-                    if (!Number.isFinite(nextPort) || nextPort < 1024 || nextPort > 65535) {
-                      return
-                    }
-                    void updateLanAccess({ port: nextPort })
-                  }}
-                >
-                  {t('settings.remoteAccessApplyPort')}
-                </Button>
+                {qrCodeUrl ? (
+                  <div className="settings-qr-panel" aria-label={t('settings.remoteAccessQr')}>
+                    <img src={qrCodeUrl} alt={t('settings.remoteAccessQr')} className="settings-qr-image" />
+                  </div>
+                ) : null}
               </div>
-              <span>{t('settings.remoteAccessPort', { port: settings.lanAccess.port })}</span>
-              <span>{t('settings.remoteAccessToggleHint')}</span>
-              {settings.lanAccess.authEnabled ? (
-                <code className="settings-token">{settings.lanAccess.authToken}</code>
-              ) : (
-                <span>{t('settings.remoteAccessAuthDisabledHint')}</span>
-              )}
-            </>
-          ) : (
-            <span>{t('settings.remoteAccessReadonlyHint')}</span>
-          )}
+            ) : null}
+            {runtime.host === 'electron' && settings?.lanAccess ? (
+              <>
+                <label className="settings-toggle">
+                  <input
+                    type="checkbox"
+                    checked={settings.lanAccess.enabled}
+                    onChange={(event) => {
+                      void updateLanAccess({ enabled: event.target.checked })
+                    }}
+                  />
+                  <span>{t('settings.remoteAccessEnabledToggle')}</span>
+                </label>
+                <label className="settings-toggle">
+                  <input
+                    type="checkbox"
+                    checked={settings.lanAccess.authEnabled}
+                    onChange={(event) => {
+                      void updateLanAccess({ authEnabled: event.target.checked })
+                    }}
+                  />
+                  <span>{t('settings.remoteAccessAuthToggle')}</span>
+                </label>
+                <div className="settings-inline-row">
+                  <Input
+                    className="settings-port-input"
+                    type="number"
+                    min={1024}
+                    max={65535}
+                    value={portDraft}
+                    onChange={(event) => setPortDraft(event.target.value)}
+                  />
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => {
+                      const nextPort = Number(portDraft)
+                      if (!Number.isFinite(nextPort) || nextPort < 1024 || nextPort > 65535) {
+                        return
+                      }
+                      void updateLanAccess({ port: nextPort })
+                    }}
+                  >
+                    {t('settings.remoteAccessApplyPort')}
+                  </Button>
+                </div>
+                <span>{t('settings.remoteAccessPort', { port: settings.lanAccess.port })}</span>
+                <span>{t('settings.remoteAccessToggleHint')}</span>
+                {settings.lanAccess.authEnabled ? (
+                  <code className="settings-token">{settings.lanAccess.authToken}</code>
+                ) : (
+                  <span>{t('settings.remoteAccessAuthDisabledHint')}</span>
+                )}
+              </>
+            ) : (
+              <span>{t('settings.remoteAccessReadonlyHint')}</span>
+            )}
+          </div>
         </div>
-      </div>
+      ) : null}
 
       {!runtime.canWrite ? <p className="settings-note">{t('settings.remoteReadonlyMode')}</p> : null}
     </section>

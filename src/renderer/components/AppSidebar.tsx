@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { APP_NAME } from '@shared/branding'
 import type { AppRoute } from '@shared/types'
 import { BRAND_ICON_URL } from '../branding'
+import { SafeAreaTopInset } from './SafeAreaTopInset'
 import { SettingsIcon } from './icons/SettingsIcon'
 import { Button } from './ui/button'
 
@@ -61,6 +62,8 @@ export function AppSidebar({ route, collapsed, onToggleCollapse, onNavigate }: A
 
   return (
     <aside className={`app-sidebar ${collapsed ? 'collapsed' : ''}`}>
+      <SafeAreaTopInset className="sidebar-safe-area-top" />
+
       <div className="sidebar-brand">
         <div className="sidebar-brand-main">
           <span className="sidebar-brand-icon">

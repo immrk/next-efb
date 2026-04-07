@@ -4,6 +4,7 @@ import type { AppRoute } from '@shared/types'
 import type { BuildFlightPlanInput } from '@shared/flight-plan-types'
 import { AppSidebar } from './components/AppSidebar'
 import { DesktopTitleBar } from './components/DesktopTitleBar'
+import { SafeAreaTopInset } from './components/SafeAreaTopInset'
 import { getAppClient } from './client'
 import { useDesktopData } from './hooks/useDesktopData'
 import { ChartDetailPage } from './pages/ChartDetailPage'
@@ -31,6 +32,13 @@ export function App() {
   const isFullBleedRoute =
     route === 'map' || route === 'charts' || route === 'chartDetail' || route === 'settings'
   const showDesktopTitleBar = runtime.host === 'electron'
+  const appShellClassName = [
+    'app-shell',
+    isFullBleedRoute ? 'app-shell-fullbleed' : '',
+    route === 'map' ? 'app-shell-map' : ''
+  ]
+    .filter(Boolean)
+    .join(' ')
 
   return (
     <main className={`desktop-shell ${showDesktopTitleBar ? 'desktop-shell-with-titlebar' : ''}`}>
@@ -47,7 +55,7 @@ export function App() {
             }
           }}
         />
-        <section className={`app-shell ${isFullBleedRoute ? 'app-shell-fullbleed' : ''}`}>
+        <section className={appShellClassName}>
           {isFullBleedRoute ? null : (
             <header className="topbar">
               <span>{t('app.subtitle')}</span>
@@ -72,7 +80,8 @@ export function App() {
             />
           </section>
 
-          <section className={`route-view ${route === 'charts' ? 'active' : ''}`}>
+          <section className={`route-view route-view-with-safe-area ${route === 'charts' ? 'active' : ''}`}>
+            <SafeAreaTopInset className="route-safe-area-top" />
             <ChartsPage
               selectedChartId={selectedChartId}
               onSelectChart={setSelectedChartId}
@@ -85,12 +94,14 @@ export function App() {
             />
           </section>
 
-          <section className={`route-view ${route === 'settings' ? 'active' : ''}`}>
+          <section className={`route-view route-view-with-safe-area ${route === 'settings' ? 'active' : ''}`}>
+            <SafeAreaTopInset className="route-safe-area-top" />
             <SettingsPage />
           </section>
 
           {route === 'chartDetail' && detailChartId ? (
-            <section className={`route-view ${route === 'chartDetail' ? 'active' : ''}`}>
+            <section className={`route-view route-view-with-safe-area ${route === 'chartDetail' ? 'active' : ''}`}>
+              <SafeAreaTopInset className="route-safe-area-top" />
               <ChartDetailPage
                 chartId={detailChartId}
                 onBack={() => setRoute(chartDetailBackRoute)}

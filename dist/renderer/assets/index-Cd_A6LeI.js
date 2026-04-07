@@ -12758,6 +12758,9 @@ const useTranslation = (ns, props = {}) => {
 const APP_NAME = "NextEFB";
 const brandIconUrl = "" + new URL("brand-mark-rIPLYFvC.png", import.meta.url).href;
 const BRAND_ICON_URL = brandIconUrl;
+function SafeAreaTopInset({ className = "" }) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: `safe-area-top-inset ${className}`.trim(), "aria-hidden": "true" });
+}
 function SettingsIcon() {
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { viewBox: "0 0 24 24", "aria-hidden": "true", children: [
     /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M10.4 3.2h3.2l.5 2.05c.37.11.72.25 1.06.44l1.88-.95 2.26 2.26-.95 1.88c.19.34.33.69.44 1.06l2.05.5v3.2l-2.05.5c-.11.37-.25.72-.44 1.06l.95 1.88-2.26 2.26-1.88-.95c-.34.19-.69.33-1.06.44l-.5 2.05h-3.2l-.5-2.05a6.77 6.77 0 0 1-1.06-.44l-1.88.95-2.26-2.26.95-1.88a6.77 6.77 0 0 1-.44-1.06l-2.05-.5v-3.2l2.05-.5c.11-.37.25-.72.44-1.06l-.95-1.88 2.26-2.26 1.88.95c.34-.19.69-.33 1.06-.44z" }),
@@ -12825,6 +12828,7 @@ function AppSidebar({ route, collapsed, onToggleCollapse, onNavigate }) {
     { key: "settings", label: t("nav.settings"), icon: "settings" }
   ];
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("aside", { className: `app-sidebar ${collapsed ? "collapsed" : ""}`, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx(SafeAreaTopInset, { className: "sidebar-safe-area-top" }),
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "sidebar-brand", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "sidebar-brand-main", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "sidebar-brand-icon", children: /* @__PURE__ */ jsxRuntimeExports.jsx(SidebarIcon, { kind: "brand" }) }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { className: "sidebar-brand-text", children: APP_NAME })
@@ -56447,6 +56451,7 @@ function MapPanel({
       )
     ] }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "map-floating-toolbar", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(SafeAreaTopInset, { className: "map-safe-area-top" }),
       /* @__PURE__ */ jsxRuntimeExports.jsx(
         MapDisplayToolbar,
         {
@@ -56918,24 +56923,27 @@ function MapPage({
       }
     ),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "map-workspace-overlays", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "map-route-launcher", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
-        Button,
-        {
-          type: "button",
-          variant: "outline",
-          className: "map-route-launcher-button",
-          onClick: () => setIsFlightPlanDrawerOpen(true),
-          "aria-label": t("flightPlan.launchEditor"),
-          title: t("flightPlan.launchEditor"),
-          children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { viewBox: "0 0 24 24", "aria-hidden": "true", children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M3 7H7L10 13L14 9L17 13H21" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M7 7L9 5M17 13L19 11" })
-            ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: t("flightPlan.launchEditor") })
-          ]
-        }
-      ) }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "map-route-launcher", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(SafeAreaTopInset, { className: "map-safe-area-top" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          Button,
+          {
+            type: "button",
+            variant: "outline",
+            className: "map-route-launcher-button",
+            onClick: () => setIsFlightPlanDrawerOpen(true),
+            "aria-label": t("flightPlan.launchEditor"),
+            title: t("flightPlan.launchEditor"),
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { viewBox: "0 0 24 24", "aria-hidden": "true", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M3 7H7L10 13L14 9L17 13H21" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M7 7L9 5M17 13L19 11" })
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: t("flightPlan.launchEditor") })
+            ]
+          }
+        )
+      ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsx(
         ChartMountDrawer,
         {
@@ -59237,6 +59245,7 @@ function SettingsPanel() {
   const [navPathDraft, setNavPathDraft] = reactExports.useState("");
   const [simbriefUsernameDraft, setSimbriefUsernameDraft] = reactExports.useState("");
   const [qrCodeUrl, setQrCodeUrl] = reactExports.useState(null);
+  const [isMobileAccess, setIsMobileAccess] = reactExports.useState(false);
   reactExports.useEffect(() => {
     const refreshRemoteAccessStatus = () => {
       void appClient2.getRemoteAccessStatus().then(setRemoteAccessStatus);
@@ -59280,6 +59289,32 @@ function SettingsPanel() {
       active = false;
     };
   }, [remoteAccessStatus?.primaryAccessUrl]);
+  reactExports.useEffect(() => {
+    if (typeof window === "undefined" || runtime.host === "electron") {
+      return;
+    }
+    const widthQuery = window.matchMedia("(max-width: 900px)");
+    const pointerQuery = window.matchMedia("(pointer: coarse)");
+    const mobileUserAgentPattern = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i;
+    const syncMobileAccess = () => {
+      const viewportWidth = window.visualViewport?.width ?? window.innerWidth;
+      const isMobileViewport = viewportWidth <= 900 || widthQuery.matches;
+      const isTouchFirstDevice = pointerQuery.matches;
+      const isMobileUserAgent = mobileUserAgentPattern.test(window.navigator.userAgent);
+      setIsMobileAccess(isMobileViewport || isTouchFirstDevice || isMobileUserAgent);
+    };
+    syncMobileAccess();
+    widthQuery.addEventListener("change", syncMobileAccess);
+    pointerQuery.addEventListener("change", syncMobileAccess);
+    window.addEventListener("resize", syncMobileAccess);
+    window.visualViewport?.addEventListener("resize", syncMobileAccess);
+    return () => {
+      widthQuery.removeEventListener("change", syncMobileAccess);
+      pointerQuery.removeEventListener("change", syncMobileAccess);
+      window.removeEventListener("resize", syncMobileAccess);
+      window.visualViewport?.removeEventListener("resize", syncMobileAccess);
+    };
+  }, [runtime.host]);
   const updateLanguage = async (language) => {
     const nextSettings = await appClient2.updateSettings({ language });
     setSettings(nextSettings);
@@ -59287,10 +59322,6 @@ function SettingsPanel() {
   };
   const updateProviderMode = async (providerMode) => {
     const nextSettings = await appClient2.updateSettings({ providerMode });
-    setSettings(nextSettings);
-  };
-  const updateMapTileProvider = async (mapTileProvider) => {
-    const nextSettings = await appClient2.updateSettings({ mapTileProvider });
     setSettings(nextSettings);
   };
   const updateChartOpacity = async (chartOpacity) => {
@@ -59352,7 +59383,7 @@ function SettingsPanel() {
         }
       )
     ] }),
-    runtime.isDev ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "settings-field", children: [
+    runtime.isDev && !isMobileAccess ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "settings-field", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx("label", { htmlFor: "provider-select", children: t("settings.provider") }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs(
         Select,
@@ -59372,31 +59403,6 @@ function SettingsPanel() {
         }
       )
     ] }) : null,
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "settings-field", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("label", { htmlFor: "map-tile-provider-select", children: t("settings.mapTileProvider") }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs(
-        Select,
-        {
-          value: settings?.mapTileProvider ?? "osm",
-          disabled: !runtime.canWrite,
-          onValueChange: (value) => {
-            void updateMapTileProvider(value);
-          },
-          children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx(SelectTrigger, { id: "map-tile-provider-select", children: /* @__PURE__ */ jsxRuntimeExports.jsx(SelectValue, {}) }),
-            /* @__PURE__ */ jsxRuntimeExports.jsxs(SelectContent, { children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: "esriWorldStreet", children: t("settings.mapTileProviderEsriWorldStreet") }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: "osm", children: t("settings.mapTileProviderOsm") }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: "osmHot", children: t("settings.mapTileProviderOsmHot") }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: "cartoLight", children: t("settings.mapTileProviderCartoLight") }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: "cartoVoyager", children: t("settings.mapTileProviderCartoVoyager") }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: "osmfr", children: t("settings.mapTileProviderOsmFr") })
-            ] })
-          ]
-        }
-      ),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "settings-note-inline", children: t("settings.mapTileProviderHint") })
-    ] }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "settings-field", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx("label", { htmlFor: "chart-opacity-range", children: t("settings.chartOpacity") }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "settings-note settings-note-card", children: [
@@ -59422,7 +59428,7 @@ function SettingsPanel() {
         ] })
       ] })
     ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "settings-field", children: [
+    !isMobileAccess ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "settings-field", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx("label", { children: t("settings.navDataTitle") }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "settings-note settings-note-card", children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: t("settings.navDataDefaultPath", { path: navDataStatus?.defaultPath ?? "-" }) }),
@@ -59475,7 +59481,7 @@ function SettingsPanel() {
           )
         ] })
       ] })
-    ] }),
+    ] }) : null,
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "settings-field", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx("label", { children: t("settings.simbriefTitle") }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "settings-note settings-note-card", children: [
@@ -59490,7 +59496,7 @@ function SettingsPanel() {
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "settings-inline-row", children: /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "button", variant: "secondary", onClick: saveSimBriefSettings, children: t("settings.simbriefSave") }) })
       ] })
     ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "settings-field", children: [
+    !isMobileAccess ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "settings-field", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx("label", { children: t("settings.remoteAccess") }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "settings-note settings-note-card", children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: remoteAccessStatus?.running ? t("settings.remoteAccessEnabled") : t("settings.remoteAccessDisabled") }),
@@ -59572,7 +59578,7 @@ function SettingsPanel() {
           settings.lanAccess.authEnabled ? /* @__PURE__ */ jsxRuntimeExports.jsx("code", { className: "settings-token", children: settings.lanAccess.authToken }) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: t("settings.remoteAccessAuthDisabledHint") })
         ] }) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: t("settings.remoteAccessReadonlyHint") })
       ] })
-    ] }),
+    ] }) : null,
     !runtime.canWrite ? /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "settings-note", children: t("settings.remoteReadonlyMode") }) : null
   ] });
 }
@@ -59597,6 +59603,11 @@ function App() {
   }, [flightPlanDraft]);
   const isFullBleedRoute = route === "map" || route === "charts" || route === "chartDetail" || route === "settings";
   const showDesktopTitleBar = runtime.host === "electron";
+  const appShellClassName = [
+    "app-shell",
+    isFullBleedRoute ? "app-shell-fullbleed" : "",
+    route === "map" ? "app-shell-map" : ""
+  ].filter(Boolean).join(" ");
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("main", { className: `desktop-shell ${showDesktopTitleBar ? "desktop-shell-with-titlebar" : ""}`, children: [
     showDesktopTitleBar ? /* @__PURE__ */ jsxRuntimeExports.jsx(DesktopTitleBar, {}) : null,
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: `product-shell ${sidebarCollapsed ? "sidebar-collapsed" : ""}`, children: [
@@ -59613,7 +59624,7 @@ function App() {
           }
         }
       ),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("section", { className: `app-shell ${isFullBleedRoute ? "app-shell-fullbleed" : ""}`, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("section", { className: appShellClassName, children: [
         isFullBleedRoute ? null : /* @__PURE__ */ jsxRuntimeExports.jsx("header", { className: "topbar", children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: t("app.subtitle") }) }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("section", { className: `route-view ${route === "map" ? "active" : ""}`, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
           MapPage,
@@ -59633,33 +59644,42 @@ function App() {
             onFlightPlanDraftChange: setFlightPlanDraft
           }
         ) }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("section", { className: `route-view ${route === "charts" ? "active" : ""}`, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-          ChartsPage,
-          {
-            selectedChartId,
-            onSelectChart: setSelectedChartId,
-            onEditChart: (chartId) => {
-              setSelectedChartId(chartId);
-              setDetailChartId(chartId);
-              setChartDetailBackRoute("charts");
-              setRoute("chartDetail");
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("section", { className: `route-view route-view-with-safe-area ${route === "charts" ? "active" : ""}`, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(SafeAreaTopInset, { className: "route-safe-area-top" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            ChartsPage,
+            {
+              selectedChartId,
+              onSelectChart: setSelectedChartId,
+              onEditChart: (chartId) => {
+                setSelectedChartId(chartId);
+                setDetailChartId(chartId);
+                setChartDetailBackRoute("charts");
+                setRoute("chartDetail");
+              }
             }
-          }
-        ) }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("section", { className: `route-view ${route === "settings" ? "active" : ""}`, children: /* @__PURE__ */ jsxRuntimeExports.jsx(SettingsPage, {}) }),
-        route === "chartDetail" && detailChartId ? /* @__PURE__ */ jsxRuntimeExports.jsx("section", { className: `route-view ${route === "chartDetail" ? "active" : ""}`, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-          ChartDetailPage,
-          {
-            chartId: detailChartId,
-            onBack: () => setRoute(chartDetailBackRoute),
-            onSaved: () => void 0,
-            onDeleted: () => {
-              setSelectedChartId(null);
-              setDetailChartId(null);
-              setRoute(chartDetailBackRoute);
+          )
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("section", { className: `route-view route-view-with-safe-area ${route === "settings" ? "active" : ""}`, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(SafeAreaTopInset, { className: "route-safe-area-top" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(SettingsPage, {})
+        ] }),
+        route === "chartDetail" && detailChartId ? /* @__PURE__ */ jsxRuntimeExports.jsxs("section", { className: `route-view route-view-with-safe-area ${route === "chartDetail" ? "active" : ""}`, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(SafeAreaTopInset, { className: "route-safe-area-top" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            ChartDetailPage,
+            {
+              chartId: detailChartId,
+              onBack: () => setRoute(chartDetailBackRoute),
+              onSaved: () => void 0,
+              onDeleted: () => {
+                setSelectedChartId(null);
+                setDetailChartId(null);
+                setRoute(chartDetailBackRoute);
+              }
             }
-          }
-        ) }) : null
+          )
+        ] }) : null
       ] })
     ] })
   ] });
@@ -59678,6 +59698,7 @@ function Toaster2() {
   );
 }
 installExternalLinkInterceptor();
+installViewportMetrics();
 ReactDOM$1.createRoot(document.getElementById("root")).render(
   /* @__PURE__ */ jsxRuntimeExports.jsxs(React.StrictMode, { children: [
     /* @__PURE__ */ jsxRuntimeExports.jsx(App, {}),
@@ -59726,6 +59747,32 @@ function installExternalLinkInterceptor() {
   };
   document.addEventListener("click", interceptClick, true);
   document.addEventListener("auxclick", interceptAuxClick, true);
+}
+function installViewportMetrics() {
+  if (typeof window === "undefined" || typeof document === "undefined") {
+    return;
+  }
+  const root = document.documentElement;
+  const syncViewportMetrics = () => {
+    const viewport = window.visualViewport;
+    const viewportHeight = viewport?.height ?? window.innerHeight;
+    const viewportTopOffset = viewport?.offsetTop ?? 0;
+    const viewportBottomOffset = Math.max(
+      0,
+      window.innerHeight - viewportHeight - viewportTopOffset
+    );
+    const isStandaloneWebApp = window.matchMedia("(display-mode: standalone)").matches || window.matchMedia("(display-mode: fullscreen)").matches || window.matchMedia("(display-mode: minimal-ui)").matches || (typeof window.navigator !== "undefined" && "standalone" in window.navigator ? Boolean(window.navigator.standalone) : false);
+    root.style.setProperty("--app-viewport-height", `${viewportHeight}px`);
+    root.style.setProperty("--app-viewport-offset-top", `${viewportTopOffset}px`);
+    root.style.setProperty("--app-viewport-offset-bottom", `${viewportBottomOffset}px`);
+    root.style.setProperty("--app-webapp-safe-area-top", isStandaloneWebApp ? `${viewportTopOffset}px` : "0px");
+    root.dataset.webappMode = isStandaloneWebApp ? "standalone" : "browser";
+  };
+  syncViewportMetrics();
+  window.addEventListener("resize", syncViewportMetrics, { passive: true });
+  window.addEventListener("orientationchange", syncViewportMetrics, { passive: true });
+  window.visualViewport?.addEventListener("resize", syncViewportMetrics, { passive: true });
+  window.visualViewport?.addEventListener("scroll", syncViewportMetrics, { passive: true });
 }
 function isExternalLink(url) {
   try {

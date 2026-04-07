@@ -8,6 +8,7 @@ import { createAircraftLeafletIcon } from './AircraftArrow'
 import { ConnectionBadge } from './ConnectionBadge'
 import { MapDisplayToolbar } from './MapDisplayToolbar'
 import { NavDataOverlay } from './NavDataOverlay'
+import { SafeAreaTopInset } from './SafeAreaTopInset'
 import { useAppStore } from '../store/useAppStore'
 import { usePersistentMapDisplaySettings } from '../hooks/usePersistentMapDisplaySettings'
 import { useMapOverlayChart } from '../hooks/useMapOverlayChart'
@@ -397,6 +398,7 @@ export function MapPanel({
           </Button>
         </div>
         <div className="map-floating-toolbar">
+          <SafeAreaTopInset className="map-safe-area-top" />
           <MapDisplayToolbar
             className="map-toolbar-inline"
             navLayerVisibility={navLayerVisibility}

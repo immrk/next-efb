@@ -8,6 +8,7 @@ import './styles.css'
 import './i18n'
 
 installExternalLinkInterceptor()
+installViewportMetrics()
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
@@ -69,6 +70,43 @@ function installExternalLinkInterceptor(): void {
 
   document.addEventListener('click', interceptClick, true)
   document.addEventListener('auxclick', interceptAuxClick, true)
+}
+
+function installViewportMetrics(): void {
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    return
+  }
+
+  const root = document.documentElement
+
+  const syncViewportMetrics = () => {
+    const viewport = window.visualViewport
+    const viewportHeight = viewport?.height ?? window.innerHeight
+    const viewportTopOffset = viewport?.offsetTop ?? 0
+    const viewportBottomOffset = Math.max(
+      0,
+      window.innerHeight - viewportHeight - viewportTopOffset
+    )
+    const isStandaloneWebApp =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      window.matchMedia('(display-mode: fullscreen)').matches ||
+      window.matchMedia('(display-mode: minimal-ui)').matches ||
+      (typeof window.navigator !== 'undefined' && 'standalone' in window.navigator
+        ? Boolean((window.navigator as Navigator & { standalone?: boolean }).standalone)
+        : false)
+
+    root.style.setProperty('--app-viewport-height', `${viewportHeight}px`)
+    root.style.setProperty('--app-viewport-offset-top', `${viewportTopOffset}px`)
+    root.style.setProperty('--app-viewport-offset-bottom', `${viewportBottomOffset}px`)
+    root.style.setProperty('--app-webapp-safe-area-top', isStandaloneWebApp ? `${viewportTopOffset}px` : '0px')
+    root.dataset.webappMode = isStandaloneWebApp ? 'standalone' : 'browser'
+  }
+
+  syncViewportMetrics()
+  window.addEventListener('resize', syncViewportMetrics, { passive: true })
+  window.addEventListener('orientationchange', syncViewportMetrics, { passive: true })
+  window.visualViewport?.addEventListener('resize', syncViewportMetrics, { passive: true })
+  window.visualViewport?.addEventListener('scroll', syncViewportMetrics, { passive: true })
 }
 
 function isExternalLink(url: string): boolean {

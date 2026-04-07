@@ -6,6 +6,7 @@ import { getAppClient } from '../client'
 import { ChartMountDrawer } from '../components/ChartMountDrawer'
 import { FlightPlanDrawer } from '../components/FlightPlanDrawer'
 import { MapPanel } from '../components/MapPanel'
+import { SafeAreaTopInset } from '../components/SafeAreaTopInset'
 import { Button } from '../components/ui/button'
 import { useChartLibraryData } from '../hooks/useChartLibraryData'
 import {
@@ -351,6 +352,7 @@ export function MapPage({
 
       <div className="map-workspace-overlays">
         <div className="map-route-launcher">
+          <SafeAreaTopInset className="map-safe-area-top" />
           <Button
             type="button"
             variant="outline"
