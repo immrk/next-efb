@@ -278,6 +278,11 @@ body {
   min-height: 0;
 }
 
+.route-view-page-surface {
+  --safe-area-top-inset-background: #0c121c;
+  background: #0c121c;
+}
+
 .product-shell {
   --sidebar-width: 260px;
   height: 100%;
@@ -308,7 +313,7 @@ body {
   min-height: var(--app-standalone-safe-area-top);
   flex: 0 0 auto;
   pointer-events: none;
-  background: transparent;
+  background: var(--safe-area-top-inset-background, transparent);
 }
 
 .route-safe-area-top {

@@ -59644,42 +59644,60 @@ function App() {
             onFlightPlanDraftChange: setFlightPlanDraft
           }
         ) }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("section", { className: `route-view route-view-with-safe-area ${route === "charts" ? "active" : ""}`, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(SafeAreaTopInset, { className: "route-safe-area-top" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            ChartsPage,
-            {
-              selectedChartId,
-              onSelectChart: setSelectedChartId,
-              onEditChart: (chartId) => {
-                setSelectedChartId(chartId);
-                setDetailChartId(chartId);
-                setChartDetailBackRoute("charts");
-                setRoute("chartDetail");
-              }
-            }
-          )
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("section", { className: `route-view route-view-with-safe-area ${route === "settings" ? "active" : ""}`, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(SafeAreaTopInset, { className: "route-safe-area-top" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(SettingsPage, {})
-        ] }),
-        route === "chartDetail" && detailChartId ? /* @__PURE__ */ jsxRuntimeExports.jsxs("section", { className: `route-view route-view-with-safe-area ${route === "chartDetail" ? "active" : ""}`, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(SafeAreaTopInset, { className: "route-safe-area-top" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            ChartDetailPage,
-            {
-              chartId: detailChartId,
-              onBack: () => setRoute(chartDetailBackRoute),
-              onSaved: () => void 0,
-              onDeleted: () => {
-                setSelectedChartId(null);
-                setDetailChartId(null);
-                setRoute(chartDetailBackRoute);
-              }
-            }
-          )
-        ] }) : null
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "section",
+          {
+            className: `route-view route-view-with-safe-area route-view-page-surface ${route === "charts" ? "active" : ""}`,
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(SafeAreaTopInset, { className: "route-safe-area-top" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                ChartsPage,
+                {
+                  selectedChartId,
+                  onSelectChart: setSelectedChartId,
+                  onEditChart: (chartId) => {
+                    setSelectedChartId(chartId);
+                    setDetailChartId(chartId);
+                    setChartDetailBackRoute("charts");
+                    setRoute("chartDetail");
+                  }
+                }
+              )
+            ]
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "section",
+          {
+            className: `route-view route-view-with-safe-area route-view-page-surface ${route === "settings" ? "active" : ""}`,
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(SafeAreaTopInset, { className: "route-safe-area-top" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(SettingsPage, {})
+            ]
+          }
+        ),
+        route === "chartDetail" && detailChartId ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "section",
+          {
+            className: `route-view route-view-with-safe-area route-view-page-surface ${route === "chartDetail" ? "active" : ""}`,
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(SafeAreaTopInset, { className: "route-safe-area-top" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                ChartDetailPage,
+                {
+                  chartId: detailChartId,
+                  onBack: () => setRoute(chartDetailBackRoute),
+                  onSaved: () => void 0,
+                  onDeleted: () => {
+                    setSelectedChartId(null);
+                    setDetailChartId(null);
+                    setRoute(chartDetailBackRoute);
+                  }
+                }
+              )
+            ]
+          }
+        ) : null
       ] })
     ] })
   ] });

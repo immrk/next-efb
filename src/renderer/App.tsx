@@ -80,7 +80,9 @@ export function App() {
             />
           </section>
 
-          <section className={`route-view route-view-with-safe-area ${route === 'charts' ? 'active' : ''}`}>
+          <section
+            className={`route-view route-view-with-safe-area route-view-page-surface ${route === 'charts' ? 'active' : ''}`}
+          >
             <SafeAreaTopInset className="route-safe-area-top" />
             <ChartsPage
               selectedChartId={selectedChartId}
@@ -94,13 +96,17 @@ export function App() {
             />
           </section>
 
-          <section className={`route-view route-view-with-safe-area ${route === 'settings' ? 'active' : ''}`}>
+          <section
+            className={`route-view route-view-with-safe-area route-view-page-surface ${route === 'settings' ? 'active' : ''}`}
+          >
             <SafeAreaTopInset className="route-safe-area-top" />
             <SettingsPage />
           </section>
 
           {route === 'chartDetail' && detailChartId ? (
-            <section className={`route-view route-view-with-safe-area ${route === 'chartDetail' ? 'active' : ''}`}>
+            <section
+              className={`route-view route-view-with-safe-area route-view-page-surface ${route === 'chartDetail' ? 'active' : ''}`}
+            >
               <SafeAreaTopInset className="route-safe-area-top" />
               <ChartDetailPage
                 chartId={detailChartId}
