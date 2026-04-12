@@ -19,6 +19,7 @@ const IPC_CHANNELS = {
   chartFinalizeImport: "chart:finalize-import",
   chartGet: "chart:get",
   chartImport: "chart:pick-file",
+  chartImportFromUrl: "chart:import-from-url",
   chartReferenceGet: "chart:reference:get",
   chartReferenceSave: "chart:reference:save",
   chartUpdate: "chart:update",
@@ -39,6 +40,139 @@ const IPC_CHANNELS = {
   devAction: "dev:action"
 };
 const APP_NAME = "NextEFB";
+const CONTENT_TYPE_FORMAT_MAP = {
+  "application/pdf": "pdf",
+  "image/jpeg": "jpg",
+  "image/jpg": "jpg",
+  "image/png": "png"
+};
+class RemoteChartImportService {
+  async download(url) {
+    const normalizedUrl = parseRemoteUrl(url);
+    const response = await fetch(normalizedUrl.toString(), {
+      redirect: "follow"
+    });
+    if (!response.ok) {
+      throw new Error(`REMOTE_DOWNLOAD_FAILED:${response.status}`);
+    }
+    const bytes = Buffer.from(await response.arrayBuffer());
+    if (bytes.length === 0) {
+      throw new Error("REMOTE_FILE_EMPTY");
+    }
+    const contentType = normalizeContentType(response.headers.get("content-type"));
+    const fileNameFromHeader = extractFileNameFromContentDisposition(
+      response.headers.get("content-disposition")
+    );
+    const finalUrl = new URL(response.url || normalizedUrl.toString());
+    const fileFormat = detectFileFormatFromBytes(bytes) ?? inferFileFormat(fileNameFromHeader) ?? inferFileFormat(finalUrl.pathname) ?? inferFileFormatFromContentType(contentType);
+    if (!fileFormat) {
+      throw new Error("REMOTE_FILE_TYPE_UNSUPPORTED");
+    }
+    const fileName = ensureFileName(
+      fileNameFromHeader ?? extractFileNameFromPath(finalUrl.pathname) ?? "chart",
+      fileFormat
+    );
+    return {
+      sourcePath: null,
+      fileName,
+      fileFormat,
+      mimeType: getMimeTypeByFormat$2(fileFormat),
+      base64: bytes.toString("base64")
+    };
+  }
+}
+function parseRemoteUrl(value) {
+  let parsed;
+  try {
+    parsed = new URL(value.trim());
+  } catch {
+    throw new Error("REMOTE_URL_INVALID");
+  }
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    throw new Error("REMOTE_URL_INVALID");
+  }
+  return parsed;
+}
+function normalizeContentType(value) {
+  if (!value) {
+    return null;
+  }
+  return value.split(";")[0]?.trim().toLowerCase() ?? null;
+}
+function inferFileFormat(source) {
+  if (!source) {
+    return null;
+  }
+  const normalized = source.toLowerCase();
+  if (normalized.endsWith(".pdf")) return "pdf";
+  if (normalized.endsWith(".png")) return "png";
+  if (normalized.endsWith(".jpg")) return "jpg";
+  if (normalized.endsWith(".jpeg")) return "jpeg";
+  return null;
+}
+function inferFileFormatFromContentType(contentType) {
+  if (!contentType) {
+    return null;
+  }
+  return CONTENT_TYPE_FORMAT_MAP[contentType] ?? null;
+}
+function detectFileFormatFromBytes(bytes) {
+  if (bytes.length >= 5 && bytes[0] === 37 && bytes[1] === 80 && bytes[2] === 68 && bytes[3] === 70 && bytes[4] === 45) {
+    return "pdf";
+  }
+  if (bytes.length >= 8 && bytes[0] === 137 && bytes[1] === 80 && bytes[2] === 78 && bytes[3] === 71 && bytes[4] === 13 && bytes[5] === 10 && bytes[6] === 26 && bytes[7] === 10) {
+    return "png";
+  }
+  if (bytes.length >= 3 && bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255) {
+    return "jpg";
+  }
+  return null;
+}
+function extractFileNameFromContentDisposition(value) {
+  if (!value) {
+    return null;
+  }
+  const utf8Match = value.match(/filename\*=UTF-8''([^;]+)/i);
+  if (utf8Match?.[1]) {
+    return sanitizeFileName(decodeURIComponent(utf8Match[1]));
+  }
+  const basicMatch = value.match(/filename="?([^";]+)"?/i);
+  if (basicMatch?.[1]) {
+    return sanitizeFileName(basicMatch[1]);
+  }
+  return null;
+}
+function extractFileNameFromPath(pathname) {
+  const segments = pathname.split("/").filter(Boolean);
+  const lastSegment = segments.at(-1);
+  if (!lastSegment) {
+    return null;
+  }
+  return sanitizeFileName(decodeURIComponent(lastSegment));
+}
+function sanitizeFileName(value) {
+  return value.replace(/[\\/:*?"<>|]/g, "_").trim();
+}
+function ensureFileName(fileName, fileFormat) {
+  const normalized = sanitizeFileName(fileName) || "chart";
+  if (inferFileFormat(normalized)) {
+    return normalized;
+  }
+  const extension = fileFormat === "jpeg" ? "jpg" : fileFormat;
+  return `${normalized}.${extension}`;
+}
+function getMimeTypeByFormat$2(fileFormat) {
+  switch (fileFormat) {
+    case "pdf":
+      return "application/pdf";
+    case "jpg":
+    case "jpeg":
+      return "image/jpeg";
+    case "png":
+    default:
+      return "image/png";
+  }
+}
 function registerIpc(options) {
   const {
     mainWindow: mainWindow2,
@@ -50,6 +184,7 @@ function registerIpc(options) {
     lanServer,
     navDataService
   } = options;
+  const remoteChartImportService = new RemoteChartImportService();
   simConnectService.onAircraftState((state) => {
     flightStateStore.setAircraftState(state);
     lanServer.broadcastAircraftState(state);
@@ -167,6 +302,10 @@ function registerIpc(options) {
       base64: storageService.readFileBase64(sourcePath)
     };
   });
+  electron.ipcMain.handle(
+    IPC_CHANNELS.chartImportFromUrl,
+    async (_event, input) => remoteChartImportService.download(input.url)
+  );
   electron.ipcMain.handle(
     IPC_CHANNELS.chartFinalizeImport,
     (_event, input) => {
@@ -992,6 +1131,7 @@ class LanServer {
     this.simConnectService = options.simConnectService;
     this.chartRepository = options.chartRepository;
     this.storageService = options.storageService;
+    this.remoteChartImportService = new RemoteChartImportService();
     this.navDataService = options.navDataService;
   }
   async start() {
@@ -1172,6 +1312,14 @@ class LanServer {
           return;
         }
         this.sendJson(response, this.chartRepository.listCharts());
+        return;
+      }
+      if (url.pathname === "/api/charts/import-from-url" && request.method === "POST") {
+        if (!this.ensureWriteEnabled(response)) {
+          return;
+        }
+        const input = await this.readJsonBody(request);
+        this.sendJson(response, await this.remoteChartImportService.download(input.url), 201);
         return;
       }
       const chartMatch = url.pathname.match(/^\/api\/charts\/([^/]+)$/);

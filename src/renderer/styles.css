@@ -1331,7 +1331,7 @@ body {
 
 .chart-picker-drawer {
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto auto 1fr;
   overflow: hidden;
   pointer-events: auto;
 }
@@ -1364,32 +1364,6 @@ body {
   position: relative;
 }
 
-.chart-drawer-import-fab {
-  position: absolute;
-  left: 14px;
-  bottom: 14px;
-  width: 44px;
-  height: 44px;
-  border: 1px solid var(--ui-border);
-  border-radius: 10px;
-  background: rgba(18, 23, 32, 0.92);
-  color: var(--ui-fg);
-  cursor: pointer;
-  display: grid;
-  place-items: center;
-  z-index: 3;
-}
-
-.chart-drawer-import-fab svg {
-  width: 18px;
-  height: 18px;
-  stroke: currentColor;
-  stroke-width: 2.4;
-  fill: none;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
 .chart-picker-head {
   display: flex;
   align-items: center;
@@ -1407,6 +1381,10 @@ body {
   color: var(--ui-fg);
   padding: 0 14px;
   font: inherit;
+}
+
+.chart-picker-link-toggle {
+  flex: 0 0 auto;
 }
 
 .chart-picker-close {
@@ -1431,6 +1409,42 @@ body {
   stroke-width: 2;
   fill: none;
   stroke-linecap: round;
+}
+
+.chart-import-url-bar {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--ui-border-soft);
+  background: rgba(10, 14, 21, 0.72);
+  align-items: center;
+}
+
+.chart-import-file-button {
+  width: 38px;
+  min-width: 38px;
+  height: 38px;
+  min-height: 38px;
+  padding: 0;
+  border-radius: 10px;
+}
+
+.chart-import-url-input {
+  min-width: 0;
+  min-height: 38px;
+  padding: 0.55rem 0.75rem;
+  border-radius: 10px;
+  font-size: 14px;
+}
+
+.chart-import-url-submit {
+  min-width: 92px;
+  min-height: 38px;
+  padding: 0 0.85rem;
+  border-radius: 10px;
+  font-size: 13px;
+  white-space: nowrap;
 }
 
 .chart-picker-body {
@@ -2779,6 +2793,19 @@ body {
     height: 45vh;
     border-right: 0;
     border-bottom: 1px solid var(--ui-border);
+  }
+
+  .chart-import-url-bar {
+    grid-template-columns: 1fr;
+  }
+
+  .chart-import-file-button {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .chart-import-url-submit {
+    width: 100%;
   }
 
   .chart-editor-topbar {

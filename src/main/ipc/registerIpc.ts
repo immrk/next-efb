@@ -14,6 +14,7 @@ import type {
 import type { NavMapFeatureCollection, NavMapQueryInput } from '@shared/nav-map-types'
 import type {
   ChartAssetPayload,
+  ChartImportFromUrlInput,
   ChartImportResult,
   ChartRecord,
   FinalizeChartImportInput,
@@ -26,6 +27,7 @@ import { SettingsStore } from '../services/config/SettingsStore'
 import { SimConnectService } from '../services/simconnect/SimConnectService'
 import { ChartRepository } from '../services/storage/ChartRepository'
 import { StorageService } from '../services/storage/StorageService'
+import { RemoteChartImportService } from '../services/storage/RemoteChartImportService'
 import { LanServer } from '../services/lan/LanServer'
 import { NavDataService } from '../services/navigation/NavDataService'
 
@@ -51,6 +53,7 @@ export function registerIpc(options: RegisterIpcOptions): void {
     lanServer,
     navDataService
   } = options
+  const remoteChartImportService = new RemoteChartImportService()
 
   simConnectService.onAircraftState((state) => {
     flightStateStore.setAircraftState(state)
@@ -178,6 +181,11 @@ export function registerIpc(options: RegisterIpcOptions): void {
       base64: storageService.readFileBase64(sourcePath)
     }
   })
+  ipcMain.handle(
+    IPC_CHANNELS.chartImportFromUrl,
+    async (_event, input: ChartImportFromUrlInput): Promise<PickedChartFile> =>
+      remoteChartImportService.download(input.url)
+  )
   ipcMain.handle(
     IPC_CHANNELS.chartFinalizeImport,
     (_event, input: FinalizeChartImportInput): ChartImportResult => {

@@ -9,6 +9,7 @@ import type {
 } from '@shared/types'
 import type {
   ChartAssetPayload,
+  ChartImportFromUrlInput,
   ChartImportResult,
   ChartRecord,
   FinalizeChartImportInput,
@@ -44,6 +45,7 @@ declare global {
       getChartAsset: (chartId: string) => Promise<ChartAssetPayload | null>
       getChartReferencePoints: (chartId: string) => Promise<GeoReferencePoint[]>
       pickChartFile: () => Promise<PickedChartFile | null>
+      importChartFromUrl: (input: ChartImportFromUrlInput) => Promise<PickedChartFile>
       listCharts: () => Promise<ChartRecord[]>
       getStorageSummary: () => Promise<StorageSummary>
       finalizeChartImport: (input: FinalizeChartImportInput) => Promise<ChartImportResult>

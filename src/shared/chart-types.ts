@@ -58,6 +58,10 @@ export interface PickedChartFile {
   base64: string
 }
 
+export interface ChartImportFromUrlInput {
+  url: string
+}
+
 export interface FinalizeChartImportInput {
   title: string
   sourcePath?: string | null

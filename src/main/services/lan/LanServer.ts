@@ -5,6 +5,7 @@ import { extname, join, resolve } from 'node:path'
 import { networkInterfaces } from 'node:os'
 import type {
   ChartAssetPayload,
+  ChartImportFromUrlInput,
   ChartImportResult,
   ChartRecord,
   ChartUpdateInput,
@@ -28,6 +29,7 @@ import { SimConnectService } from '../simconnect/SimConnectService'
 import { FlightStateStore } from '../state/FlightStateStore'
 import { ChartRepository } from '../storage/ChartRepository'
 import { StorageService } from '../storage/StorageService'
+import { RemoteChartImportService } from '../storage/RemoteChartImportService'
 import { NavDataService } from '../navigation/NavDataService'
 
 interface LanServerOptions {
@@ -55,6 +57,7 @@ export class LanServer {
   private readonly simConnectService: SimConnectService
   private readonly chartRepository: ChartRepository
   private readonly storageService: StorageService
+  private readonly remoteChartImportService: RemoteChartImportService
   private readonly navDataService: NavDataService
   private server: ReturnType<typeof createServer> | null = null
   private readonly wsServer = new WebSocketServer({ noServer: true })
@@ -68,6 +71,7 @@ export class LanServer {
     this.simConnectService = options.simConnectService
     this.chartRepository = options.chartRepository
     this.storageService = options.storageService
+    this.remoteChartImportService = new RemoteChartImportService()
     this.navDataService = options.navDataService
   }
 
@@ -287,6 +291,15 @@ export class LanServer {
         }
 
         this.sendJson(response, this.chartRepository.listCharts())
+        return
+      }
+
+      if (url.pathname === '/api/charts/import-from-url' && request.method === 'POST') {
+        if (!this.ensureWriteEnabled(response)) {
+          return
+        }
+        const input = (await this.readJsonBody(request)) as ChartImportFromUrlInput
+        this.sendJson(response, await this.remoteChartImportService.download(input.url), 201)
         return
       }
 

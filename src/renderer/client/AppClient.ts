@@ -1,5 +1,6 @@
 import type {
   ChartAssetPayload,
+  ChartImportFromUrlInput,
   ChartImportResult,
   ChartRecord,
   ChartUpdateInput,
@@ -58,6 +59,7 @@ export interface AppClient {
   listCharts(): Promise<ChartRecord[]>
   getStorageSummary(): Promise<StorageSummary>
   pickChartFile(): Promise<PickedChartFile | null>
+  importChartFromUrl(input: ChartImportFromUrlInput): Promise<PickedChartFile>
   finalizeChartImport(input: FinalizeChartImportInput): Promise<ChartImportResult>
   deleteChart(chartId: string): Promise<boolean>
   saveChartReferencePoints(chartId: string, points: GeoReferencePoint[]): Promise<GeoReferencePoint[]>

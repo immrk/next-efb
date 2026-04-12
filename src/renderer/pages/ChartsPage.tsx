@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getAppClient } from '../client'
 import { ChartImagePreview } from '../components/ChartImagePreview'
@@ -22,8 +22,10 @@ export function ChartsPage({
   const runtime = getAppClient().getRuntime()
   const { t } = useTranslation()
   const aircraft = useAppStore((state) => state.aircraft)
-  const { charts, importChart } = useChartLibraryData()
+  const { charts, importChart, importChartFromUrl } = useChartLibraryData()
   const { chart, asset, points } = useChartDetailData(selectedChartId)
+  const [importUrl, setImportUrl] = useState('')
+  const [importingUrl, setImportingUrl] = useState(false)
 
   useEffect(() => {
     if (charts.length === 0 || selectedChartId) return
@@ -46,6 +48,29 @@ export function ChartsPage({
     }
   }
 
+  const handleImportChartFromUrl = async () => {
+    const normalizedUrl = importUrl.trim()
+    if (!normalizedUrl) return
+
+    setImportingUrl(true)
+    try {
+      const result = await importChartFromUrl(normalizedUrl)
+      if (result?.chart) {
+        onSelectChart(result.chart.id)
+        setImportUrl('')
+        toast.success(t('feedback.imported'))
+      }
+    } catch (error) {
+      let message = t('charts.importUrlFailed')
+      if (error instanceof Error) {
+        message = `${t('charts.importUrlFailed')}\n${translateChartImportError(t, error.message)}`
+      }
+      toast.error(message)
+    } finally {
+      setImportingUrl(false)
+    }
+  }
+
   return (
     <section className="charts-workspace">
       <ChartMountDrawer
@@ -57,6 +82,10 @@ export function ChartsPage({
         onSelect={onSelectChart}
         onEdit={runtime.canWrite ? onEditChart : undefined}
         onImport={runtime.canManageLocalFiles ? handleImportChart : undefined}
+        importUrlValue={importUrl}
+        importUrlPending={importingUrl}
+        onImportUrlValueChange={setImportUrl}
+        onImportFromUrl={runtime.canWrite ? handleImportChartFromUrl : undefined}
       />
 
       <section className="chart-preview-pane">
@@ -78,4 +107,25 @@ export function ChartsPage({
       </section>
     </section>
   )
+}
+
+function translateChartImportError(
+  t: (key: string) => string,
+  message: string
+): string {
+  if (message.startsWith('REMOTE_DOWNLOAD_FAILED:')) {
+    return t('charts.importUrlErrorDownload')
+  }
+
+  switch (message) {
+    case 'REMOTE_URL_INVALID':
+      return t('charts.importUrlErrorInvalid')
+    case 'REMOTE_FILE_EMPTY':
+      return t('charts.importUrlErrorEmpty')
+    case 'REMOTE_FILE_TYPE_UNSUPPORTED':
+    case 'PDF_MULTI_PAGE_NOT_SUPPORTED':
+      return t('charts.importUrlErrorUnsupported')
+    default:
+      return message
+  }
 }

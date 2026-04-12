@@ -88,8 +88,7 @@ export function useChartLibraryData() {
     }
   }, [appClient])
 
-  const importChart = async (): Promise<ChartImportResult | null> => {
-    const picked = await appClient.pickChartFile()
+  const importPickedChart = async (picked: PickedChartFile | null): Promise<ChartImportResult | null> => {
     if (!picked) return null
 
     let displayImageBase64: string | null = null
@@ -117,6 +116,16 @@ export function useChartLibraryData() {
     return result
   }
 
+  const importChart = async (): Promise<ChartImportResult | null> => {
+    const picked = await appClient.pickChartFile()
+    return importPickedChart(picked)
+  }
+
+  const importChartFromUrl = async (url: string): Promise<ChartImportResult | null> => {
+    const picked = await appClient.importChartFromUrl({ url })
+    return importPickedChart(picked)
+  }
+
   const deleteChart = async (chartId: string): Promise<void> => {
     await appClient.deleteChart(chartId)
     refresh()
@@ -128,6 +137,7 @@ export function useChartLibraryData() {
     storageSummary,
     refresh,
     importChart,
+    importChartFromUrl,
     deleteChart
   }
 }

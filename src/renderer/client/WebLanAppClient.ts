@@ -1,5 +1,6 @@
 import type {
   ChartAssetPayload,
+  ChartImportFromUrlInput,
   ChartImportResult,
   ChartRecord,
   ChartUpdateInput,
@@ -172,6 +173,13 @@ export class WebLanAppClient implements AppClient {
       mimeType: file.type || getMimeTypeByFormat(getFileFormat(file.name)),
       base64: await readFileAsBase64(file)
     }
+  }
+
+  async importChartFromUrl(input: ChartImportFromUrlInput): Promise<PickedChartFile> {
+    return this.fetchJson('/api/charts/import-from-url', {
+      method: 'POST',
+      body: JSON.stringify(input)
+    })
   }
 
   async finalizeChartImport(input: FinalizeChartImportInput): Promise<ChartImportResult> {

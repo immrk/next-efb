@@ -9,6 +9,7 @@ export const IPC_CHANNELS = {
   chartFinalizeImport: 'chart:finalize-import',
   chartGet: 'chart:get',
   chartImport: 'chart:pick-file',
+  chartImportFromUrl: 'chart:import-from-url',
   chartReferenceGet: 'chart:reference:get',
   chartReferenceSave: 'chart:reference:save',
   chartUpdate: 'chart:update',

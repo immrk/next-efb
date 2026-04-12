@@ -55,6 +55,10 @@ interface ChartMountDrawerProps {
   onPin?: (chartId: string) => void
   onEdit?: (chartId: string) => void
   onImport?: () => void
+  importUrlValue?: string
+  importUrlPending?: boolean
+  onImportUrlValueChange?: (value: string) => void
+  onImportFromUrl?: () => void
 }
 
 export function ChartMountDrawer({
@@ -69,10 +73,15 @@ export function ChartMountDrawer({
   onSelect,
   onPin,
   onEdit,
-  onImport
+  onImport,
+  importUrlValue = '',
+  importUrlPending = false,
+  onImportUrlValueChange,
+  onImportFromUrl
 }: ChartMountDrawerProps) {
   const { t } = useTranslation()
   const [search, setSearch] = useState('')
+  const [showUrlImport, setShowUrlImport] = useState(false)
 
   const chartTypeLabel: Record<ChartType, string> = {
     airport: t('chartType.airport'),
@@ -111,6 +120,20 @@ export function ChartMountDrawer({
           value={search}
           onChange={(event) => setSearch(event.target.value)}
         />
+        {onImportFromUrl ? (
+          <Button
+            type="button"
+            variant={showUrlImport ? 'default' : 'outline'}
+            size="icon"
+            className="chart-picker-link-toggle"
+            onClick={() => setShowUrlImport((value) => !value)}
+            aria-label={t('charts.add')}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 5V19M5 12H19" />
+            </svg>
+          </Button>
+        ) : null}
         {closable ? (
           <Button
             type="button"
@@ -126,6 +149,50 @@ export function ChartMountDrawer({
           </Button>
         ) : null}
       </header>
+
+      {showUrlImport && onImportFromUrl ? (
+        <div className="chart-import-url-bar">
+          {onImport ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="chart-import-file-button"
+              onClick={onImport}
+              aria-label={t('charts.importAction')}
+              title={t('charts.importAction')}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M14 3H8A2 2 0 0 0 6 5V19A2 2 0 0 0 8 21H16A2 2 0 0 0 18 19V7Z" />
+                <path d="M14 3V7H18" />
+                <path d="M9 12H15" />
+                <path d="M9 16H13" />
+              </svg>
+            </Button>
+          ) : null}
+          <Input
+            className="chart-import-url-input"
+            placeholder={t('charts.importUrlPlaceholder')}
+            value={importUrlValue}
+            onChange={(event) => onImportUrlValueChange?.(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' && !importUrlPending) {
+                event.preventDefault()
+                onImportFromUrl()
+              }
+            }}
+          />
+          <Button
+            type="button"
+            variant="default"
+            className="chart-import-url-submit"
+            disabled={importUrlPending || !importUrlValue.trim()}
+            onClick={onImportFromUrl}
+          >
+            {importUrlPending ? t('charts.importUrlPending') : t('charts.importUrlAction')}
+          </Button>
+        </div>
+      ) : null}
 
       <div className="chart-picker-body">
         {groupedCharts.length > 0 ? (
@@ -230,20 +297,6 @@ export function ChartMountDrawer({
     return (
       <section className="chart-picker-drawer chart-picker-drawer-docked">
         {drawerContent}
-        {onImport ? (
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            className="chart-drawer-import-fab"
-            onClick={onImport}
-            aria-label={t('charts.importAction')}
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 5V19M5 12H19" />
-            </svg>
-          </Button>
-        ) : null}
       </section>
     )
   }
