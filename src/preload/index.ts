@@ -61,6 +61,8 @@ const api = {
   getChartReferencePoints: async (chartId: string): Promise<GeoReferencePoint[]> =>
     ipcRenderer.invoke(IPC_CHANNELS.chartReferenceGet, chartId),
   pickChartFile: async (): Promise<PickedChartFile | null> => ipcRenderer.invoke(IPC_CHANNELS.chartImport),
+  pickChartsDirectory: async (): Promise<string | null> =>
+    ipcRenderer.invoke(IPC_CHANNELS.storagePickChartsDirectory),
   importChartFromUrl: async (input: ChartImportFromUrlInput): Promise<PickedChartFile> =>
     ipcRenderer.invoke(IPC_CHANNELS.chartImportFromUrl, input),
   listCharts: async (): Promise<ChartRecord[]> => ipcRenderer.invoke(IPC_CHANNELS.chartsList),

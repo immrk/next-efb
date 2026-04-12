@@ -1,26 +1,69 @@
-import { copyFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { basename, extname, join } from 'node:path'
+import { copyFileSync, cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { basename, extname, join, resolve, sep } from 'node:path'
 import type { ChartFileFormat, StorageSummary } from '@shared/chart-types'
-import { ensureDataRootDir } from './AppDataPaths'
+import type { AppSettings } from '@shared/types'
+import { ensureAppStoragePaths, resolveChartsRootPath } from './AppDataPaths'
 
 export class StorageService {
-  private readonly storageSummary: StorageSummary
+  private storageSummary: StorageSummary
 
   constructor() {
-    const root = ensureDataRootDir()
-    const chartsRoot = join(root, 'charts')
+    const { settingsRoot, databasePath, chartsRoot, defaultChartsRoot, legacyDataRoot } = ensureAppStoragePaths()
 
-    mkdirSync(root, { recursive: true })
+    mkdirSync(settingsRoot, { recursive: true })
     mkdirSync(chartsRoot, { recursive: true })
 
     this.storageSummary = {
-      databasePath: join(root, 'app.db'),
-      chartsRoot
+      databasePath,
+      chartsRoot,
+      defaultChartsRoot,
+      legacyChartsRoot: join(legacyDataRoot, 'charts')
     }
   }
 
   getSummary(): StorageSummary {
     return this.storageSummary
+  }
+
+  resolveChartsRoot(settings: AppSettings): string {
+    return resolveChartsRootPath(settings.storage.chartLibraryPath)
+  }
+
+  relocateChartsRoot(nextChartsRoot: string): { previousChartsRoot: string; nextChartsRoot: string } {
+    const previousChartsRoot = resolve(this.storageSummary.chartsRoot)
+    const normalizedNextChartsRoot = resolve(nextChartsRoot)
+
+    if (samePath(previousChartsRoot, normalizedNextChartsRoot)) {
+      return {
+        previousChartsRoot,
+        nextChartsRoot: normalizedNextChartsRoot
+      }
+    }
+
+    if (
+      isNestedPath(previousChartsRoot, normalizedNextChartsRoot) ||
+      isNestedPath(normalizedNextChartsRoot, previousChartsRoot)
+    ) {
+      throw new Error('CHART_LIBRARY_PATH_CONFLICT')
+    }
+
+    mkdirSync(normalizedNextChartsRoot, { recursive: true })
+    cpSync(previousChartsRoot, normalizedNextChartsRoot, {
+      recursive: true,
+      force: false,
+      errorOnExist: false
+    })
+    rmSync(previousChartsRoot, { recursive: true, force: true })
+
+    this.storageSummary = {
+      ...this.storageSummary,
+      chartsRoot: normalizedNextChartsRoot
+    }
+
+    return {
+      previousChartsRoot,
+      nextChartsRoot: normalizedNextChartsRoot
+    }
   }
 
   importChartFile(sourcePath: string, chartId: string): { destinationPath: string; fileName: string } {
@@ -74,4 +117,18 @@ export class StorageService {
     const chartDir = join(this.storageSummary.chartsRoot, chartId)
     rmSync(chartDir, { recursive: true, force: true })
   }
+}
+
+function samePath(left: string, right: string): boolean {
+  return normalizePath(left) === normalizePath(right)
+}
+
+function isNestedPath(parent: string, child: string): boolean {
+  const normalizedParent = `${normalizePath(parent)}${sep}`
+  const normalizedChild = `${normalizePath(child)}${sep}`
+  return normalizedChild.startsWith(normalizedParent)
+}
+
+function normalizePath(value: string): string {
+  return process.platform === 'win32' ? value.toLowerCase() : value
 }

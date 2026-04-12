@@ -12898,6 +12898,9 @@ class ElectronAppClient {
   getNavMapFeatures(input) {
     return window.msfsApi.getNavMapFeatures(input);
   }
+  searchNavMapPoints(input) {
+    return window.msfsApi.searchNavMapPoints(input);
+  }
   importSimBrief(input) {
     return window.msfsApi.importSimBrief(input);
   }
@@ -12921,6 +12924,12 @@ class ElectronAppClient {
   }
   pickChartFile() {
     return window.msfsApi.pickChartFile();
+  }
+  pickChartsDirectory() {
+    return window.msfsApi.pickChartsDirectory();
+  }
+  importChartFromUrl(input) {
+    return window.msfsApi.importChartFromUrl(input);
   }
   finalizeChartImport(input) {
     return window.msfsApi.finalizeChartImport(input);
@@ -13028,6 +13037,12 @@ class WebLanAppClient {
       body: JSON.stringify(input)
     });
   }
+  searchNavMapPoints(input) {
+    return this.fetchJson("/api/nav/search-points", {
+      method: "POST",
+      body: JSON.stringify(input)
+    });
+  }
   importSimBrief(input) {
     return this.fetchJson("/api/simbrief/import", {
       method: "POST",
@@ -13079,6 +13094,15 @@ class WebLanAppClient {
       mimeType: file.type || getMimeTypeByFormat(getFileFormat(file.name)),
       base64: await readFileAsBase64(file)
     };
+  }
+  async pickChartsDirectory() {
+    return null;
+  }
+  async importChartFromUrl(input) {
+    return this.fetchJson("/api/charts/import-from-url", {
+      method: "POST",
+      body: JSON.stringify(input)
+    });
   }
   async finalizeChartImport(input) {
     return this.fetchJson("/api/charts", {
@@ -15650,6 +15674,7 @@ const zhCN = {
   "map.fitRoute": "适应航路",
   "map.followAircraftStart": "开始跟随飞机",
   "map.followAircraftStop": "停止跟随飞机",
+  "map.searchPlaceholder": "搜索已显示信息点",
   "status.title": "飞行状态",
   "status.subtitle": "实时飞机遥测",
   "status.connected": "已连接游戏",
@@ -15692,7 +15717,16 @@ const zhCN = {
   "charts.emptyTitle": "暂无航图",
   "charts.emptyDescription": "请先导入航图。",
   "charts.importAction": "导入航图",
+  "charts.importUrlAction": "下载导入",
+  "charts.importUrlToggle": "从链接导入",
+  "charts.importUrlPlaceholder": "粘贴 PDF 或图片网络链接",
+  "charts.importUrlPending": "下载中...",
   "charts.importFailed": "导入航图失败，请重试。",
+  "charts.importUrlFailed": "从链接导入航图失败，请重试。",
+  "charts.importUrlErrorInvalid": "请输入有效的 http 或 https 文件链接。",
+  "charts.importUrlErrorDownload": "无法下载远程文件。",
+  "charts.importUrlErrorEmpty": "远程文件为空。",
+  "charts.importUrlErrorUnsupported": "仅支持单页 PDF、PNG、JPG 或 JPEG 文件。",
   "charts.add": "添加航图",
   "charts.unmountAria": "卸载 {{title}}",
   "charts.searchPlaceholder": "按标题、机场、类型搜索",
@@ -15717,20 +15751,31 @@ const zhCN = {
   "chartDetail.clearChartPoints": "清除航图点位",
   "chartDetail.metaTitle": "基础信息",
   "chartDetail.modeManual": "自定义名称",
-  "chartDetail.modeProcedure": "绑定进近程序",
+  "chartDetail.modeProcedure": "绑定程序",
   "chartDetail.fieldTitle": "标题",
   "chartDetail.fieldTitlePlaceholder": "输入自定义标题",
   "chartDetail.fieldAirportCode": "机场代码",
   "chartDetail.fieldAirportCodePlaceholder": "例如：ZBAA",
   "chartDetail.fieldChartType": "航图类型",
-  "chartDetail.procedureModeTitle": "进近程序绑定",
-  "chartDetail.procedureModeHint": "航图标题将直接使用所选进近程序的名称。",
+  "chartDetail.procedureModeTitle": "程序绑定",
+  "chartDetail.procedureModeHint": "航图标题将直接使用第一个所选程序的名称。",
   "chartDetail.procedureModeBlocked": "请先选择航图类型为“进近”，并确保导航数据可用。",
   "chartDetail.procedureRunway": "跑道筛选",
   "chartDetail.procedureAnyRunway": "任意跑道",
   "chartDetail.procedureSelect": "进近程序",
   "chartDetail.procedureSelectPlaceholder": "请选择程序",
   "chartDetail.procedureNone": "未选择",
+  "chartDetail.runwayMultiSelectPlaceholder": "请选择一个或多个跑道",
+  "chartDetail.runwayEmpty": "当前机场没有可用跑道。",
+  "chartDetail.procedureMultiSelectPlaceholder": "请选择一个或多个程序",
+  "chartDetail.procedureEmpty": "当前航图类型下没有可绑定的程序。",
+  "chartDetail.multiSelectSearchPlaceholder": "搜索",
+  "chartDetail.multiSelectSelectVisible": "全选",
+  "chartDetail.multiSelectClearVisible": "清空可见项",
+  "chartDetail.multiSelectNoSearchResult": "没有匹配结果。",
+  "chartDetail.procedureBindingCard": "程序绑定 {{index}}",
+  "chartDetail.addProcedureBinding": "新增程序绑定",
+  "chartDetail.removeProcedureBinding": "移除此绑定",
   "chartDetail.procedureDerivedTitle": "生成标题",
   "chartDetail.procedureDerivedEmpty": "尚未选择程序",
   "chartDetail.procedureLoading": "正在加载导航程序...",
@@ -15799,6 +15844,13 @@ const zhCN = {
   "settings.navDataBrowse": "浏览",
   "settings.navDataSave": "保存路径",
   "settings.navDataClear": "清除手动路径",
+  "settings.chartLibraryTitle": "航图库路径",
+  "settings.chartLibraryDefaultPath": "默认路径：{{path}}",
+  "settings.chartLibraryActivePath": "当前路径：{{path}}",
+  "settings.chartLibraryHint": "保存新路径后，已有航图文件会自动迁移到新位置。",
+  "settings.chartLibraryBrowse": "浏览",
+  "settings.chartLibrarySave": "保存路径",
+  "settings.chartLibraryReset": "恢复默认",
   "settings.simbriefTitle": "SimBrief",
   "settings.simbriefUsername": "SimBrief 用户名",
   "settings.simbriefUserId": "SimBrief 用户 ID",
@@ -15840,6 +15892,10 @@ const enUS = {
   "map.layerVors": "VOR",
   "map.layerNdbs": "NDB",
   "map.layerWaypoints": "WPT",
+  "map.searchPlaceholder": "Search active points",
+  "map.searchDisabledPlaceholder": "Enable APT/VOR/NDB/WPT",
+  "map.searchLoading": "Searching...",
+  "map.searchNoResults": "No matching points",
   "map.recenter": "Recenter map to aircraft",
   "status.title": "Flight Status",
   "status.subtitle": "Live aircraft telemetry",
@@ -15883,7 +15939,16 @@ const enUS = {
   "charts.emptyTitle": "No charts",
   "charts.emptyDescription": "Import charts to continue.",
   "charts.importAction": "Import chart",
+  "charts.importUrlAction": "Download",
+  "charts.importUrlToggle": "Import from URL",
+  "charts.importUrlPlaceholder": "Paste a PDF or image URL",
+  "charts.importUrlPending": "Downloading...",
   "charts.importFailed": "Failed to import chart. Please try again.",
+  "charts.importUrlFailed": "Failed to import chart from URL. Please try again.",
+  "charts.importUrlErrorInvalid": "Enter a valid http or https file URL.",
+  "charts.importUrlErrorDownload": "The remote file could not be downloaded.",
+  "charts.importUrlErrorEmpty": "The remote file is empty.",
+  "charts.importUrlErrorUnsupported": "Only single-page PDF, PNG, JPG, or JPEG files are supported.",
   "charts.add": "Add chart",
   "charts.unmountAria": "Unmount {{title}}",
   "charts.searchPlaceholder": "Search by title, airport, type",
@@ -15908,20 +15973,31 @@ const enUS = {
   "chartDetail.clearChartPoints": "Clear chart points",
   "chartDetail.metaTitle": "Metadata",
   "chartDetail.modeManual": "Custom title",
-  "chartDetail.modeProcedure": "Bind approach procedure",
+  "chartDetail.modeProcedure": "Bind procedure",
   "chartDetail.fieldTitle": "Title",
   "chartDetail.fieldTitlePlaceholder": "Enter a custom title",
   "chartDetail.fieldAirportCode": "Airport Code",
   "chartDetail.fieldAirportCodePlaceholder": "For example: ZBAA",
   "chartDetail.fieldChartType": "Chart Type",
-  "chartDetail.procedureModeTitle": "Approach procedure binding",
-  "chartDetail.procedureModeHint": "The chart title will be taken from the selected approach procedure.",
+  "chartDetail.procedureModeTitle": "Procedure binding",
+  "chartDetail.procedureModeHint": "The chart title will be taken from the first selected procedure.",
   "chartDetail.procedureModeBlocked": "Select chart type Approach first, and make sure navigation data is available.",
   "chartDetail.procedureRunway": "Runway filter",
   "chartDetail.procedureAnyRunway": "Any runway",
   "chartDetail.procedureSelect": "Approach procedure",
   "chartDetail.procedureSelectPlaceholder": "Choose a procedure",
   "chartDetail.procedureNone": "Not selected",
+  "chartDetail.runwayMultiSelectPlaceholder": "Choose one or more runways",
+  "chartDetail.runwayEmpty": "No runways are available for this airport.",
+  "chartDetail.procedureMultiSelectPlaceholder": "Choose one or more procedures",
+  "chartDetail.procedureEmpty": "No procedures are available for the current chart type.",
+  "chartDetail.multiSelectSearchPlaceholder": "Search",
+  "chartDetail.multiSelectSelectVisible": "Select all",
+  "chartDetail.multiSelectClearVisible": "Clear visible",
+  "chartDetail.multiSelectNoSearchResult": "No matches found.",
+  "chartDetail.procedureBindingCard": "Procedure Binding {{index}}",
+  "chartDetail.addProcedureBinding": "Add another procedure",
+  "chartDetail.removeProcedureBinding": "Remove this binding",
   "chartDetail.procedureDerivedTitle": "Derived title",
   "chartDetail.procedureDerivedEmpty": "No procedure selected yet",
   "chartDetail.procedureLoading": "Loading navigation procedures...",
@@ -15995,6 +16071,13 @@ const enUS = {
   "settings.navDataBrowse": "Browse",
   "settings.navDataSave": "Save Path",
   "settings.navDataClear": "Clear Manual Path",
+  "settings.chartLibraryTitle": "Chart Library Path",
+  "settings.chartLibraryDefaultPath": "Default path: {{path}}",
+  "settings.chartLibraryActivePath": "Current path: {{path}}",
+  "settings.chartLibraryHint": "Saving a new path will move existing chart files to the new location.",
+  "settings.chartLibraryBrowse": "Browse",
+  "settings.chartLibrarySave": "Save Path",
+  "settings.chartLibraryReset": "Use Default",
   "settings.simbriefTitle": "SimBrief",
   "settings.simbriefUsername": "SimBrief username",
   "settings.simbriefUserId": "SimBrief user id",
@@ -26053,6 +26136,10 @@ const Tooltip = createOverlayComponent(function createTooltip(props, context) {
     position
   ]);
 });
+function Input(props) {
+  const { className = "", ...rest } = props;
+  return /* @__PURE__ */ jsxRuntimeExports.jsx("input", { className: `input ${className}`.trim(), ...rest });
+}
 function clamp$1(value, [min2, max2]) {
   return Math.min(max2, Math.max(min2, value));
 }
@@ -31087,17 +31174,107 @@ SelectSeparator.displayName = Separator.displayName;
 function MapDisplayToolbar({
   className = "map-floating-toolbar",
   navLayerVisibility,
-  onToggleLayer
+  onToggleLayer,
+  onSearchSelect
 }) {
   const { t } = useTranslation();
   const appClient2 = getAppClient();
   const settings = useAppStore((state) => state.settings);
   const setSettings = useAppStore((state) => state.setSettings);
+  const [search, setSearch] = reactExports.useState("");
+  const [results, setResults] = reactExports.useState([]);
+  const [isOpen, setIsOpen] = reactExports.useState(false);
+  const [loading, setLoading] = reactExports.useState(false);
+  const rootRef = reactExports.useRef(null);
+  const activeSearchTypes = reactExports.useMemo(() => {
+    const types = [];
+    if (navLayerVisibility.airports) types.push("airports");
+    if (navLayerVisibility.vors) types.push("vors");
+    if (navLayerVisibility.ndbs) types.push("ndbs");
+    if (navLayerVisibility.waypoints) types.push("waypoints");
+    return types;
+  }, [navLayerVisibility]);
   const updateMapTileProvider = async (mapTileProvider) => {
     const nextSettings = await appClient2.updateSettings({ mapTileProvider });
     setSettings(nextSettings);
   };
+  reactExports.useEffect(() => {
+    const handlePointerDown = (event) => {
+      if (!rootRef.current?.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handlePointerDown);
+    return () => document.removeEventListener("mousedown", handlePointerDown);
+  }, []);
+  reactExports.useEffect(() => {
+    const query = search.trim();
+    if (!query || activeSearchTypes.length === 0) {
+      setResults([]);
+      setLoading(false);
+      return;
+    }
+    let active = true;
+    setLoading(true);
+    const timer = window.setTimeout(() => {
+      void appClient2.searchNavMapPoints({
+        query,
+        types: activeSearchTypes
+      }).then((nextResults) => {
+        if (!active) return;
+        setResults(nextResults);
+      }).catch(() => {
+        if (!active) return;
+        setResults([]);
+      }).finally(() => {
+        if (active) {
+          setLoading(false);
+        }
+      });
+    }, 180);
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [activeSearchTypes, appClient2, search]);
+  const placeholder = activeSearchTypes.length > 0 ? t("map.searchPlaceholder", { defaultValue: "Search active points" }) : t("map.searchDisabledPlaceholder", { defaultValue: "Enable APT/VOR/NDB/WPT" });
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "map-search-shell", ref: rootRef, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        Input,
+        {
+          className: "map-search-input",
+          value: search,
+          onChange: (event) => {
+            setSearch(event.target.value);
+            setIsOpen(true);
+          },
+          onFocus: () => setIsOpen(true),
+          placeholder,
+          disabled: activeSearchTypes.length === 0
+        }
+      ),
+      isOpen && search.trim() && activeSearchTypes.length > 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "map-search-panel", children: loading ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "map-search-empty", children: t("map.searchLoading", { defaultValue: "Searching..." }) }) : results.length > 0 ? results.map((result) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        "button",
+        {
+          type: "button",
+          className: "map-search-item",
+          onClick: () => {
+            setSearch(result.ident);
+            setIsOpen(false);
+            onSearchSelect?.(result);
+          },
+          children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "map-search-item-main", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: result.ident }),
+              result.name ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: result.name }) : null
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "map-search-item-type", children: getTypeLabel(result.type) })
+          ]
+        },
+        result.id
+      )) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "map-search-empty", children: t("map.searchNoResults", { defaultValue: "No matching points" }) }) }) : null
+    ] }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "map-nav-layer-group", role: "group", "aria-label": "Navigation layers", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx(ToolbarLayerButton, { label: "APT", active: navLayerVisibility.airports, onClick: () => onToggleLayer("airports") }),
       /* @__PURE__ */ jsxRuntimeExports.jsx(ToolbarLayerButton, { label: "AWY", active: navLayerVisibility.airways, onClick: () => onToggleLayer("airways") }),
@@ -31137,6 +31314,19 @@ function MapDisplayToolbar({
       }
     )
   ] });
+  function getTypeLabel(type) {
+    switch (type) {
+      case "airports":
+        return "APT";
+      case "vors":
+        return "VOR";
+      case "ndbs":
+        return "NDB";
+      case "waypoints":
+      default:
+        return "WPT";
+    }
+  }
 }
 function ToolbarLayerButton({
   label,
@@ -54347,10 +54537,6 @@ function Badge({
 }) {
   return /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: `${variantClassNames[variant]} ${className}`.trim(), ...props, children });
 }
-function Input(props) {
-  const { className = "", ...rest } = props;
-  return /* @__PURE__ */ jsxRuntimeExports.jsx("input", { className: `input ${className}`.trim(), ...rest });
-}
 const TabsContext = reactExports.createContext(null);
 function useTabsContext(componentName) {
   const context = reactExports.useContext(TabsContext);
@@ -54413,6 +54599,7 @@ const TabsContent = reactExports.forwardRef(
   }
 );
 TabsContent.displayName = "TabsContent";
+const BINDABLE_CHART_TYPES = ["sid", "star", "approach"];
 function createMapDot(label) {
   return leafletSrcExports.divIcon({
     className: "map-reference-icon",
@@ -54420,6 +54607,44 @@ function createMapDot(label) {
     iconSize: [28, 38],
     iconAnchor: [14, 38]
   });
+}
+function isBindableChartType(value) {
+  return BINDABLE_CHART_TYPES.includes(value);
+}
+function getProcedureOptionsByChartType(procedures, chartType) {
+  const sortByName = (items) => [...items].sort((left, right) => left.name.localeCompare(right.name));
+  switch (chartType) {
+    case "sid":
+      return sortByName(procedures.departures);
+    case "star":
+      return sortByName(procedures.arrivals);
+    case "approach":
+      return sortByName(procedures.approaches);
+    default:
+      return [];
+  }
+}
+function getProcedureLabelKeyByChartType(chartType) {
+  switch (chartType) {
+    case "sid":
+      return "flightPlan.departureProcedure";
+    case "star":
+      return "flightPlan.arrivalProcedure";
+    case "approach":
+    default:
+      return "flightPlan.approachProcedure";
+  }
+}
+function buildProcedureDerivedTitle(runways, procedures) {
+  if (procedures.length === 0) {
+    return "";
+  }
+  const runwayPrefix = runways.length > 0 ? `${runways.map((runway) => runway.displayName).join(", ")} ` : "";
+  const firstProcedureName = procedures[0]?.name ?? "";
+  if (procedures.length === 1) {
+    return `${runwayPrefix}${firstProcedureName}`.trim();
+  }
+  return `${runwayPrefix}${firstProcedureName}...(${procedures.length})`.trim();
 }
 function ClickCaptureLayer({
   onAddPoint
@@ -54463,6 +54688,19 @@ function AutoFitMapPoints({
   }, [fitKey, map, points]);
   return null;
 }
+function FlyToSearchTarget$1({
+  target
+}) {
+  const map = useMap();
+  reactExports.useEffect(() => {
+    if (!target) return;
+    map.flyTo([target.lat, target.lon], Math.max(map.getZoom(), 11), {
+      animate: true,
+      duration: 0.75
+    });
+  }, [map, target]);
+  return null;
+}
 const EMPTY_PROCEDURES$2 = {
   airport: null,
   runways: [],
@@ -54471,7 +54709,6 @@ const EMPTY_PROCEDURES$2 = {
   transitions: [],
   approaches: []
 };
-const NONE_SELECT_VALUE$1 = "__none__";
 function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }) {
   const appClient2 = getAppClient();
   const runtime = appClient2.getRuntime();
@@ -54485,13 +54722,18 @@ function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }) {
   const [manualTitle, setManualTitle] = reactExports.useState("");
   const [airportCode, setAirportCode] = reactExports.useState("");
   const [chartType, setChartType] = reactExports.useState("general");
-  const [boundApproachProcedureId, setBoundApproachProcedureId] = reactExports.useState("");
-  const [boundApproachRunway, setBoundApproachRunway] = reactExports.useState("");
+  const [selectedRunwayNames, setSelectedRunwayNames] = reactExports.useState([]);
+  const [isRunwayPickerOpen, setIsRunwayPickerOpen] = reactExports.useState(false);
+  const [runwaySearch, setRunwaySearch] = reactExports.useState("");
+  const [selectedProcedureIds, setSelectedProcedureIds] = reactExports.useState([]);
+  const [isProcedurePickerOpen, setIsProcedurePickerOpen] = reactExports.useState(false);
+  const [procedureSearch, setProcedureSearch] = reactExports.useState("");
   const [navProcedures, setNavProcedures] = reactExports.useState(EMPTY_PROCEDURES$2);
   const [navProceduresLoading, setNavProceduresLoading] = reactExports.useState(false);
   const [navProceduresError, setNavProceduresError] = reactExports.useState("");
   const [draftMapPoints, setDraftMapPoints] = reactExports.useState([]);
   const [draftChartPoints, setDraftChartPoints] = reactExports.useState([]);
+  const [mapSearchTarget, setMapSearchTarget] = reactExports.useState(null);
   const [draftInitializedForChartId, setDraftInitializedForChartId] = reactExports.useState(null);
   const [mapAutoFitKey, setMapAutoFitKey] = reactExports.useState(0);
   const [chartAutoFitKey, setChartAutoFitKey] = reactExports.useState(0);
@@ -54514,8 +54756,12 @@ function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }) {
     setAirportCode(sourceChart.airportCode ?? "");
     setChartType(sourceChart.chartType);
     setTitleMode(sourceChart.titleMode);
-    setBoundApproachProcedureId(sourceChart.boundApproachProcedureId ?? "");
-    setBoundApproachRunway("");
+    setSelectedRunwayNames(sourceChart.boundRunwayNames);
+    setIsRunwayPickerOpen(false);
+    setRunwaySearch("");
+    setSelectedProcedureIds(sourceChart.boundApproachProcedureIds);
+    setIsProcedurePickerOpen(false);
+    setProcedureSearch("");
     setNavProceduresError("");
   };
   const closeMetaModal = () => {
@@ -54539,7 +54785,8 @@ function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }) {
   }, [appClient2]);
   const normalizedAirportCode = airportCode.trim().toUpperCase();
   const isProcedureModeActive = titleMode === "approach-procedure";
-  const hasProcedureLookupContext = Boolean(normalizedAirportCode) && (chartType === "approach" || isProcedureModeActive);
+  const effectiveProcedureChartType = isProcedureModeActive ? isBindableChartType(chartType) ? chartType : "approach" : chartType;
+  const hasProcedureLookupContext = Boolean(normalizedAirportCode) && isProcedureModeActive;
   reactExports.useEffect(() => {
     if (!hasProcedureLookupContext) {
       setNavProcedures(EMPTY_PROCEDURES$2);
@@ -54566,10 +54813,6 @@ function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }) {
       active = false;
     };
   }, [appClient2, hasProcedureLookupContext, normalizedAirportCode, t]);
-  const filteredApproachProcedures = reactExports.useMemo(
-    () => filterProceduresByRunway(navProcedures.approaches, boundApproachRunway),
-    [boundApproachRunway, navProcedures.approaches]
-  );
   reactExports.useEffect(() => {
     if (titleMode !== "approach-procedure") {
       return;
@@ -54580,22 +54823,95 @@ function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }) {
     if (normalizedAirportCode && navProcedures.airport?.ident !== normalizedAirportCode) {
       return;
     }
-    if (!boundApproachProcedureId) {
-      return;
-    }
-    if (!filteredApproachProcedures.some((procedure) => procedure.id === boundApproachProcedureId)) {
-      setBoundApproachProcedureId("");
-    }
+    const validProcedureIds = new Set(
+      getProcedureOptionsByChartType(navProcedures, effectiveProcedureChartType).filter(
+        (procedure) => selectedRunwayNames.length === 0 ? true : selectedRunwayNames.some((runwayName) => runwayMatches(procedure.runwayName, runwayName))
+      ).map((procedure) => procedure.id)
+    );
+    setSelectedProcedureIds((current) => current.filter((procedureId) => validProcedureIds.has(procedureId)));
   }, [
-    boundApproachProcedureId,
-    filteredApproachProcedures,
     navProcedures.airport?.ident,
     navProceduresLoading,
     normalizedAirportCode,
-    titleMode
+    titleMode,
+    navProcedures.departures,
+    navProcedures.arrivals,
+    navProcedures.approaches,
+    effectiveProcedureChartType,
+    selectedRunwayNames
   ]);
   const canOpenProcedureModeTab = navDataReady;
   const canUseProcedureMode = Boolean(normalizedAirportCode) && navDataReady;
+  const availableRunwayOptions = reactExports.useMemo(
+    () => [...navProcedures.runways].sort((left, right) => left.displayName.localeCompare(right.displayName)),
+    [navProcedures.runways]
+  );
+  const filteredRunwayOptions = reactExports.useMemo(() => {
+    const query = runwaySearch.trim().toLowerCase();
+    if (!query) return availableRunwayOptions;
+    return availableRunwayOptions.filter((runway) => {
+      const haystack = `${runway.displayName} ${runway.name}`.toLowerCase();
+      return haystack.includes(query);
+    });
+  }, [availableRunwayOptions, runwaySearch]);
+  const availableProcedureOptions = reactExports.useMemo(
+    () => getProcedureOptionsByChartType(navProcedures, effectiveProcedureChartType).filter(
+      (procedure) => selectedRunwayNames.length === 0 ? true : selectedRunwayNames.some((runwayName) => runwayMatches(procedure.runwayName, runwayName))
+    ),
+    [navProcedures, effectiveProcedureChartType, selectedRunwayNames]
+  );
+  const filteredProcedureOptions = reactExports.useMemo(() => {
+    const query = procedureSearch.trim().toLowerCase();
+    if (!query) return availableProcedureOptions;
+    return availableProcedureOptions.filter((procedure) => {
+      const haystack = `${procedure.name} ${procedure.runwayName ?? ""}`.toLowerCase();
+      return haystack.includes(query);
+    });
+  }, [availableProcedureOptions, procedureSearch]);
+  const selectedRunwayOptions = reactExports.useMemo(
+    () => availableRunwayOptions.filter((runway) => selectedRunwayNames.includes(runway.name)),
+    [availableRunwayOptions, selectedRunwayNames]
+  );
+  const selectedProcedureOptions = reactExports.useMemo(
+    () => availableProcedureOptions.filter((procedure) => selectedProcedureIds.includes(procedure.id)),
+    [availableProcedureOptions, selectedProcedureIds]
+  );
+  const derivedProcedureTitle = reactExports.useMemo(
+    () => buildProcedureDerivedTitle(selectedRunwayOptions, selectedProcedureOptions),
+    [selectedRunwayOptions, selectedProcedureOptions]
+  );
+  const allFilteredRunwaysSelected = filteredRunwayOptions.length > 0 && filteredRunwayOptions.every((runway) => selectedRunwayNames.includes(runway.name));
+  const allFilteredProceduresSelected = filteredProcedureOptions.length > 0 && filteredProcedureOptions.every((procedure) => selectedProcedureIds.includes(procedure.id));
+  const toggleRunwaySelection = (runwayName) => {
+    setSelectedRunwayNames(
+      (current) => current.includes(runwayName) ? current.filter((name) => name !== runwayName) : [...current, runwayName]
+    );
+  };
+  const toggleSelectAllFilteredRunways = () => {
+    if (filteredRunwayOptions.length === 0) return;
+    setSelectedRunwayNames((current) => {
+      const filteredNames = filteredRunwayOptions.map((runway) => runway.name);
+      if (filteredNames.every((name) => current.includes(name))) {
+        return current.filter((name) => !filteredNames.includes(name));
+      }
+      return Array.from(/* @__PURE__ */ new Set([...current, ...filteredNames]));
+    });
+  };
+  const toggleProcedureSelection = (procedureId) => {
+    setSelectedProcedureIds(
+      (current) => current.includes(procedureId) ? current.filter((id) => id !== procedureId) : [...current, procedureId]
+    );
+  };
+  const toggleSelectAllFilteredProcedures = () => {
+    if (filteredProcedureOptions.length === 0) return;
+    setSelectedProcedureIds((current) => {
+      const filteredIds = filteredProcedureOptions.map((procedure) => procedure.id);
+      if (filteredIds.every((id) => current.includes(id))) {
+        return current.filter((id) => !filteredIds.includes(id));
+      }
+      return Array.from(/* @__PURE__ */ new Set([...current, ...filteredIds]));
+    });
+  };
   reactExports.useEffect(() => {
     setDraftMapPoints([]);
     setDraftChartPoints([]);
@@ -54627,26 +54943,35 @@ function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }) {
     if (!chart) return;
     const nextManualTitle = manualTitle.trim();
     const nextTitleMode = canUseProcedureMode && titleMode === "approach-procedure" ? "approach-procedure" : "manual";
-    const nextBoundProcedureId = nextTitleMode === "approach-procedure" ? boundApproachProcedureId || null : null;
-    const nextChartType = nextTitleMode === "approach-procedure" ? "approach" : chartType;
-    const selectedProcedureForSave = nextTitleMode === "approach-procedure" && nextBoundProcedureId ? navProcedures.approaches.find((procedure) => procedure.id === nextBoundProcedureId) ?? (chart.boundApproachProcedureId === nextBoundProcedureId ? { id: nextBoundProcedureId, name: chart.title } : null) : null;
+    const nextBoundProcedureIds = nextTitleMode === "approach-procedure" ? Array.from(new Set(selectedProcedureIds.filter((procedureId) => Boolean(procedureId)))) : [];
+    const nextChartType = nextTitleMode === "approach-procedure" ? isBindableChartType(chartType) ? chartType : "approach" : chartType;
+    const nextProcedureOptions = getProcedureOptionsByChartType(navProcedures, nextChartType);
+    const selectedProceduresForSave = nextTitleMode === "approach-procedure" ? nextBoundProcedureIds.map(
+      (procedureId) => nextProcedureOptions.find((procedure) => procedure.id === procedureId) ?? (chart.boundApproachProcedureIds.includes(procedureId) ? {
+        id: procedureId,
+        name: chart.title,
+        procedureType: nextChartType === "sid" ? "departure" : nextChartType === "star" ? "arrival" : "approach",
+        runwayName: null
+      } : null)
+    ).filter((procedure) => Boolean(procedure)) : [];
     if (nextTitleMode === "manual" && !nextManualTitle) {
       toast.error(t("chartDetail.titleRequired"));
       return;
     }
-    if (nextTitleMode === "approach-procedure" && (!nextBoundProcedureId || !selectedProcedureForSave)) {
+    if (nextTitleMode === "approach-procedure" && selectedProceduresForSave.length === 0) {
       toast.error(t("chartDetail.procedureRequired"));
       return;
     }
     try {
-      const titleToSave = nextTitleMode === "approach-procedure" ? selectedProcedureForSave?.name ?? chart.title : nextManualTitle;
+      const titleToSave = nextTitleMode === "approach-procedure" ? buildProcedureDerivedTitle(selectedRunwayOptions, selectedProceduresForSave) : nextManualTitle;
       const updated = await appClient2.updateChart({
         id: chart.id,
         title: titleToSave,
         airportCode: airportCode || null,
         chartType: nextChartType,
         titleMode: nextTitleMode,
-        boundApproachProcedureId: nextBoundProcedureId
+        boundRunwayNames: nextTitleMode === "approach-procedure" ? selectedRunwayNames : [],
+        boundApproachProcedureIds: nextBoundProcedureIds
       });
       if (updated) {
         setChart(updated);
@@ -54764,7 +55089,12 @@ function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }) {
             {
               className: "chart-editor-map-toolbar-inner",
               navLayerVisibility,
-              onToggleLayer: toggleNavLayer
+              onToggleLayer: toggleNavLayer,
+              onSearchSelect: (result) => setMapSearchTarget({
+                lat: result.lat,
+                lon: result.lon,
+                key: Date.now()
+              })
             }
           ) }),
           /* @__PURE__ */ jsxRuntimeExports.jsxs(
@@ -54816,7 +55146,8 @@ function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }) {
                   },
                   `${point.lat}-${point.lon}`
                 )),
-                /* @__PURE__ */ jsxRuntimeExports.jsx(AutoFitMapPoints, { points: draftMapPoints, fitKey: mapAutoFitKey })
+                /* @__PURE__ */ jsxRuntimeExports.jsx(AutoFitMapPoints, { points: draftMapPoints, fitKey: mapAutoFitKey }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(FlyToSearchTarget$1, { target: mapSearchTarget })
               ]
             }
           )
@@ -54890,7 +55221,7 @@ function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }) {
                   onValueChange: (value) => {
                     const nextMode = value;
                     setTitleMode(nextMode);
-                    if (nextMode === "approach-procedure" && chartType !== "approach") {
+                    if (nextMode === "approach-procedure" && !isBindableChartType(chartType)) {
                       setChartType("approach");
                     }
                   },
@@ -54916,13 +55247,17 @@ function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }) {
                         /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: t("chartDetail.fieldChartType") }),
                         /* @__PURE__ */ jsxRuntimeExports.jsxs(Select, { value: chartType, onValueChange: (value) => setChartType(value), children: [
                           /* @__PURE__ */ jsxRuntimeExports.jsx(SelectTrigger, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(SelectValue, {}) }),
-                          /* @__PURE__ */ jsxRuntimeExports.jsxs(SelectContent, { children: [
+                          /* @__PURE__ */ jsxRuntimeExports.jsx(SelectContent, { children: titleMode === "approach-procedure" ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+                            /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: "sid", children: t("chartType.sid") }),
+                            /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: "star", children: t("chartType.star") }),
+                            /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: "approach", children: t("chartType.approach") })
+                          ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
                             /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: "general", children: t("chartType.general") }),
                             /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: "airport", children: t("chartType.airport") }),
                             /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: "sid", children: t("chartType.sid") }),
                             /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: "star", children: t("chartType.star") }),
                             /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: "approach", children: t("chartType.approach") })
-                          ] })
+                          ] }) })
                         ] })
                       ] })
                     ] }),
@@ -54938,41 +55273,119 @@ function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }) {
                       )
                     ] }) }),
                     /* @__PURE__ */ jsxRuntimeExports.jsxs(TabsContent, { value: "approach-procedure", className: "chart-meta-tab-panel", children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: "settings-field", children: [
-                        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: t("chartDetail.procedureRunway") }),
+                      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "chart-procedure-multiselect", children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "chart-procedure-multiselect-label", children: t("chartDetail.procedureRunway") }),
                         /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                          Select,
+                          "button",
                           {
-                            value: boundApproachRunway || NONE_SELECT_VALUE$1,
-                            onValueChange: (value) => setBoundApproachRunway(value === NONE_SELECT_VALUE$1 ? "" : value),
+                            type: "button",
+                            className: "chart-procedure-multiselect-trigger",
                             disabled: !canUseProcedureMode || navProceduresLoading,
+                            onClick: () => setIsRunwayPickerOpen((value) => !value),
                             children: [
-                              /* @__PURE__ */ jsxRuntimeExports.jsx(SelectTrigger, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(SelectValue, {}) }),
-                              /* @__PURE__ */ jsxRuntimeExports.jsxs(SelectContent, { children: [
-                                /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: NONE_SELECT_VALUE$1, children: t("chartDetail.procedureAnyRunway") }),
-                                navProcedures.runways.map((runway) => /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: runway.name, children: runway.displayName }, runway.name))
-                              ] })
+                              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "chart-procedure-multiselect-value", children: selectedRunwayOptions.length > 0 ? selectedRunwayOptions.map((runway) => runway.displayName).join(", ") : t("chartDetail.runwayMultiSelectPlaceholder") }),
+                              /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { viewBox: "0 0 24 24", "aria-hidden": "true", className: isRunwayPickerOpen ? "open" : "", children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M6 9L12 15L18 9" }) })
                             ]
                           }
-                        )
+                        ),
+                        isRunwayPickerOpen ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "chart-procedure-multiselect-panel", children: [
+                          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "chart-multiselect-tools", children: [
+                            /* @__PURE__ */ jsxRuntimeExports.jsx(
+                              Input,
+                              {
+                                value: runwaySearch,
+                                onChange: (event) => setRunwaySearch(event.target.value),
+                                placeholder: t("chartDetail.multiSelectSearchPlaceholder")
+                              }
+                            ),
+                            /* @__PURE__ */ jsxRuntimeExports.jsx(
+                              Button,
+                              {
+                                type: "button",
+                                variant: "outline",
+                                className: "chart-multiselect-toggle",
+                                onClick: toggleSelectAllFilteredRunways,
+                                disabled: filteredRunwayOptions.length === 0,
+                                children: allFilteredRunwaysSelected ? t("chartDetail.multiSelectClearVisible") : t("chartDetail.multiSelectSelectVisible")
+                              }
+                            )
+                          ] }),
+                          filteredRunwayOptions.length > 0 ? filteredRunwayOptions.map((runway) => {
+                            const checked = selectedRunwayNames.includes(runway.name);
+                            return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                              "button",
+                              {
+                                type: "button",
+                                className: `chart-procedure-option ${checked ? "selected" : ""}`,
+                                onClick: () => toggleRunwaySelection(runway.name),
+                                children: [
+                                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: `chart-procedure-option-check ${checked ? "selected" : ""}`, children: /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { viewBox: "0 0 24 24", "aria-hidden": "true", children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M20 6L9 17L4 12" }) }) }),
+                                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "chart-procedure-option-copy", children: runway.displayName })
+                                ]
+                              },
+                              runway.name
+                            );
+                          }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "chart-meta-hint", children: availableRunwayOptions.length > 0 ? t("chartDetail.multiSelectNoSearchResult") : t("chartDetail.runwayEmpty") })
+                        ] }) : null
                       ] }),
-                      /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: "settings-field", children: [
-                        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: t("chartDetail.procedureSelect") }),
+                      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "chart-procedure-multiselect", children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "chart-procedure-multiselect-label", children: t(getProcedureLabelKeyByChartType(effectiveProcedureChartType)) }),
                         /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                          Select,
+                          "button",
                           {
-                            value: boundApproachProcedureId || NONE_SELECT_VALUE$1,
-                            onValueChange: (value) => setBoundApproachProcedureId(value === NONE_SELECT_VALUE$1 ? "" : value),
-                            disabled: !canUseProcedureMode || navProceduresLoading || filteredApproachProcedures.length === 0,
+                            type: "button",
+                            className: "chart-procedure-multiselect-trigger",
+                            disabled: !canUseProcedureMode || navProceduresLoading,
+                            onClick: () => setIsProcedurePickerOpen((value) => !value),
                             children: [
-                              /* @__PURE__ */ jsxRuntimeExports.jsx(SelectTrigger, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(SelectValue, { placeholder: t("chartDetail.procedureSelectPlaceholder") }) }),
-                              /* @__PURE__ */ jsxRuntimeExports.jsxs(SelectContent, { children: [
-                                /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: NONE_SELECT_VALUE$1, children: t("chartDetail.procedureNone") }),
-                                filteredApproachProcedures.map((procedure) => /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: procedure.id, children: procedure.name }, procedure.id))
-                              ] })
+                              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "chart-procedure-multiselect-value", children: selectedProcedureOptions.length > 0 ? selectedProcedureOptions.map((procedure) => procedure.name).join(", ") : t("chartDetail.procedureMultiSelectPlaceholder") }),
+                              /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { viewBox: "0 0 24 24", "aria-hidden": "true", className: isProcedurePickerOpen ? "open" : "", children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M6 9L12 15L18 9" }) })
                             ]
                           }
-                        )
+                        ),
+                        isProcedurePickerOpen ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "chart-procedure-multiselect-panel", children: [
+                          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "chart-multiselect-tools", children: [
+                            /* @__PURE__ */ jsxRuntimeExports.jsx(
+                              Input,
+                              {
+                                value: procedureSearch,
+                                onChange: (event) => setProcedureSearch(event.target.value),
+                                placeholder: t("chartDetail.multiSelectSearchPlaceholder")
+                              }
+                            ),
+                            /* @__PURE__ */ jsxRuntimeExports.jsx(
+                              Button,
+                              {
+                                type: "button",
+                                variant: "outline",
+                                className: "chart-multiselect-toggle",
+                                onClick: toggleSelectAllFilteredProcedures,
+                                disabled: filteredProcedureOptions.length === 0,
+                                children: allFilteredProceduresSelected ? t("chartDetail.multiSelectClearVisible") : t("chartDetail.multiSelectSelectVisible")
+                              }
+                            )
+                          ] }),
+                          filteredProcedureOptions.length > 0 ? filteredProcedureOptions.map((procedure) => {
+                            const checked = selectedProcedureIds.includes(procedure.id);
+                            return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                              "button",
+                              {
+                                type: "button",
+                                className: `chart-procedure-option ${checked ? "selected" : ""}`,
+                                onClick: () => toggleProcedureSelection(procedure.id),
+                                children: [
+                                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: `chart-procedure-option-check ${checked ? "selected" : ""}`, children: /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { viewBox: "0 0 24 24", "aria-hidden": "true", children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M20 6L9 17L4 12" }) }) }),
+                                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "chart-procedure-option-copy", children: procedure.name })
+                                ]
+                              },
+                              procedure.id
+                            );
+                          }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "chart-meta-hint", children: availableProcedureOptions.length > 0 ? t("chartDetail.multiSelectNoSearchResult") : t("chartDetail.procedureEmpty") })
+                        ] }) : null
+                      ] }),
+                      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "chart-meta-derived-title", children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: t("chartDetail.procedureDerivedTitle") }),
+                        /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: derivedProcedureTitle || t("chartDetail.procedureDerivedEmpty") })
                       ] }),
                       navProceduresLoading ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "chart-meta-hint", children: t("chartDetail.procedureLoading") }) : null,
                       navProceduresError ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "chart-meta-hint danger-copy", children: navProceduresError }) : null
@@ -55082,10 +55495,15 @@ function ChartMountDrawer({
   onSelect,
   onPin,
   onEdit,
-  onImport
+  onImport,
+  importUrlValue = "",
+  importUrlPending = false,
+  onImportUrlValueChange,
+  onImportFromUrl
 }) {
   const { t } = useTranslation();
   const [search, setSearch] = reactExports.useState("");
+  const [showUrlImport, setShowUrlImport] = reactExports.useState(false);
   const chartTypeLabel = {
     airport: t("chartType.airport"),
     sid: t("chartType.sid"),
@@ -55117,6 +55535,18 @@ function ChartMountDrawer({
           onChange: (event) => setSearch(event.target.value)
         }
       ),
+      onImportFromUrl ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+        Button,
+        {
+          type: "button",
+          variant: showUrlImport ? "default" : "outline",
+          size: "icon",
+          className: "chart-picker-link-toggle",
+          onClick: () => setShowUrlImport((value) => !value),
+          "aria-label": t("charts.add"),
+          children: /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { viewBox: "0 0 24 24", "aria-hidden": "true", children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M12 5V19M5 12H19" }) })
+        }
+      ) : null,
       closable ? /* @__PURE__ */ jsxRuntimeExports.jsx(
         Button,
         {
@@ -55130,6 +55560,52 @@ function ChartMountDrawer({
         }
       ) : null
     ] }),
+    showUrlImport && onImportFromUrl ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "chart-import-url-bar", children: [
+      onImport ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+        Button,
+        {
+          type: "button",
+          variant: "outline",
+          size: "icon",
+          className: "chart-import-file-button",
+          onClick: onImport,
+          "aria-label": t("charts.importAction"),
+          title: t("charts.importAction"),
+          children: /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { viewBox: "0 0 24 24", "aria-hidden": "true", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M14 3H8A2 2 0 0 0 6 5V19A2 2 0 0 0 8 21H16A2 2 0 0 0 18 19V7Z" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M14 3V7H18" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M9 12H15" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M9 16H13" })
+          ] })
+        }
+      ) : null,
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        Input,
+        {
+          className: "chart-import-url-input",
+          placeholder: t("charts.importUrlPlaceholder"),
+          value: importUrlValue,
+          onChange: (event) => onImportUrlValueChange?.(event.target.value),
+          onKeyDown: (event) => {
+            if (event.key === "Enter" && !importUrlPending) {
+              event.preventDefault();
+              onImportFromUrl();
+            }
+          }
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        Button,
+        {
+          type: "button",
+          variant: "default",
+          className: "chart-import-url-submit",
+          disabled: importUrlPending || !importUrlValue.trim(),
+          onClick: onImportFromUrl,
+          children: importUrlPending ? t("charts.importUrlPending") : t("charts.importUrlAction")
+        }
+      )
+    ] }) : null,
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "chart-picker-body", children: groupedCharts.length > 0 ? groupedCharts.map((group) => /* @__PURE__ */ jsxRuntimeExports.jsxs("details", { className: "chart-airport-group", open: true, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs("summary", { className: "chart-airport-head", children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "collapse-chevron", "aria-hidden": "true", children: /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { viewBox: "0 0 20 20", children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M6 8L10 12L14 8" }) }) }),
@@ -55202,21 +55678,7 @@ function ChartMountDrawer({
     ] }, group.airportCode)) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "chart-picker-empty", children: t("charts.searchEmpty") }) })
   ] });
   if (mode2 === "docked") {
-    return /* @__PURE__ */ jsxRuntimeExports.jsxs("section", { className: "chart-picker-drawer chart-picker-drawer-docked", children: [
-      drawerContent,
-      onImport ? /* @__PURE__ */ jsxRuntimeExports.jsx(
-        Button,
-        {
-          type: "button",
-          variant: "outline",
-          size: "icon",
-          className: "chart-drawer-import-fab",
-          onClick: onImport,
-          "aria-label": t("charts.importAction"),
-          children: /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { viewBox: "0 0 24 24", "aria-hidden": "true", children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M12 5V19M5 12H19" }) })
-        }
-      ) : null
-    ] });
+    return /* @__PURE__ */ jsxRuntimeExports.jsx("section", { className: "chart-picker-drawer chart-picker-drawer-docked", children: drawerContent });
   }
   return /* @__PURE__ */ jsxRuntimeExports.jsx("aside", { className: "chart-picker-drawer-layer", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
     "section",
@@ -55297,8 +55759,7 @@ function useChartLibraryData() {
       unsubscribe();
     };
   }, [appClient2]);
-  const importChart = async () => {
-    const picked = await appClient2.pickChartFile();
+  const importPickedChart = async (picked) => {
     if (!picked) return null;
     let displayImageBase64 = null;
     let displayImageMimeType = null;
@@ -55321,6 +55782,14 @@ function useChartLibraryData() {
     notifyChartChanged();
     return result;
   };
+  const importChart = async () => {
+    const picked = await appClient2.pickChartFile();
+    return importPickedChart(picked);
+  };
+  const importChartFromUrl = async (url) => {
+    const picked = await appClient2.importChartFromUrl({ url });
+    return importPickedChart(picked);
+  };
   const deleteChart = async (chartId) => {
     await appClient2.deleteChart(chartId);
     refresh();
@@ -55331,6 +55800,7 @@ function useChartLibraryData() {
     storageSummary,
     refresh,
     importChart,
+    importChartFromUrl,
     deleteChart
   };
 }
@@ -55342,8 +55812,10 @@ function ChartsPage({
   const runtime = getAppClient().getRuntime();
   const { t } = useTranslation();
   const aircraft = useAppStore((state) => state.aircraft);
-  const { charts, importChart } = useChartLibraryData();
+  const { charts, importChart, importChartFromUrl } = useChartLibraryData();
   const { chart, asset, points } = useChartDetailData(selectedChartId);
+  const [importUrl, setImportUrl] = reactExports.useState("");
+  const [importingUrl, setImportingUrl] = reactExports.useState(false);
   reactExports.useEffect(() => {
     if (charts.length === 0 || selectedChartId) return;
     onSelectChart(charts[0].id);
@@ -55364,6 +55836,28 @@ ${error.message}`;
       toast.error(message);
     }
   };
+  const handleImportChartFromUrl = async () => {
+    const normalizedUrl = importUrl.trim();
+    if (!normalizedUrl) return;
+    setImportingUrl(true);
+    try {
+      const result = await importChartFromUrl(normalizedUrl);
+      if (result?.chart) {
+        onSelectChart(result.chart.id);
+        setImportUrl("");
+        toast.success(t("feedback.imported"));
+      }
+    } catch (error) {
+      let message = t("charts.importUrlFailed");
+      if (error instanceof Error) {
+        message = `${t("charts.importUrlFailed")}
+${translateChartImportError(t, error.message)}`;
+      }
+      toast.error(message);
+    } finally {
+      setImportingUrl(false);
+    }
+  };
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("section", { className: "charts-workspace", children: [
     /* @__PURE__ */ jsxRuntimeExports.jsx(
       ChartMountDrawer,
@@ -55375,7 +55869,11 @@ ${error.message}`;
         showPinButton: false,
         onSelect: onSelectChart,
         onEdit: runtime.canWrite ? onEditChart : void 0,
-        onImport: runtime.canManageLocalFiles ? handleImportChart : void 0
+        onImport: runtime.canManageLocalFiles ? handleImportChart : void 0,
+        importUrlValue: importUrl,
+        importUrlPending: importingUrl,
+        onImportUrlValueChange: setImportUrl,
+        onImportFromUrl: runtime.canWrite ? handleImportChartFromUrl : void 0
       }
     ),
     /* @__PURE__ */ jsxRuntimeExports.jsx("section", { className: "chart-preview-pane", children: /* @__PURE__ */ jsxRuntimeExports.jsx("section", { className: "panel charts-panel chart-preview-panel", children: chart ? /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -55391,6 +55889,22 @@ ${error.message}`;
       /* @__PURE__ */ jsxRuntimeExports.jsx("p", { children: t("charts.emptyDescription") })
     ] }) }) })
   ] });
+}
+function translateChartImportError(t, message) {
+  if (message.startsWith("REMOTE_DOWNLOAD_FAILED:")) {
+    return t("charts.importUrlErrorDownload");
+  }
+  switch (message) {
+    case "REMOTE_URL_INVALID":
+      return t("charts.importUrlErrorInvalid");
+    case "REMOTE_FILE_EMPTY":
+      return t("charts.importUrlErrorEmpty");
+    case "REMOTE_FILE_TYPE_UNSUPPORTED":
+    case "PDF_MULTI_PAGE_NOT_SUPPORTED":
+      return t("charts.importUrlErrorUnsupported");
+    default:
+      return message;
+  }
 }
 function Textarea(props) {
   const { className = "", ...rest } = props;
@@ -56234,6 +56748,19 @@ function FitRouteView({
   }, [map, points, trigger]);
   return null;
 }
+function FlyToSearchTarget({
+  target
+}) {
+  const map = useMap();
+  reactExports.useEffect(() => {
+    if (!target) return;
+    map.flyTo([target.lat, target.lon], Math.max(map.getZoom(), 11), {
+      animate: true,
+      duration: 0.75
+    });
+  }, [map, target]);
+  return null;
+}
 function ChartOverlay({
   rasterUrl,
   width,
@@ -56333,6 +56860,7 @@ function MapPanel({
   const heading = aircraftPositionUsable ? aircraft?.headingDeg ?? 0 : 0;
   const [isFollowActive, setIsFollowActive] = reactExports.useState(false);
   const [routeViewTrigger, setRouteViewTrigger] = reactExports.useState(0);
+  const [searchTarget, setSearchTarget] = reactExports.useState(null);
   const tileConfig = getMapTileConfig(settings?.mapTileProvider);
   const routeViewPoints = reactExports.useMemo(() => {
     const points = routeSegments.length > 0 ? routeSegments.flatMap((segment) => segment.points) : routePoints;
@@ -56407,6 +56935,7 @@ function MapPanel({
             `${point.ident}:${index2}`
           )),
           /* @__PURE__ */ jsxRuntimeExports.jsx(FitRouteView, { points: routeViewPoints, trigger: routeViewTrigger }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(FlyToSearchTarget, { target: searchTarget }),
           /* @__PURE__ */ jsxRuntimeExports.jsx(FollowAircraft, { lat, lon, enabled: aircraftPositionUsable && isFollowActive }),
           /* @__PURE__ */ jsxRuntimeExports.jsx(MapViewPersistence, {})
         ]
@@ -56457,7 +56986,15 @@ function MapPanel({
         {
           className: "map-toolbar-inline",
           navLayerVisibility,
-          onToggleLayer: toggleNavLayer
+          onToggleLayer: toggleNavLayer,
+          onSearchSelect: (result) => {
+            setIsFollowActive(false);
+            setSearchTarget({
+              lat: result.lat,
+              lon: result.lon,
+              key: Date.now()
+            });
+          }
         }
       ),
       /* @__PURE__ */ jsxRuntimeExports.jsx(ConnectionBadge, {})
@@ -56491,8 +57028,8 @@ function buildProcedureMountCards(charts, selection, navContext) {
       if (!sameAirport(chart.airportCode, airportCode) || chart.chartType !== chartType) {
         return false;
       }
-      if (kind === "approach") {
-        return chart.boundApproachProcedureId === procedure.id;
+      if (chart.boundApproachProcedureIds.includes(procedure.id)) {
+        return true;
       }
       return normalize(chart.title) === normalize(procedure.name);
     });
@@ -59241,11 +59778,15 @@ function SettingsPanel() {
   const setSettings = useAppStore((state) => state.setSettings);
   const [remoteAccessStatus, setRemoteAccessStatus] = reactExports.useState(null);
   const [navDataStatus, setNavDataStatus] = reactExports.useState(null);
+  const [storageSummary, setStorageSummary] = reactExports.useState(null);
   const [portDraft, setPortDraft] = reactExports.useState("31831");
   const [navPathDraft, setNavPathDraft] = reactExports.useState("");
+  const [chartsPathDraft, setChartsPathDraft] = reactExports.useState("");
   const [simbriefUsernameDraft, setSimbriefUsernameDraft] = reactExports.useState("");
   const [qrCodeUrl, setQrCodeUrl] = reactExports.useState(null);
   const [isMobileAccess, setIsMobileAccess] = reactExports.useState(false);
+  const [isSavingChartsPath, setIsSavingChartsPath] = reactExports.useState(false);
+  const isChinese = (settings?.language ?? instance.language).toLowerCase().startsWith("zh");
   reactExports.useEffect(() => {
     const refreshRemoteAccessStatus = () => {
       void appClient2.getRemoteAccessStatus().then(setRemoteAccessStatus);
@@ -59253,11 +59794,16 @@ function SettingsPanel() {
     const refreshNavDataStatus = () => {
       void appClient2.getNavDataStatus().then(setNavDataStatus);
     };
+    const refreshStorageSummary = () => {
+      void appClient2.getStorageSummary().then(setStorageSummary);
+    };
     refreshRemoteAccessStatus();
     refreshNavDataStatus();
+    refreshStorageSummary();
     const offSettings = appClient2.onSettingsChanged(() => {
       refreshRemoteAccessStatus();
       refreshNavDataStatus();
+      refreshStorageSummary();
     });
     return () => {
       offSettings();
@@ -59268,8 +59814,9 @@ function SettingsPanel() {
   }, [settings?.lanAccess.port]);
   reactExports.useEffect(() => {
     setNavPathDraft(settings?.navData.sqlitePath ?? "");
+    setChartsPathDraft(settings?.storage.chartLibraryPath ?? storageSummary?.chartsRoot ?? "");
     setSimbriefUsernameDraft(settings?.simbrief.username ?? "");
-  }, [settings?.navData.sqlitePath, settings?.simbrief.username]);
+  }, [settings?.navData.sqlitePath, settings?.storage.chartLibraryPath, settings?.simbrief.username, storageSummary?.chartsRoot]);
   reactExports.useEffect(() => {
     const accessUrl = remoteAccessStatus?.primaryAccessUrl;
     if (!accessUrl) {
@@ -59351,6 +59898,24 @@ function SettingsPanel() {
     const nextStatus = await appClient2.getNavDataStatus();
     setNavDataStatus(nextStatus);
     toast.success(t("feedback.saved"));
+  };
+  const saveChartLibraryPath = async (chartLibraryPath) => {
+    setIsSavingChartsPath(true);
+    try {
+      const normalizedPath = chartLibraryPath?.trim() || null;
+      const nextSettings = await appClient2.updateSettings({
+        storage: {
+          chartLibraryPath: normalizedPath
+        }
+      });
+      setSettings(nextSettings);
+      const nextSummary = await appClient2.getStorageSummary();
+      setStorageSummary(nextSummary);
+      setChartsPathDraft(nextSettings.storage.chartLibraryPath ?? nextSummary.chartsRoot);
+      toast.success(t("feedback.saved"));
+    } finally {
+      setIsSavingChartsPath(false);
+    }
   };
   const saveSimBriefSettings = async () => {
     const nextSettings = await appClient2.updateSettings({
@@ -59477,6 +60042,73 @@ function SettingsPanel() {
                 void saveNavDataPath("");
               },
               children: t("settings.navDataClear")
+            }
+          )
+        ] })
+      ] })
+    ] }) : null,
+    !isMobileAccess ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "settings-field", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("label", { children: t("settings.chartLibraryTitle", {
+        defaultValue: isChinese ? "航图库路径" : "Chart Library Path"
+      }) }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "settings-note settings-note-card", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: t("settings.chartLibraryDefaultPath", {
+          defaultValue: isChinese ? "默认路径：{{path}}" : "Default path: {{path}}",
+          path: storageSummary?.defaultChartsRoot ?? "-"
+        }) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: t("settings.chartLibraryActivePath", {
+          defaultValue: isChinese ? "当前路径：{{path}}" : "Current path: {{path}}",
+          path: storageSummary?.chartsRoot ?? "-"
+        }) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "settings-note-inline", children: t("settings.chartLibraryHint", {
+          defaultValue: isChinese ? "保存新路径后，已有航图文件会自动迁移到新位置。" : "Saving a new path will move existing chart files to the new location."
+        }) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "settings-inline-row", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            Input,
+            {
+              value: chartsPathDraft,
+              onChange: (event) => setChartsPathDraft(event.target.value),
+              placeholder: storageSummary?.defaultChartsRoot ?? "",
+              disabled: !runtime.canWrite || isSavingChartsPath
+            }
+          ),
+          runtime.host === "electron" ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+            Button,
+            {
+              type: "button",
+              variant: "secondary",
+              disabled: isSavingChartsPath,
+              onClick: async () => {
+                const picked = await appClient2.pickChartsDirectory();
+                if (!picked) return;
+                setChartsPathDraft(picked);
+              },
+              children: t("settings.chartLibraryBrowse", { defaultValue: isChinese ? "浏览" : "Browse" })
+            }
+          ) : null,
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            Button,
+            {
+              type: "button",
+              variant: "secondary",
+              disabled: !runtime.canWrite || isSavingChartsPath,
+              onClick: () => {
+                void saveChartLibraryPath(chartsPathDraft);
+              },
+              children: t("settings.chartLibrarySave", { defaultValue: isChinese ? "保存路径" : "Save Path" })
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            Button,
+            {
+              type: "button",
+              variant: "secondary",
+              disabled: !runtime.canWrite || isSavingChartsPath,
+              onClick: () => {
+                void saveChartLibraryPath(null);
+              },
+              children: t("settings.chartLibraryReset", { defaultValue: isChinese ? "恢复默认" : "Use Default" })
             }
           )
         ] })

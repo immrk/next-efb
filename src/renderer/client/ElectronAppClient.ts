@@ -78,6 +78,10 @@ export class ElectronAppClient implements AppClient {
     return window.msfsApi.pickChartFile()
   }
 
+  pickChartsDirectory() {
+    return window.msfsApi.pickChartsDirectory()
+  }
+
   importChartFromUrl(input: Parameters<typeof window.msfsApi.importChartFromUrl>[0]) {
     return window.msfsApi.importChartFromUrl(input)
   }

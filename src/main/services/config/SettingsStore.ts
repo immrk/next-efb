@@ -2,7 +2,7 @@ import { randomBytes } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { AppLanguage, AppSettings } from '@shared/types'
-import { ensureDataRootDir } from '../storage/AppDataPaths'
+import { ensureAppStoragePaths } from '../storage/AppDataPaths'
 
 const DEFAULT_SETTINGS_BASE: AppSettings = {
   language: 'en-US',
@@ -11,6 +11,9 @@ const DEFAULT_SETTINGS_BASE: AppSettings = {
   providerMode: 'simconnect',
   mapTileProvider: 'osm',
   chartOpacity: 100,
+  storage: {
+    chartLibraryPath: null
+  },
   navData: {
     sqlitePath: null,
     autoDetect: true
@@ -34,7 +37,7 @@ export class SettingsStore {
   private settings: AppSettings
 
   constructor(defaultLanguage: AppLanguage) {
-    const baseDir = ensureDataRootDir()
+    const { settingsRoot: baseDir } = ensureAppStoragePaths()
     mkdirSync(baseDir, { recursive: true })
     this.filePath = join(baseDir, 'settings.json')
     this.defaultLanguage = defaultLanguage
@@ -50,6 +53,10 @@ export class SettingsStore {
     this.settings = {
       ...this.settings,
       ...partial,
+      storage: {
+        ...this.settings.storage,
+        ...partial.storage
+      },
       navData: {
         ...this.settings.navData,
         ...partial.navData
@@ -80,6 +87,10 @@ export class SettingsStore {
       return {
         ...this.withDefaultLanguage(DEFAULT_SETTINGS_BASE),
         ...parsed,
+        storage: {
+          ...DEFAULT_SETTINGS_BASE.storage,
+          ...parsed.storage
+        },
         navData: {
           ...DEFAULT_SETTINGS_BASE.navData,
           ...parsed.navData

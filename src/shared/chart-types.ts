@@ -9,6 +9,7 @@ export interface ChartRecord {
   airportCode: string | null
   chartType: ChartType
   titleMode: ChartTitleMode
+  boundRunwayNames: string[]
   boundApproachProcedureIds: string[]
   sourceFilePath: string
   previewImagePath: string | null
@@ -44,6 +45,8 @@ export interface ChartRegistration {
 export interface StorageSummary {
   databasePath: string
   chartsRoot: string
+  defaultChartsRoot: string
+  legacyChartsRoot: string
 }
 
 export interface ChartImportResult {
@@ -79,6 +82,7 @@ export interface ChartUpdateInput {
   airportCode: string | null
   chartType: ChartType
   titleMode: ChartTitleMode
+  boundRunwayNames: string[]
   boundApproachProcedureIds: string[]
 }
 

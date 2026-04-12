@@ -65,6 +65,7 @@ export interface AppClient {
   listCharts(): Promise<ChartRecord[]>
   getStorageSummary(): Promise<StorageSummary>
   pickChartFile(): Promise<PickedChartFile | null>
+  pickChartsDirectory(): Promise<string | null>
   importChartFromUrl(input: ChartImportFromUrlInput): Promise<PickedChartFile>
   finalizeChartImport(input: FinalizeChartImportInput): Promise<ChartImportResult>
   deleteChart(chartId: string): Promise<boolean>

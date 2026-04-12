@@ -217,7 +217,7 @@ export class LanServer {
             return
           }
           const partial = (await this.readJsonBody(request)) as Partial<AppSettings>
-          const nextSettings = this.settingsStore.update(partial)
+          const nextSettings = this.applySettingsUpdate(partial)
           this.settings = nextSettings
           this.simConnectService.reconfigure(nextSettings)
           await this.reconfigure(nextSettings)
@@ -479,6 +479,7 @@ export class LanServer {
       airportCode: null,
       chartType: 'general',
       titleMode: 'manual',
+      boundRunwayNames: [],
       boundApproachProcedureIds: [],
       sourceFilePath: imported.destinationPath,
       previewImagePath: displayPath,
@@ -512,6 +513,22 @@ export class LanServer {
     this.chartRepository.deleteChart(chartId)
     this.storageService.deleteChartFiles(chartId)
     this.broadcastChartChanged()
+  }
+
+  private applySettingsUpdate(partial: Partial<AppSettings>): AppSettings {
+    const currentSettings = this.settingsStore.get()
+    const nextCandidate = mergeSettings(currentSettings, partial)
+    const storageSummary = this.storageService.getSummary()
+    const previousChartsRoot = storageSummary.chartsRoot
+    const nextChartsRoot = this.storageService.resolveChartsRoot(nextCandidate)
+
+    if (normalizePath(previousChartsRoot) !== normalizePath(nextChartsRoot)) {
+      const relocated = this.storageService.relocateChartsRoot(nextChartsRoot)
+      this.chartRepository.relocateChartAssetPaths(relocated.previousChartsRoot, relocated.nextChartsRoot)
+    }
+
+    const normalizedPartial = normalizeSettingsPartial(partial, nextChartsRoot, storageSummary.defaultChartsRoot)
+    return this.settingsStore.update(normalizedPartial)
   }
 
   private isAuthorized(request: IncomingMessage): boolean {
@@ -589,6 +606,51 @@ function getMimeTypeByFormat(fileFormat: ChartAssetPayload['fileFormat']): strin
     case 'png':
     default:
       return 'image/png'
+  }
+}
+
+function mergeSettings(current: AppSettings, partial: Partial<AppSettings>): AppSettings {
+  return {
+    ...current,
+    ...partial,
+    storage: {
+      ...current.storage,
+      ...partial.storage
+    },
+    navData: {
+      ...current.navData,
+      ...partial.navData
+    },
+    simbrief: {
+      ...current.simbrief,
+      ...partial.simbrief
+    },
+    lanAccess: {
+      ...current.lanAccess,
+      ...partial.lanAccess
+    }
+  }
+}
+
+function normalizePath(value: string): string {
+  return process.platform === 'win32' ? value.toLowerCase() : value
+}
+
+function normalizeSettingsPartial(
+  partial: Partial<AppSettings>,
+  chartsRoot: string,
+  defaultChartsRoot: string
+): Partial<AppSettings> {
+  if (!partial.storage) {
+    return partial
+  }
+
+  return {
+    ...partial,
+    storage: {
+      ...partial.storage,
+      chartLibraryPath: normalizePath(chartsRoot) === normalizePath(defaultChartsRoot) ? null : chartsRoot
+    }
   }
 }
 

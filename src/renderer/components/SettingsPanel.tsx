@@ -5,6 +5,7 @@ import { getAppClient } from '../client'
 import i18n from '../i18n'
 import type { AppLanguage, AircraftSource, RemoteAccessStatus } from '@shared/types'
 import type { NavDataStatus } from '@shared/flight-plan-types'
+import type { StorageSummary } from '@shared/chart-types'
 import { useAppStore } from '../store/useAppStore'
 import { toast } from './ui/use-toast'
 import { Button } from './ui/button'
@@ -25,11 +26,15 @@ export function SettingsPanel() {
   const setSettings = useAppStore((state) => state.setSettings)
   const [remoteAccessStatus, setRemoteAccessStatus] = useState<RemoteAccessStatus | null>(null)
   const [navDataStatus, setNavDataStatus] = useState<NavDataStatus | null>(null)
+  const [storageSummary, setStorageSummary] = useState<StorageSummary | null>(null)
   const [portDraft, setPortDraft] = useState('31831')
   const [navPathDraft, setNavPathDraft] = useState('')
+  const [chartsPathDraft, setChartsPathDraft] = useState('')
   const [simbriefUsernameDraft, setSimbriefUsernameDraft] = useState('')
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null)
   const [isMobileAccess, setIsMobileAccess] = useState(false)
+  const [isSavingChartsPath, setIsSavingChartsPath] = useState(false)
+  const isChinese = (settings?.language ?? i18n.language).toLowerCase().startsWith('zh')
 
   useEffect(() => {
     const refreshRemoteAccessStatus = () => {
@@ -38,12 +43,17 @@ export function SettingsPanel() {
     const refreshNavDataStatus = () => {
       void appClient.getNavDataStatus().then(setNavDataStatus)
     }
+    const refreshStorageSummary = () => {
+      void appClient.getStorageSummary().then(setStorageSummary)
+    }
 
     refreshRemoteAccessStatus()
     refreshNavDataStatus()
+    refreshStorageSummary()
     const offSettings = appClient.onSettingsChanged(() => {
       refreshRemoteAccessStatus()
       refreshNavDataStatus()
+      refreshStorageSummary()
     })
     return () => {
       offSettings()
@@ -56,8 +66,9 @@ export function SettingsPanel() {
 
   useEffect(() => {
     setNavPathDraft(settings?.navData.sqlitePath ?? '')
+    setChartsPathDraft(settings?.storage.chartLibraryPath ?? storageSummary?.chartsRoot ?? '')
     setSimbriefUsernameDraft(settings?.simbrief.username ?? '')
-  }, [settings?.navData.sqlitePath, settings?.simbrief.username])
+  }, [settings?.navData.sqlitePath, settings?.storage.chartLibraryPath, settings?.simbrief.username, storageSummary?.chartsRoot])
 
   useEffect(() => {
     const accessUrl = remoteAccessStatus?.primaryAccessUrl
@@ -154,6 +165,26 @@ export function SettingsPanel() {
     const nextStatus = await appClient.getNavDataStatus()
     setNavDataStatus(nextStatus)
     toast.success(t('feedback.saved'))
+  }
+
+  const saveChartLibraryPath = async (chartLibraryPath: string | null) => {
+    setIsSavingChartsPath(true)
+
+    try {
+      const normalizedPath = chartLibraryPath?.trim() || null
+      const nextSettings = await appClient.updateSettings({
+        storage: {
+          chartLibraryPath: normalizedPath
+        }
+      })
+      setSettings(nextSettings)
+      const nextSummary = await appClient.getStorageSummary()
+      setStorageSummary(nextSummary)
+      setChartsPathDraft(nextSettings.storage.chartLibraryPath ?? nextSummary.chartsRoot)
+      toast.success(t('feedback.saved'))
+    } finally {
+      setIsSavingChartsPath(false)
+    }
   }
 
   const saveSimBriefSettings = async () => {
@@ -279,6 +310,79 @@ export function SettingsPanel() {
               </Button>
             </div>
           </div>
+        </div>
+      ) : null}
+
+      {!isMobileAccess ? (
+        <div className="settings-field">
+          <label>
+            {t('settings.chartLibraryTitle', {
+              defaultValue: isChinese ? '航图库路径' : 'Chart Library Path'
+            })}
+          </label>
+          <div className="settings-note settings-note-card">
+            <span>
+              {t('settings.chartLibraryDefaultPath', {
+                defaultValue: isChinese ? '默认路径：{{path}}' : 'Default path: {{path}}',
+                path: storageSummary?.defaultChartsRoot ?? '-'
+              })}
+            </span>
+            <span>
+              {t('settings.chartLibraryActivePath', {
+                defaultValue: isChinese ? '当前路径：{{path}}' : 'Current path: {{path}}',
+                path: storageSummary?.chartsRoot ?? '-'
+              })}
+            </span>
+            <span className="settings-note-inline">
+              {t('settings.chartLibraryHint', {
+                defaultValue: isChinese
+                  ? '保存新路径后，已有航图文件会自动迁移到新位置。'
+                  : 'Saving a new path will move existing chart files to the new location.'
+              })}
+            </span>
+            <div className="settings-inline-row">
+              <Input
+                value={chartsPathDraft}
+                onChange={(event) => setChartsPathDraft(event.target.value)}
+                placeholder={storageSummary?.defaultChartsRoot ?? ''}
+                disabled={!runtime.canWrite || isSavingChartsPath}
+              />
+              {runtime.host === 'electron' ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={isSavingChartsPath}
+                onClick={async () => {
+                  const picked = await appClient.pickChartsDirectory()
+                  if (!picked) return
+                  setChartsPathDraft(picked)
+                }}
+              >
+                {t('settings.chartLibraryBrowse', { defaultValue: isChinese ? '浏览' : 'Browse' })}
+              </Button>
+            ) : null}
+            <Button
+                type="button"
+                variant="secondary"
+                disabled={!runtime.canWrite || isSavingChartsPath}
+                onClick={() => {
+                void saveChartLibraryPath(chartsPathDraft)
+              }}
+            >
+              {t('settings.chartLibrarySave', { defaultValue: isChinese ? '保存路径' : 'Save Path' })}
+            </Button>
+            <Button
+                type="button"
+                variant="secondary"
+                disabled={!runtime.canWrite || isSavingChartsPath}
+                onClick={() => {
+                void saveChartLibraryPath(null)
+              }}
+            >
+              {t('settings.chartLibraryReset', { defaultValue: isChinese ? '恢复默认' : 'Use Default' })}
+            </Button>
+          </div>
+        </div>
         </div>
       ) : null}
 

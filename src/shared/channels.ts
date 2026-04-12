@@ -15,6 +15,7 @@ export const IPC_CHANNELS = {
   chartUpdate: 'chart:update',
   chartsList: 'charts:list',
   storageSummary: 'storage:summary',
+  storagePickChartsDirectory: 'storage:pick-charts-directory',
   connectionUpdate: 'connection:update',
   settingsGet: 'settings:get',
   settingsUpdate: 'settings:update',

@@ -1,4 +1,5 @@
 import Database from 'better-sqlite3'
+import { isAbsolute, join, relative, resolve, sep } from 'node:path'
 import type {
   ChartRecord,
   ChartUpdateInput,
@@ -12,6 +13,7 @@ type ChartRow = {
   airport_code: string | null
   chart_type: ChartRecord['chartType']
   title_mode: ChartRecord['titleMode']
+  bound_runway_names: string | null
   bound_approach_procedure_id: string | null
   bound_approach_procedure_ids: string | null
   source_file_path: string
@@ -41,6 +43,9 @@ export class ChartRepository {
     this.db = new Database(storage.databasePath)
     this.db.pragma('journal_mode = WAL')
     this.init()
+    if (normalizePath(resolve(storage.legacyChartsRoot)) !== normalizePath(resolve(storage.chartsRoot))) {
+      this.relocateChartAssetPaths(storage.legacyChartsRoot, storage.chartsRoot)
+    }
   }
 
   listCharts(): ChartRecord[] {
@@ -61,9 +66,9 @@ export class ChartRepository {
       .prepare(
         `
         INSERT INTO charts (
-          id, title, airport_code, chart_type, title_mode, bound_approach_procedure_id, bound_approach_procedure_ids, source_file_path, preview_image_path,
+          id, title, airport_code, chart_type, title_mode, bound_runway_names, bound_approach_procedure_id, bound_approach_procedure_ids, source_file_path, preview_image_path,
           file_format, width, height, is_georeferenced, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `
       )
       .run(
@@ -72,6 +77,7 @@ export class ChartRepository {
         chart.airportCode,
         chart.chartType,
         chart.titleMode,
+        JSON.stringify(chart.boundRunwayNames),
         chart.boundApproachProcedureIds[0] ?? null,
         JSON.stringify(chart.boundApproachProcedureIds),
         chart.sourceFilePath,
@@ -93,7 +99,7 @@ export class ChartRepository {
       .prepare(
         `
         UPDATE charts
-        SET title = ?, airport_code = ?, chart_type = ?, title_mode = ?, bound_approach_procedure_id = ?, bound_approach_procedure_ids = ?, updated_at = ?
+        SET title = ?, airport_code = ?, chart_type = ?, title_mode = ?, bound_runway_names = ?, bound_approach_procedure_id = ?, bound_approach_procedure_ids = ?, updated_at = ?
         WHERE id = ?
       `
       )
@@ -102,6 +108,7 @@ export class ChartRepository {
         input.airportCode,
         input.chartType,
         input.titleMode,
+        JSON.stringify(input.boundRunwayNames),
         input.boundApproachProcedureIds[0] ?? null,
         JSON.stringify(input.boundApproachProcedureIds),
         now,
@@ -183,6 +190,35 @@ export class ChartRepository {
     return this.listReferencePoints(chartId)
   }
 
+  relocateChartAssetPaths(previousChartsRoot: string, nextChartsRoot: string): void {
+    const rows = this.db
+      .prepare('SELECT id, source_file_path, preview_image_path FROM charts')
+      .all() as Array<{ id: string; source_file_path: string; preview_image_path: string | null }>
+
+    const updateChartPaths = this.db.prepare(
+      `
+        UPDATE charts
+        SET source_file_path = ?, preview_image_path = ?, updated_at = ?
+        WHERE id = ?
+      `
+    )
+
+    const trx = this.db.transaction(() => {
+      rows.forEach((row) => {
+        const nextSourcePath = relocatePath(row.source_file_path, previousChartsRoot, nextChartsRoot)
+        const nextPreviewPath = relocatePath(row.preview_image_path, previousChartsRoot, nextChartsRoot)
+
+        if (nextSourcePath === row.source_file_path && nextPreviewPath === row.preview_image_path) {
+          return
+        }
+
+        updateChartPaths.run(nextSourcePath, nextPreviewPath, Date.now(), row.id)
+      })
+    })
+
+    trx()
+  }
+
   private init(): void {
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS charts (
@@ -191,6 +227,7 @@ export class ChartRepository {
         airport_code TEXT,
         chart_type TEXT NOT NULL,
         title_mode TEXT NOT NULL DEFAULT 'manual',
+        bound_runway_names TEXT,
         bound_approach_procedure_id TEXT,
         bound_approach_procedure_ids TEXT,
         source_file_path TEXT NOT NULL,
@@ -231,6 +268,11 @@ export class ChartRepository {
       this.db.prepare(`ALTER TABLE charts ADD COLUMN bound_approach_procedure_id TEXT`).run()
     }
 
+    if (!columns.has('bound_runway_names')) {
+      this.db.prepare(`ALTER TABLE charts ADD COLUMN bound_runway_names TEXT`).run()
+      this.db.prepare(`UPDATE charts SET bound_runway_names = '[]' WHERE bound_runway_names IS NULL`).run()
+    }
+
     if (!columns.has('bound_approach_procedure_ids')) {
       this.db.prepare(`ALTER TABLE charts ADD COLUMN bound_approach_procedure_ids TEXT`).run()
       this.db.prepare(`
@@ -251,6 +293,7 @@ export class ChartRepository {
       airportCode: row.airport_code,
       chartType: row.chart_type,
       titleMode: row.title_mode ?? 'manual',
+      boundRunwayNames: parseStringArray(row.bound_runway_names),
       boundApproachProcedureIds: parseProcedureIds(
         row.bound_approach_procedure_ids,
         row.bound_approach_procedure_id
@@ -267,6 +310,18 @@ export class ChartRepository {
   }
 }
 
+function relocatePath(
+  filePath: string | null,
+  previousChartsRoot: string,
+  nextChartsRoot: string
+): string | null {
+  if (!filePath || !isAbsolute(filePath) || !isPathInsideRoot(filePath, previousChartsRoot)) {
+    return filePath
+  }
+
+  return join(resolve(nextChartsRoot), relative(resolve(previousChartsRoot), resolve(filePath)))
+}
+
 function parseProcedureIds(value: string | null, legacyValue: string | null): string[] {
   if (value) {
     try {
@@ -280,4 +335,31 @@ function parseProcedureIds(value: string | null, legacyValue: string | null): st
   }
 
   return legacyValue ? [legacyValue] : []
+}
+
+function parseStringArray(value: string | null): string[] {
+  if (!value) {
+    return []
+  }
+
+  try {
+    const parsed = JSON.parse(value) as unknown
+    if (Array.isArray(parsed)) {
+      return parsed.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+    }
+  } catch {
+    return []
+  }
+
+  return []
+}
+
+function isPathInsideRoot(targetPath: string, rootPath: string): boolean {
+  const normalizedTarget = normalizePath(resolve(targetPath))
+  const normalizedRoot = `${normalizePath(resolve(rootPath))}${sep}`
+  return normalizedTarget === normalizePath(resolve(rootPath)) || normalizedTarget.startsWith(normalizedRoot)
+}
+
+function normalizePath(value: string): string {
+  return process.platform === 'win32' ? value.toLowerCase() : value
 }

@@ -187,6 +187,10 @@ export class WebLanAppClient implements AppClient {
     }
   }
 
+  async pickChartsDirectory(): Promise<string | null> {
+    return null
+  }
+
   async importChartFromUrl(input: ChartImportFromUrlInput): Promise<PickedChartFile> {
     return this.fetchJson('/api/charts/import-from-url', {
       method: 'POST',

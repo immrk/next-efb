@@ -91,6 +91,15 @@ export function registerIpc(options: RegisterIpcOptions): void {
     }
     return result.filePaths[0]
   })
+  ipcMain.handle(IPC_CHANNELS.storagePickChartsDirectory, async (): Promise<string | null> => {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openDirectory', 'createDirectory']
+    })
+    if (result.canceled || result.filePaths.length === 0) {
+      return null
+    }
+    return result.filePaths[0]
+  })
   ipcMain.handle(IPC_CHANNELS.navAirportsSearch, (_event, query: string): NavAirportOption[] =>
     navDataService.searchAirports(settingsStore.get(), query)
   )
@@ -228,6 +237,7 @@ export function registerIpc(options: RegisterIpcOptions): void {
         airportCode: null,
         chartType: 'general',
         titleMode: 'manual',
+        boundRunwayNames: [],
         boundApproachProcedureIds: [],
         sourceFilePath: imported.destinationPath,
         previewImagePath: displayPath,
@@ -258,12 +268,39 @@ export function registerIpc(options: RegisterIpcOptions): void {
   })
 
   ipcMain.handle(IPC_CHANNELS.settingsUpdate, async (_event, partial: Partial<AppSettings>) => {
-    const nextSettings = settingsStore.update(partial)
+    const nextSettings = applySettingsUpdate({
+      partial,
+      settingsStore,
+      storageService,
+      chartRepository
+    })
     simConnectService.reconfigure(nextSettings)
     await lanServer.reconfigure(nextSettings)
     lanServer.broadcastSettingsChanged()
     return nextSettings
   })
+}
+
+function applySettingsUpdate(options: {
+  partial: Partial<AppSettings>
+  settingsStore: SettingsStore
+  storageService: StorageService
+  chartRepository: ChartRepository
+}): AppSettings {
+  const { partial, settingsStore, storageService, chartRepository } = options
+  const currentSettings = settingsStore.get()
+  const nextCandidate = mergeSettings(currentSettings, partial)
+  const storageSummary = storageService.getSummary()
+  const previousChartsRoot = storageSummary.chartsRoot
+  const nextChartsRoot = storageService.resolveChartsRoot(nextCandidate)
+
+  if (normalizePath(previousChartsRoot) !== normalizePath(nextChartsRoot)) {
+    const relocated = storageService.relocateChartsRoot(nextChartsRoot)
+    chartRepository.relocateChartAssetPaths(relocated.previousChartsRoot, relocated.nextChartsRoot)
+  }
+
+  const normalizedPartial = normalizeSettingsPartial(partial, nextChartsRoot, storageSummary.defaultChartsRoot)
+  return settingsStore.update(normalizedPartial)
 }
 
 function getWindowState(window: BrowserWindow): DesktopWindowState {
@@ -348,5 +385,50 @@ function _legacyGetMimeType(chart: ChartRecord): string {
     case 'png':
     default:
       return 'image/png'
+  }
+}
+
+function mergeSettings(current: AppSettings, partial: Partial<AppSettings>): AppSettings {
+  return {
+    ...current,
+    ...partial,
+    storage: {
+      ...current.storage,
+      ...partial.storage
+    },
+    navData: {
+      ...current.navData,
+      ...partial.navData
+    },
+    simbrief: {
+      ...current.simbrief,
+      ...partial.simbrief
+    },
+    lanAccess: {
+      ...current.lanAccess,
+      ...partial.lanAccess
+    }
+  }
+}
+
+function normalizePath(value: string): string {
+  return process.platform === 'win32' ? value.toLowerCase() : value
+}
+
+function normalizeSettingsPartial(
+  partial: Partial<AppSettings>,
+  chartsRoot: string,
+  defaultChartsRoot: string
+): Partial<AppSettings> {
+  if (!partial.storage) {
+    return partial
+  }
+
+  return {
+    ...partial,
+    storage: {
+      ...partial.storage,
+      chartLibraryPath: normalizePath(chartsRoot) === normalizePath(defaultChartsRoot) ? null : chartsRoot
+    }
   }
 }

@@ -25,6 +25,7 @@ const IPC_CHANNELS = {
   chartUpdate: "chart:update",
   chartsList: "charts:list",
   storageSummary: "storage:summary",
+  storagePickChartsDirectory: "storage:pick-charts-directory",
   connectionUpdate: "connection:update",
   settingsGet: "settings:get",
   settingsUpdate: "settings:update",
@@ -214,6 +215,15 @@ function registerIpc(options) {
     }
     return result.filePaths[0];
   });
+  electron.ipcMain.handle(IPC_CHANNELS.storagePickChartsDirectory, async () => {
+    const result = await electron.dialog.showOpenDialog(mainWindow2, {
+      properties: ["openDirectory", "createDirectory"]
+    });
+    if (result.canceled || result.filePaths.length === 0) {
+      return null;
+    }
+    return result.filePaths[0];
+  });
   electron.ipcMain.handle(
     IPC_CHANNELS.navAirportsSearch,
     (_event, query) => navDataService.searchAirports(settingsStore.get(), query)
@@ -333,6 +343,7 @@ function registerIpc(options) {
         airportCode: null,
         chartType: "general",
         titleMode: "manual",
+        boundRunwayNames: [],
         boundApproachProcedureIds: [],
         sourceFilePath: imported.destinationPath,
         previewImagePath: displayPath,
@@ -359,12 +370,31 @@ function registerIpc(options) {
     return true;
   });
   electron.ipcMain.handle(IPC_CHANNELS.settingsUpdate, async (_event, partial) => {
-    const nextSettings = settingsStore.update(partial);
+    const nextSettings = applySettingsUpdate({
+      partial,
+      settingsStore,
+      storageService,
+      chartRepository
+    });
     simConnectService.reconfigure(nextSettings);
     await lanServer.reconfigure(nextSettings);
     lanServer.broadcastSettingsChanged();
     return nextSettings;
   });
+}
+function applySettingsUpdate(options) {
+  const { partial, settingsStore, storageService, chartRepository } = options;
+  const currentSettings = settingsStore.get();
+  const nextCandidate = mergeSettings$1(currentSettings, partial);
+  const storageSummary = storageService.getSummary();
+  const previousChartsRoot = storageSummary.chartsRoot;
+  const nextChartsRoot = storageService.resolveChartsRoot(nextCandidate);
+  if (normalizePath$3(previousChartsRoot) !== normalizePath$3(nextChartsRoot)) {
+    const relocated = storageService.relocateChartsRoot(nextChartsRoot);
+    chartRepository.relocateChartAssetPaths(relocated.previousChartsRoot, relocated.nextChartsRoot);
+  }
+  const normalizedPartial = normalizeSettingsPartial$1(partial, nextChartsRoot, storageSummary.defaultChartsRoot);
+  return settingsStore.update(normalizedPartial);
 }
 function getWindowState(window) {
   return {
@@ -427,6 +457,43 @@ function getMimeTypeByFormat$1(fileFormat) {
       return "image/png";
   }
 }
+function mergeSettings$1(current, partial) {
+  return {
+    ...current,
+    ...partial,
+    storage: {
+      ...current.storage,
+      ...partial.storage
+    },
+    navData: {
+      ...current.navData,
+      ...partial.navData
+    },
+    simbrief: {
+      ...current.simbrief,
+      ...partial.simbrief
+    },
+    lanAccess: {
+      ...current.lanAccess,
+      ...partial.lanAccess
+    }
+  };
+}
+function normalizePath$3(value) {
+  return process.platform === "win32" ? value.toLowerCase() : value;
+}
+function normalizeSettingsPartial$1(partial, chartsRoot, defaultChartsRoot) {
+  if (!partial.storage) {
+    return partial;
+  }
+  return {
+    ...partial,
+    storage: {
+      ...partial.storage,
+      chartLibraryPath: normalizePath$3(chartsRoot) === normalizePath$3(defaultChartsRoot) ? null : chartsRoot
+    }
+  };
+}
 class FlightStateStore {
   constructor() {
     this.aircraftState = {
@@ -467,10 +534,96 @@ function resolveInstallRoot() {
   }
   return electron.app.isPackaged ? node_path.dirname(process.execPath) : process.cwd();
 }
-function ensureDataRootDir() {
-  const dataRoot = node_path.join(resolveInstallRoot(), "data");
-  node_fs.mkdirSync(dataRoot, { recursive: true });
-  return dataRoot;
+function getLegacyDataRoot() {
+  return node_path.join(resolveInstallRoot(), "data");
+}
+function resolveSettingsRoot(isPortable) {
+  if (isPortable) {
+    return getLegacyDataRoot();
+  }
+  return node_path.join(electron.app.getPath("home"), APP_NAME);
+}
+function getDefaultChartsRoot() {
+  return node_path.join(electron.app.getPath("home"), APP_NAME, "charts");
+}
+function resolveChartsRootPath(chartLibraryPath) {
+  const normalizedPath = chartLibraryPath?.trim();
+  return normalizedPath ? node_path.resolve(normalizedPath) : getDefaultChartsRoot();
+}
+function ensureAppStoragePaths() {
+  const isPortable = Boolean(process.env.PORTABLE_EXECUTABLE_DIR?.trim());
+  const settingsRoot = resolveSettingsRoot(isPortable);
+  const legacyDataRoot = getLegacyDataRoot();
+  const defaultChartsRoot = isPortable ? node_path.join(getLegacyDataRoot(), "charts") : getDefaultChartsRoot();
+  node_fs.mkdirSync(settingsRoot, { recursive: true });
+  if (!isPortable) {
+    migrateLegacySettingsAndDatabase(settingsRoot, legacyDataRoot);
+  }
+  const configuredChartsRoot = isPortable ? null : readConfiguredChartsRoot(settingsRoot);
+  const chartsRoot = isPortable ? node_path.join(getLegacyDataRoot(), "charts") : resolveChartsRootPath(configuredChartsRoot);
+  const paths = {
+    settingsRoot,
+    databasePath: node_path.join(settingsRoot, "app.db"),
+    chartsRoot,
+    defaultChartsRoot,
+    legacyDataRoot,
+    isPortable
+  };
+  node_fs.mkdirSync(chartsRoot, { recursive: true });
+  if (!isPortable) {
+    migrateLegacyCharts(paths);
+  }
+  return paths;
+}
+function migrateLegacySettingsAndDatabase(settingsRoot, legacyDataRoot) {
+  if (!node_fs.existsSync(legacyDataRoot)) {
+    return;
+  }
+  const legacySettingsPath = node_path.join(legacyDataRoot, "settings.json");
+  const legacyDatabasePath = node_path.join(legacyDataRoot, "app.db");
+  const legacyDatabaseWalPath = node_path.join(legacyDataRoot, "app.db-wal");
+  const legacyDatabaseShmPath = node_path.join(legacyDataRoot, "app.db-shm");
+  const nextSettingsPath = node_path.join(settingsRoot, "settings.json");
+  const nextDatabasePath = node_path.join(settingsRoot, "app.db");
+  const nextDatabaseWalPath = `${nextDatabasePath}-wal`;
+  const nextDatabaseShmPath = `${nextDatabasePath}-shm`;
+  if (node_fs.existsSync(legacySettingsPath) && !node_fs.existsSync(nextSettingsPath)) {
+    node_fs.copyFileSync(legacySettingsPath, nextSettingsPath);
+  }
+  if (node_fs.existsSync(legacyDatabasePath) && !node_fs.existsSync(nextDatabasePath)) {
+    node_fs.copyFileSync(legacyDatabasePath, nextDatabasePath);
+  }
+  if (node_fs.existsSync(legacyDatabaseWalPath) && !node_fs.existsSync(nextDatabaseWalPath)) {
+    node_fs.copyFileSync(legacyDatabaseWalPath, nextDatabaseWalPath);
+  }
+  if (node_fs.existsSync(legacyDatabaseShmPath) && !node_fs.existsSync(nextDatabaseShmPath)) {
+    node_fs.copyFileSync(legacyDatabaseShmPath, nextDatabaseShmPath);
+  }
+}
+function migrateLegacyCharts(paths) {
+  const legacyChartsRoot = node_path.join(paths.legacyDataRoot, "charts");
+  if (!node_fs.existsSync(legacyChartsRoot) || node_fs.existsSync(node_path.join(paths.chartsRoot, ".migrated"))) {
+    return;
+  }
+  node_fs.cpSync(legacyChartsRoot, paths.chartsRoot, {
+    recursive: true,
+    force: false,
+    errorOnExist: false
+  });
+  node_fs.writeFileSync(node_path.join(paths.chartsRoot, ".migrated"), (/* @__PURE__ */ new Date()).toISOString(), "utf-8");
+}
+function readConfiguredChartsRoot(settingsRoot) {
+  const settingsPath = node_path.join(settingsRoot, "settings.json");
+  if (!node_fs.existsSync(settingsPath)) {
+    return null;
+  }
+  try {
+    const raw = node_fs.readFileSync(settingsPath, "utf-8");
+    const parsed = JSON.parse(raw);
+    return parsed.storage?.chartLibraryPath?.trim() || null;
+  } catch {
+    return null;
+  }
 }
 const DEFAULT_SETTINGS_BASE = {
   language: "en-US",
@@ -479,6 +632,9 @@ const DEFAULT_SETTINGS_BASE = {
   providerMode: "simconnect",
   mapTileProvider: "osm",
   chartOpacity: 100,
+  storage: {
+    chartLibraryPath: null
+  },
   navData: {
     sqlitePath: null,
     autoDetect: true
@@ -497,7 +653,7 @@ const DEFAULT_SETTINGS_BASE = {
 };
 class SettingsStore {
   constructor(defaultLanguage) {
-    const baseDir = ensureDataRootDir();
+    const { settingsRoot: baseDir } = ensureAppStoragePaths();
     node_fs.mkdirSync(baseDir, { recursive: true });
     this.filePath = node_path.join(baseDir, "settings.json");
     this.defaultLanguage = defaultLanguage;
@@ -511,6 +667,10 @@ class SettingsStore {
     this.settings = {
       ...this.settings,
       ...partial,
+      storage: {
+        ...this.settings.storage,
+        ...partial.storage
+      },
       navData: {
         ...this.settings.navData,
         ...partial.navData
@@ -539,6 +699,10 @@ class SettingsStore {
       return {
         ...this.withDefaultLanguage(DEFAULT_SETTINGS_BASE),
         ...parsed,
+        storage: {
+          ...DEFAULT_SETTINGS_BASE.storage,
+          ...parsed.storage
+        },
         navData: {
           ...DEFAULT_SETTINGS_BASE.navData,
           ...parsed.navData
@@ -895,6 +1059,9 @@ class ChartRepository {
     this.db = new Database(storage.databasePath);
     this.db.pragma("journal_mode = WAL");
     this.init();
+    if (normalizePath$2(node_path.resolve(storage.legacyChartsRoot)) !== normalizePath$2(node_path.resolve(storage.chartsRoot))) {
+      this.relocateChartAssetPaths(storage.legacyChartsRoot, storage.chartsRoot);
+    }
   }
   listCharts() {
     const rows = this.db.prepare("SELECT * FROM charts ORDER BY updated_at DESC").all();
@@ -908,9 +1075,9 @@ class ChartRepository {
     this.db.prepare(
       `
         INSERT INTO charts (
-          id, title, airport_code, chart_type, title_mode, bound_approach_procedure_id, bound_approach_procedure_ids, source_file_path, preview_image_path,
+          id, title, airport_code, chart_type, title_mode, bound_runway_names, bound_approach_procedure_id, bound_approach_procedure_ids, source_file_path, preview_image_path,
           file_format, width, height, is_georeferenced, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `
     ).run(
       chart.id,
@@ -918,6 +1085,7 @@ class ChartRepository {
       chart.airportCode,
       chart.chartType,
       chart.titleMode,
+      JSON.stringify(chart.boundRunwayNames),
       chart.boundApproachProcedureIds[0] ?? null,
       JSON.stringify(chart.boundApproachProcedureIds),
       chart.sourceFilePath,
@@ -936,7 +1104,7 @@ class ChartRepository {
     this.db.prepare(
       `
         UPDATE charts
-        SET title = ?, airport_code = ?, chart_type = ?, title_mode = ?, bound_approach_procedure_id = ?, bound_approach_procedure_ids = ?, updated_at = ?
+        SET title = ?, airport_code = ?, chart_type = ?, title_mode = ?, bound_runway_names = ?, bound_approach_procedure_id = ?, bound_approach_procedure_ids = ?, updated_at = ?
         WHERE id = ?
       `
     ).run(
@@ -944,6 +1112,7 @@ class ChartRepository {
       input.airportCode,
       input.chartType,
       input.titleMode,
+      JSON.stringify(input.boundRunwayNames),
       input.boundApproachProcedureIds[0] ?? null,
       JSON.stringify(input.boundApproachProcedureIds),
       now,
@@ -1010,6 +1179,27 @@ class ChartRepository {
     trx();
     return this.listReferencePoints(chartId);
   }
+  relocateChartAssetPaths(previousChartsRoot, nextChartsRoot) {
+    const rows = this.db.prepare("SELECT id, source_file_path, preview_image_path FROM charts").all();
+    const updateChartPaths = this.db.prepare(
+      `
+        UPDATE charts
+        SET source_file_path = ?, preview_image_path = ?, updated_at = ?
+        WHERE id = ?
+      `
+    );
+    const trx = this.db.transaction(() => {
+      rows.forEach((row) => {
+        const nextSourcePath = relocatePath(row.source_file_path, previousChartsRoot, nextChartsRoot);
+        const nextPreviewPath = relocatePath(row.preview_image_path, previousChartsRoot, nextChartsRoot);
+        if (nextSourcePath === row.source_file_path && nextPreviewPath === row.preview_image_path) {
+          return;
+        }
+        updateChartPaths.run(nextSourcePath, nextPreviewPath, Date.now(), row.id);
+      });
+    });
+    trx();
+  }
   init() {
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS charts (
@@ -1018,6 +1208,7 @@ class ChartRepository {
         airport_code TEXT,
         chart_type TEXT NOT NULL,
         title_mode TEXT NOT NULL DEFAULT 'manual',
+        bound_runway_names TEXT,
         bound_approach_procedure_id TEXT,
         bound_approach_procedure_ids TEXT,
         source_file_path TEXT NOT NULL,
@@ -1053,6 +1244,10 @@ class ChartRepository {
     if (!columns.has("bound_approach_procedure_id")) {
       this.db.prepare(`ALTER TABLE charts ADD COLUMN bound_approach_procedure_id TEXT`).run();
     }
+    if (!columns.has("bound_runway_names")) {
+      this.db.prepare(`ALTER TABLE charts ADD COLUMN bound_runway_names TEXT`).run();
+      this.db.prepare(`UPDATE charts SET bound_runway_names = '[]' WHERE bound_runway_names IS NULL`).run();
+    }
     if (!columns.has("bound_approach_procedure_ids")) {
       this.db.prepare(`ALTER TABLE charts ADD COLUMN bound_approach_procedure_ids TEXT`).run();
       this.db.prepare(`
@@ -1072,6 +1267,7 @@ class ChartRepository {
       airportCode: row.airport_code,
       chartType: row.chart_type,
       titleMode: row.title_mode ?? "manual",
+      boundRunwayNames: parseStringArray(row.bound_runway_names),
       boundApproachProcedureIds: parseProcedureIds(
         row.bound_approach_procedure_ids,
         row.bound_approach_procedure_id
@@ -1087,6 +1283,12 @@ class ChartRepository {
     };
   }
 }
+function relocatePath(filePath, previousChartsRoot, nextChartsRoot) {
+  if (!filePath || !node_path.isAbsolute(filePath) || !isPathInsideRoot(filePath, previousChartsRoot)) {
+    return filePath;
+  }
+  return node_path.join(node_path.resolve(nextChartsRoot), node_path.relative(node_path.resolve(previousChartsRoot), node_path.resolve(filePath)));
+}
 function parseProcedureIds(value, legacyValue) {
   if (value) {
     try {
@@ -1100,19 +1302,73 @@ function parseProcedureIds(value, legacyValue) {
   }
   return legacyValue ? [legacyValue] : [];
 }
+function parseStringArray(value) {
+  if (!value) {
+    return [];
+  }
+  try {
+    const parsed = JSON.parse(value);
+    if (Array.isArray(parsed)) {
+      return parsed.filter((item) => typeof item === "string" && item.trim().length > 0);
+    }
+  } catch {
+    return [];
+  }
+  return [];
+}
+function isPathInsideRoot(targetPath, rootPath) {
+  const normalizedTarget = normalizePath$2(node_path.resolve(targetPath));
+  const normalizedRoot = `${normalizePath$2(node_path.resolve(rootPath))}${node_path.sep}`;
+  return normalizedTarget === normalizePath$2(node_path.resolve(rootPath)) || normalizedTarget.startsWith(normalizedRoot);
+}
+function normalizePath$2(value) {
+  return process.platform === "win32" ? value.toLowerCase() : value;
+}
 class StorageService {
   constructor() {
-    const root = ensureDataRootDir();
-    const chartsRoot = node_path.join(root, "charts");
-    node_fs.mkdirSync(root, { recursive: true });
+    const { settingsRoot, databasePath, chartsRoot, defaultChartsRoot, legacyDataRoot } = ensureAppStoragePaths();
+    node_fs.mkdirSync(settingsRoot, { recursive: true });
     node_fs.mkdirSync(chartsRoot, { recursive: true });
     this.storageSummary = {
-      databasePath: node_path.join(root, "app.db"),
-      chartsRoot
+      databasePath,
+      chartsRoot,
+      defaultChartsRoot,
+      legacyChartsRoot: node_path.join(legacyDataRoot, "charts")
     };
   }
   getSummary() {
     return this.storageSummary;
+  }
+  resolveChartsRoot(settings) {
+    return resolveChartsRootPath(settings.storage.chartLibraryPath);
+  }
+  relocateChartsRoot(nextChartsRoot) {
+    const previousChartsRoot = node_path.resolve(this.storageSummary.chartsRoot);
+    const normalizedNextChartsRoot = node_path.resolve(nextChartsRoot);
+    if (samePath(previousChartsRoot, normalizedNextChartsRoot)) {
+      return {
+        previousChartsRoot,
+        nextChartsRoot: normalizedNextChartsRoot
+      };
+    }
+    if (isNestedPath(previousChartsRoot, normalizedNextChartsRoot) || isNestedPath(normalizedNextChartsRoot, previousChartsRoot)) {
+      throw new Error("CHART_LIBRARY_PATH_CONFLICT");
+    }
+    node_fs.mkdirSync(normalizedNextChartsRoot, { recursive: true });
+    node_fs.cpSync(previousChartsRoot, normalizedNextChartsRoot, {
+      recursive: true,
+      force: false,
+      errorOnExist: false
+    });
+    node_fs.rmSync(previousChartsRoot, { recursive: true, force: true });
+    this.storageSummary = {
+      ...this.storageSummary,
+      chartsRoot: normalizedNextChartsRoot
+    };
+    return {
+      previousChartsRoot,
+      nextChartsRoot: normalizedNextChartsRoot
+    };
   }
   importChartFile(sourcePath, chartId) {
     const chartDir = node_path.join(this.storageSummary.chartsRoot, chartId);
@@ -1153,6 +1409,17 @@ class StorageService {
     const chartDir = node_path.join(this.storageSummary.chartsRoot, chartId);
     node_fs.rmSync(chartDir, { recursive: true, force: true });
   }
+}
+function samePath(left, right) {
+  return normalizePath$1(left) === normalizePath$1(right);
+}
+function isNestedPath(parent, child) {
+  const normalizedParent = `${normalizePath$1(parent)}${node_path.sep}`;
+  const normalizedChild = `${normalizePath$1(child)}${node_path.sep}`;
+  return normalizedChild.startsWith(normalizedParent);
+}
+function normalizePath$1(value) {
+  return process.platform === "win32" ? value.toLowerCase() : value;
 }
 class LanServer {
   constructor(options) {
@@ -1283,7 +1550,7 @@ class LanServer {
             return;
           }
           const partial = await this.readJsonBody(request);
-          const nextSettings = this.settingsStore.update(partial);
+          const nextSettings = this.applySettingsUpdate(partial);
           this.settings = nextSettings;
           this.simConnectService.reconfigure(nextSettings);
           await this.reconfigure(nextSettings);
@@ -1497,6 +1764,7 @@ class LanServer {
       airportCode: null,
       chartType: "general",
       titleMode: "manual",
+      boundRunwayNames: [],
       boundApproachProcedureIds: [],
       sourceFilePath: imported.destinationPath,
       previewImagePath: displayPath,
@@ -1525,6 +1793,19 @@ class LanServer {
     this.chartRepository.deleteChart(chartId);
     this.storageService.deleteChartFiles(chartId);
     this.broadcastChartChanged();
+  }
+  applySettingsUpdate(partial) {
+    const currentSettings = this.settingsStore.get();
+    const nextCandidate = mergeSettings(currentSettings, partial);
+    const storageSummary = this.storageService.getSummary();
+    const previousChartsRoot = storageSummary.chartsRoot;
+    const nextChartsRoot = this.storageService.resolveChartsRoot(nextCandidate);
+    if (normalizePath(previousChartsRoot) !== normalizePath(nextChartsRoot)) {
+      const relocated = this.storageService.relocateChartsRoot(nextChartsRoot);
+      this.chartRepository.relocateChartAssetPaths(relocated.previousChartsRoot, relocated.nextChartsRoot);
+    }
+    const normalizedPartial = normalizeSettingsPartial(partial, nextChartsRoot, storageSummary.defaultChartsRoot);
+    return this.settingsStore.update(normalizedPartial);
   }
   isAuthorized(request) {
     if (!this.settings.lanAccess.authEnabled) {
@@ -1591,6 +1872,43 @@ function getMimeTypeByFormat(fileFormat) {
     default:
       return "image/png";
   }
+}
+function mergeSettings(current, partial) {
+  return {
+    ...current,
+    ...partial,
+    storage: {
+      ...current.storage,
+      ...partial.storage
+    },
+    navData: {
+      ...current.navData,
+      ...partial.navData
+    },
+    simbrief: {
+      ...current.simbrief,
+      ...partial.simbrief
+    },
+    lanAccess: {
+      ...current.lanAccess,
+      ...partial.lanAccess
+    }
+  };
+}
+function normalizePath(value) {
+  return process.platform === "win32" ? value.toLowerCase() : value;
+}
+function normalizeSettingsPartial(partial, chartsRoot, defaultChartsRoot) {
+  if (!partial.storage) {
+    return partial;
+  }
+  return {
+    ...partial,
+    storage: {
+      ...partial.storage,
+      chartLibraryPath: normalizePath(chartsRoot) === normalizePath(defaultChartsRoot) ? null : chartsRoot
+    }
+  };
 }
 function getContentType(filePath) {
   switch (node_path.extname(filePath).toLowerCase()) {

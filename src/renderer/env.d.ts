@@ -51,6 +51,7 @@ declare global {
       getChartAsset: (chartId: string) => Promise<ChartAssetPayload | null>
       getChartReferencePoints: (chartId: string) => Promise<GeoReferencePoint[]>
       pickChartFile: () => Promise<PickedChartFile | null>
+      pickChartsDirectory: () => Promise<string | null>
       importChartFromUrl: (input: ChartImportFromUrlInput) => Promise<PickedChartFile>
       listCharts: () => Promise<ChartRecord[]>
       getStorageSummary: () => Promise<StorageSummary>

@@ -234,7 +234,7 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
     setAirportCode(sourceChart.airportCode ?? '')
     setChartType(sourceChart.chartType)
     setTitleMode(sourceChart.titleMode)
-    setSelectedRunwayNames([])
+    setSelectedRunwayNames(sourceChart.boundRunwayNames)
     setIsRunwayPickerOpen(false)
     setRunwaySearch('')
     setSelectedProcedureIds(sourceChart.boundApproachProcedureIds)
@@ -521,6 +521,7 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
           airportCode: airportCode || null,
           chartType: nextChartType,
           titleMode: nextTitleMode,
+          boundRunwayNames: nextTitleMode === 'approach-procedure' ? selectedRunwayNames : [],
           boundApproachProcedureIds: nextBoundProcedureIds
         })
       if (updated) {

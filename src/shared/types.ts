@@ -45,6 +45,9 @@ export interface AppSettings {
   providerMode: AircraftSource
   mapTileProvider: MapTileProvider
   chartOpacity: number
+  storage: {
+    chartLibraryPath: string | null
+  }
   navData: {
     sqlitePath: string | null
     autoDetect: boolean
