@@ -19,6 +19,23 @@ export interface NavMapQueryInput {
   layers: NavMapLayerVisibility
 }
 
+export type NavMapSearchType = 'airports' | 'waypoints' | 'vors' | 'ndbs'
+
+export interface NavMapSearchInput {
+  query: string
+  types: NavMapSearchType[]
+  limit?: number
+}
+
+export interface NavMapSearchResult {
+  id: string
+  type: NavMapSearchType
+  ident: string
+  name: string | null
+  lat: number
+  lon: number
+}
+
 export interface NavMapAirportFeature {
   id: number
   ident: string

@@ -13,6 +13,7 @@ type ChartRow = {
   chart_type: ChartRecord['chartType']
   title_mode: ChartRecord['titleMode']
   bound_approach_procedure_id: string | null
+  bound_approach_procedure_ids: string | null
   source_file_path: string
   preview_image_path: string | null
   file_format: ChartRecord['fileFormat']
@@ -60,9 +61,9 @@ export class ChartRepository {
       .prepare(
         `
         INSERT INTO charts (
-          id, title, airport_code, chart_type, title_mode, bound_approach_procedure_id, source_file_path, preview_image_path,
+          id, title, airport_code, chart_type, title_mode, bound_approach_procedure_id, bound_approach_procedure_ids, source_file_path, preview_image_path,
           file_format, width, height, is_georeferenced, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `
       )
       .run(
@@ -71,7 +72,8 @@ export class ChartRepository {
         chart.airportCode,
         chart.chartType,
         chart.titleMode,
-        chart.boundApproachProcedureId,
+        chart.boundApproachProcedureIds[0] ?? null,
+        JSON.stringify(chart.boundApproachProcedureIds),
         chart.sourceFilePath,
         chart.previewImagePath,
         chart.fileFormat,
@@ -91,7 +93,7 @@ export class ChartRepository {
       .prepare(
         `
         UPDATE charts
-        SET title = ?, airport_code = ?, chart_type = ?, title_mode = ?, bound_approach_procedure_id = ?, updated_at = ?
+        SET title = ?, airport_code = ?, chart_type = ?, title_mode = ?, bound_approach_procedure_id = ?, bound_approach_procedure_ids = ?, updated_at = ?
         WHERE id = ?
       `
       )
@@ -100,7 +102,8 @@ export class ChartRepository {
         input.airportCode,
         input.chartType,
         input.titleMode,
-        input.boundApproachProcedureId,
+        input.boundApproachProcedureIds[0] ?? null,
+        JSON.stringify(input.boundApproachProcedureIds),
         now,
         input.id
       )
@@ -189,6 +192,7 @@ export class ChartRepository {
         chart_type TEXT NOT NULL,
         title_mode TEXT NOT NULL DEFAULT 'manual',
         bound_approach_procedure_id TEXT,
+        bound_approach_procedure_ids TEXT,
         source_file_path TEXT NOT NULL,
         preview_image_path TEXT,
         file_format TEXT NOT NULL,
@@ -226,6 +230,18 @@ export class ChartRepository {
     if (!columns.has('bound_approach_procedure_id')) {
       this.db.prepare(`ALTER TABLE charts ADD COLUMN bound_approach_procedure_id TEXT`).run()
     }
+
+    if (!columns.has('bound_approach_procedure_ids')) {
+      this.db.prepare(`ALTER TABLE charts ADD COLUMN bound_approach_procedure_ids TEXT`).run()
+      this.db.prepare(`
+        UPDATE charts
+        SET bound_approach_procedure_ids =
+          CASE
+            WHEN bound_approach_procedure_id IS NULL OR TRIM(bound_approach_procedure_id) = '' THEN '[]'
+            ELSE json_array(bound_approach_procedure_id)
+          END
+      `).run()
+    }
   }
 
   private toChartRecord(row: ChartRow): ChartRecord {
@@ -235,7 +251,10 @@ export class ChartRepository {
       airportCode: row.airport_code,
       chartType: row.chart_type,
       titleMode: row.title_mode ?? 'manual',
-      boundApproachProcedureId: row.bound_approach_procedure_id ?? null,
+      boundApproachProcedureIds: parseProcedureIds(
+        row.bound_approach_procedure_ids,
+        row.bound_approach_procedure_id
+      ),
       sourceFilePath: row.source_file_path,
       previewImagePath: row.preview_image_path,
       fileFormat: row.file_format,
@@ -246,4 +265,19 @@ export class ChartRepository {
       updatedAt: row.updated_at
     }
   }
+}
+
+function parseProcedureIds(value: string | null, legacyValue: string | null): string[] {
+  if (value) {
+    try {
+      const parsed = JSON.parse(value) as unknown
+      if (Array.isArray(parsed)) {
+        return parsed.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+      }
+    } catch {
+      return legacyValue ? [legacyValue] : []
+    }
+  }
+
+  return legacyValue ? [legacyValue] : []
 }

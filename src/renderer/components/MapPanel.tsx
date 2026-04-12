@@ -159,6 +159,24 @@ function FitRouteView({
   return null
 }
 
+function FlyToSearchTarget({
+  target
+}: {
+  target: { lat: number; lon: number; key: number } | null
+}) {
+  const map = useMap()
+
+  useEffect(() => {
+    if (!target) return
+    map.flyTo([target.lat, target.lon], Math.max(map.getZoom(), 11), {
+      animate: true,
+      duration: 0.75
+    })
+  }, [map, target])
+
+  return null
+}
+
 function ChartOverlay({
   rasterUrl,
   width,
@@ -284,6 +302,7 @@ export function MapPanel({
   const heading = aircraftPositionUsable ? (aircraft?.headingDeg ?? 0) : 0
   const [isFollowActive, setIsFollowActive] = useState(false)
   const [routeViewTrigger, setRouteViewTrigger] = useState(0)
+  const [searchTarget, setSearchTarget] = useState<{ lat: number; lon: number; key: number } | null>(null)
   const tileConfig = getMapTileConfig(settings?.mapTileProvider)
   const routeViewPoints = useMemo(() => {
     const points = routeSegments.length > 0 ? routeSegments.flatMap((segment) => segment.points) : routePoints
@@ -356,6 +375,7 @@ export function MapPanel({
             </CircleMarker>
           ))}
           <FitRouteView points={routeViewPoints} trigger={routeViewTrigger} />
+          <FlyToSearchTarget target={searchTarget} />
           <FollowAircraft lat={lat} lon={lon} enabled={aircraftPositionUsable && isFollowActive} />
           <MapViewPersistence />
         </MapContainer>
@@ -403,6 +423,14 @@ export function MapPanel({
             className="map-toolbar-inline"
             navLayerVisibility={navLayerVisibility}
             onToggleLayer={toggleNavLayer}
+            onSearchSelect={(result) => {
+              setIsFollowActive(false)
+              setSearchTarget({
+                lat: result.lat,
+                lon: result.lon,
+                key: Date.now()
+              })
+            }}
           />
           <ConnectionBadge />
         </div>

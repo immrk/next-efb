@@ -23,6 +23,9 @@ import type {
   NavMapFeatureCollection,
   NavMapFeatureOverflow,
   NavMapLayerVisibility,
+  NavMapSearchInput,
+  NavMapSearchResult,
+  NavMapSearchType,
   NavMapNdbFeature,
   NavMapQueryInput,
   NavMapVorFeature,
@@ -336,7 +339,7 @@ export class NavDataService {
 
       return {
         name: row.runway_name,
-        displayName,
+        displayName: row.runway_name,
         lengthM: asFiniteOrNull(row.length),
         widthM: asFiniteOrNull(row.width),
         surface: row.surface,
@@ -585,6 +588,36 @@ export class NavDataService {
       overflow,
       fetchedAt: Date.now()
     }
+  }
+
+  searchMapPoints(settings: AppSettings, input: NavMapSearchInput): NavMapSearchResult[] {
+    const db = this.openDatabase(settings)
+    if (!db) {
+      return []
+    }
+
+    const query = input.query.trim().toUpperCase()
+    const limit = Math.max(1, Math.min(30, input.limit ?? 12))
+    const uniqueTypes = Array.from(new Set(input.types)).filter(isSearchablePointType)
+
+    if (!query || uniqueTypes.length === 0) {
+      db.close()
+      return []
+    }
+
+    const perTypeLimit = Math.max(limit, 12)
+    const results = uniqueTypes.flatMap((type) => this.searchPointType(db, type, query, perTypeLimit))
+
+    db.close()
+
+    return [...results]
+      .sort((left, right) => {
+        const scoreDelta = left.score - right.score
+        if (scoreDelta !== 0) return scoreDelta
+        return left.ident.localeCompare(right.ident)
+      })
+      .slice(0, limit)
+      .map(({ score: _score, ...result }) => result)
   }
 
   private resolveProcedurePoint(db: Database.Database, procedureId: string | null): FlightPlanPoint | null {
@@ -1167,6 +1200,166 @@ export class NavDataService {
     const { querySql, queryParams } = compileViewportSql(sql, viewport, params)
     return db.prepare(querySql).all(queryParams) as Row[]
   }
+
+  private searchPointType(
+    db: Database.Database,
+    type: NavMapSearchType,
+    query: string,
+    limit: number
+  ): Array<NavMapSearchResult & { score: number }> {
+    const prefix = `${query}%`
+    const wildcard = `%${query}%`
+
+    switch (type) {
+      case 'airports': {
+        const rows = db
+          .prepare(
+            `
+            SELECT airport_id AS id, ident, name, laty, lonx
+            FROM airport
+            WHERE ident LIKE @prefix OR name LIKE @wild
+            ORDER BY
+              CASE
+                WHEN ident = @exact THEN 0
+                WHEN ident LIKE @prefix THEN 1
+                WHEN name = @exact THEN 2
+                ELSE 3
+              END,
+              ident
+            LIMIT @limit
+            `
+          )
+          .all({ prefix, wild: wildcard, exact: query, limit }) as Array<{
+          id: number
+          ident: string
+          name: string | null
+          laty: number
+          lonx: number
+        }>
+
+        return rows.map((row) => ({
+          id: `airport:${row.id}`,
+          type,
+          ident: row.ident,
+          name: row.name,
+          lat: row.laty,
+          lon: row.lonx,
+          score: getSearchScore(query, row.ident, row.name)
+        }))
+      }
+      case 'waypoints': {
+        const rows = db
+          .prepare(
+            `
+            SELECT waypoint_id AS id, ident, airport_ident, laty, lonx
+            FROM waypoint
+            WHERE ident LIKE @prefix OR ident LIKE @wild
+            ORDER BY
+              CASE
+                WHEN ident = @exact THEN 0
+                WHEN ident LIKE @prefix THEN 1
+                ELSE 2
+              END,
+              ident
+            LIMIT @limit
+            `
+          )
+          .all({ prefix, wild: wildcard, exact: query, limit }) as Array<{
+          id: number
+          ident: string
+          airport_ident: string | null
+          laty: number
+          lonx: number
+        }>
+
+        return rows.map((row) => ({
+          id: `waypoint:${row.id}`,
+          type,
+          ident: row.ident,
+          name: row.airport_ident,
+          lat: row.laty,
+          lon: row.lonx,
+          score: getSearchScore(query, row.ident, row.airport_ident)
+        }))
+      }
+      case 'vors': {
+        const rows = db
+          .prepare(
+            `
+            SELECT vor_id AS id, ident, type AS vor_type, laty, lonx
+            FROM vor
+            WHERE ident LIKE @prefix OR ident LIKE @wild
+            ORDER BY
+              CASE
+                WHEN ident = @exact THEN 0
+                WHEN ident LIKE @prefix THEN 1
+                ELSE 2
+              END,
+              ident
+            LIMIT @limit
+            `
+          )
+          .all({ prefix, wild: wildcard, exact: query, limit }) as Array<{
+          id: number
+          ident: string | null
+          vor_type: string | null
+          laty: number
+          lonx: number
+        }>
+
+        return rows
+          .filter((row) => Boolean(row.ident))
+          .map((row) => ({
+            id: `vor:${row.id}`,
+            type,
+            ident: row.ident ?? '',
+            name: row.vor_type,
+            lat: row.laty,
+            lon: row.lonx,
+            score: getSearchScore(query, row.ident ?? '', row.vor_type)
+          }))
+      }
+      case 'ndbs': {
+        const rows = db
+          .prepare(
+            `
+            SELECT ndb_id AS id, ident, type AS ndb_type, laty, lonx
+            FROM ndb
+            WHERE ident LIKE @prefix OR ident LIKE @wild
+            ORDER BY
+              CASE
+                WHEN ident = @exact THEN 0
+                WHEN ident LIKE @prefix THEN 1
+                ELSE 2
+              END,
+              ident
+            LIMIT @limit
+            `
+          )
+          .all({ prefix, wild: wildcard, exact: query, limit }) as Array<{
+          id: number
+          ident: string | null
+          ndb_type: string | null
+          laty: number
+          lonx: number
+        }>
+
+        return rows
+          .filter((row) => Boolean(row.ident))
+          .map((row) => ({
+            id: `ndb:${row.id}`,
+            type,
+            ident: row.ident ?? '',
+            name: row.ndb_type,
+            lat: row.laty,
+            lon: row.lonx,
+            score: getSearchScore(query, row.ident ?? '', row.ndb_type)
+          }))
+      }
+      default:
+        return []
+    }
+  }
 }
 
 function stripMissedFlag(point: FlightPlanPoint & { isMissed?: boolean }): FlightPlanPoint {
@@ -1270,6 +1463,23 @@ function normalizeMapQueryInput(input: NavMapQueryInput | null | undefined): {
       airways: Boolean(input.layers?.airways)
     }
   }
+}
+
+function isSearchablePointType(value: string): value is NavMapSearchType {
+  return value === 'airports' || value === 'waypoints' || value === 'vors' || value === 'ndbs'
+}
+
+function getSearchScore(query: string, ident: string, name: string | null): number {
+  const normalizedIdent = ident.trim().toUpperCase()
+  const normalizedName = name?.trim().toUpperCase() ?? ''
+
+  if (normalizedIdent === query) return 0
+  if (normalizedIdent.startsWith(query)) return 1
+  if (normalizedName === query) return 2
+  if (normalizedName.startsWith(query)) return 3
+  if (normalizedIdent.includes(query)) return 4
+  if (normalizedName.includes(query)) return 5
+  return 6
 }
 
 function normalizeViewport(viewport: NavMapQueryInput['viewport'] | null | undefined): NormalizedMapViewport | null {

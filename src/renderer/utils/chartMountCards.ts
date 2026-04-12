@@ -70,8 +70,8 @@ export function buildProcedureMountCards(
         return false
       }
 
-      if (kind === 'approach') {
-        return chart.boundApproachProcedureId === procedure.id
+      if (chart.boundApproachProcedureIds.includes(procedure.id)) {
+        return true
       }
 
       return normalize(chart.title) === normalize(procedure.name)

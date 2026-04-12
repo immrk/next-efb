@@ -3,7 +3,11 @@ import { divIcon } from 'leaflet'
 import { MapContainer, Marker, TileLayer, useMap, useMapEvents } from 'react-leaflet'
 import { useTranslation } from 'react-i18next'
 import type { ChartTitleMode, ChartType, GeoReferencePoint } from '@shared/chart-types'
-import type { NavAirportProcedures, NavDataStatus } from '@shared/flight-plan-types'
+import type {
+  NavAirportProcedures,
+  NavDataStatus,
+  NavProcedureOption
+} from '@shared/flight-plan-types'
 import { getAppClient } from '../client'
 import { MapDisplayToolbar } from '../components/MapDisplayToolbar'
 import { NavDataOverlay } from '../components/NavDataOverlay'
@@ -12,7 +16,7 @@ import { usePersistentMapDisplaySettings } from '../hooks/usePersistentMapDispla
 import { ChartImagePreview } from '../components/ChartImagePreview'
 import { useChartDetailData } from '../hooks/useChartDetailData'
 import { getMapTileConfig } from '../utils/mapTileProviders'
-import { filterProceduresByRunway } from '../utils/navProcedures'
+import { runwayMatches } from '../utils/navProcedures'
 import { notifyChartChanged } from '../utils/chartSync'
 import { toast } from '../components/ui/use-toast'
 import { Badge } from '../components/ui/badge'
@@ -34,6 +38,9 @@ interface ChartDetailPageProps {
   onDeleted: () => void
 }
 
+const NONE_SELECT_VALUE = '__none__'
+const BINDABLE_CHART_TYPES: ChartType[] = ['sid', 'star', 'approach']
+
 function createMapDot(label: string) {
   return divIcon({
     className: 'map-reference-icon',
@@ -41,6 +48,60 @@ function createMapDot(label: string) {
     iconSize: [28, 38],
     iconAnchor: [14, 38]
   })
+}
+
+function isBindableChartType(value: ChartType): boolean {
+  return BINDABLE_CHART_TYPES.includes(value)
+}
+
+function getProcedureOptionsByChartType(
+  procedures: NavAirportProcedures,
+  chartType: ChartType
+): NavProcedureOption[] {
+  const sortByName = (items: NavProcedureOption[]) =>
+    [...items].sort((left, right) => left.name.localeCompare(right.name))
+
+  switch (chartType) {
+    case 'sid':
+      return sortByName(procedures.departures)
+    case 'star':
+      return sortByName(procedures.arrivals)
+    case 'approach':
+      return sortByName(procedures.approaches)
+    default:
+      return []
+  }
+}
+
+function getProcedureLabelKeyByChartType(chartType: ChartType): string {
+  switch (chartType) {
+    case 'sid':
+      return 'flightPlan.departureProcedure'
+    case 'star':
+      return 'flightPlan.arrivalProcedure'
+    case 'approach':
+    default:
+      return 'flightPlan.approachProcedure'
+  }
+}
+
+function buildProcedureDerivedTitle(
+  runways: Array<{ displayName: string }>,
+  procedures: Array<{ name: string }>
+): string {
+  if (procedures.length === 0) {
+    return ''
+  }
+
+  const runwayPrefix =
+    runways.length > 0 ? `${runways.map((runway) => runway.displayName).join(', ')} ` : ''
+  const firstProcedureName = procedures[0]?.name ?? ''
+
+  if (procedures.length === 1) {
+    return `${runwayPrefix}${firstProcedureName}`.trim()
+  }
+
+  return `${runwayPrefix}${firstProcedureName}...(${procedures.length})`.trim()
 }
 
 function ClickCaptureLayer({
@@ -97,6 +158,24 @@ function AutoFitMapPoints({
   return null
 }
 
+function FlyToSearchTarget({
+  target
+}: {
+  target: { lat: number; lon: number; key: number } | null
+}) {
+  const map = useMap()
+
+  useEffect(() => {
+    if (!target) return
+    map.flyTo([target.lat, target.lon], Math.max(map.getZoom(), 11), {
+      animate: true,
+      duration: 0.75
+    })
+  }, [map, target])
+
+  return null
+}
+
 const EMPTY_PROCEDURES: NavAirportProcedures = {
   airport: null,
   runways: [],
@@ -105,8 +184,6 @@ const EMPTY_PROCEDURES: NavAirportProcedures = {
   transitions: [],
   approaches: []
 }
-
-const NONE_SELECT_VALUE = '__none__'
 
 export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDetailPageProps) {
   const appClient = getAppClient()
@@ -121,13 +198,18 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
   const [manualTitle, setManualTitle] = useState('')
   const [airportCode, setAirportCode] = useState('')
   const [chartType, setChartType] = useState<ChartType>('general')
-  const [boundApproachProcedureId, setBoundApproachProcedureId] = useState('')
-  const [boundApproachRunway, setBoundApproachRunway] = useState('')
+  const [selectedRunwayNames, setSelectedRunwayNames] = useState<string[]>([])
+  const [isRunwayPickerOpen, setIsRunwayPickerOpen] = useState(false)
+  const [runwaySearch, setRunwaySearch] = useState('')
+  const [selectedProcedureIds, setSelectedProcedureIds] = useState<string[]>([])
+  const [isProcedurePickerOpen, setIsProcedurePickerOpen] = useState(false)
+  const [procedureSearch, setProcedureSearch] = useState('')
   const [navProcedures, setNavProcedures] = useState<NavAirportProcedures>(EMPTY_PROCEDURES)
   const [navProceduresLoading, setNavProceduresLoading] = useState(false)
   const [navProceduresError, setNavProceduresError] = useState('')
   const [draftMapPoints, setDraftMapPoints] = useState<Array<{ lat: number; lon: number }>>([])
   const [draftChartPoints, setDraftChartPoints] = useState<Array<{ x: number; y: number }>>([])
+  const [mapSearchTarget, setMapSearchTarget] = useState<{ lat: number; lon: number; key: number } | null>(null)
   const [draftInitializedForChartId, setDraftInitializedForChartId] = useState<string | null>(null)
   const [mapAutoFitKey, setMapAutoFitKey] = useState(0)
   const [chartAutoFitKey, setChartAutoFitKey] = useState(0)
@@ -152,8 +234,12 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
     setAirportCode(sourceChart.airportCode ?? '')
     setChartType(sourceChart.chartType)
     setTitleMode(sourceChart.titleMode)
-    setBoundApproachProcedureId(sourceChart.boundApproachProcedureId ?? '')
-    setBoundApproachRunway('')
+    setSelectedRunwayNames([])
+    setIsRunwayPickerOpen(false)
+    setRunwaySearch('')
+    setSelectedProcedureIds(sourceChart.boundApproachProcedureIds)
+    setIsProcedurePickerOpen(false)
+    setProcedureSearch('')
     setNavProceduresError('')
   }
 
@@ -183,8 +269,12 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
 
   const normalizedAirportCode = airportCode.trim().toUpperCase()
   const isProcedureModeActive = titleMode === 'approach-procedure'
-  const hasProcedureLookupContext =
-    Boolean(normalizedAirportCode) && (chartType === 'approach' || isProcedureModeActive)
+  const effectiveProcedureChartType = isProcedureModeActive
+    ? isBindableChartType(chartType)
+      ? chartType
+      : 'approach'
+    : chartType
+  const hasProcedureLookupContext = Boolean(normalizedAirportCode) && isProcedureModeActive
 
   useEffect(() => {
     if (!hasProcedureLookupContext) {
@@ -220,11 +310,6 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
     }
   }, [appClient, hasProcedureLookupContext, normalizedAirportCode, t])
 
-  const filteredApproachProcedures = useMemo(
-    () => filterProceduresByRunway(navProcedures.approaches, boundApproachRunway),
-    [boundApproachRunway, navProcedures.approaches]
-  )
-
   useEffect(() => {
     if (titleMode !== 'approach-procedure') {
       return
@@ -238,24 +323,111 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
       return
     }
 
-    if (!boundApproachProcedureId) {
-      return
-    }
-
-    if (!filteredApproachProcedures.some((procedure) => procedure.id === boundApproachProcedureId)) {
-      setBoundApproachProcedureId('')
-    }
+    const validProcedureIds = new Set(
+      getProcedureOptionsByChartType(navProcedures, effectiveProcedureChartType)
+        .filter((procedure) =>
+          selectedRunwayNames.length === 0
+            ? true
+            : selectedRunwayNames.some((runwayName) => runwayMatches(procedure.runwayName, runwayName))
+        )
+        .map((procedure) => procedure.id)
+    )
+    setSelectedProcedureIds((current) => current.filter((procedureId) => validProcedureIds.has(procedureId)))
   }, [
-    boundApproachProcedureId,
-    filteredApproachProcedures,
     navProcedures.airport?.ident,
     navProceduresLoading,
     normalizedAirportCode,
-    titleMode
+    titleMode,
+    navProcedures.departures,
+    navProcedures.arrivals,
+    navProcedures.approaches,
+    effectiveProcedureChartType,
+    selectedRunwayNames
   ])
 
   const canOpenProcedureModeTab = navDataReady
   const canUseProcedureMode = Boolean(normalizedAirportCode) && navDataReady
+  const availableRunwayOptions = useMemo(
+    () => [...navProcedures.runways].sort((left, right) => left.displayName.localeCompare(right.displayName)),
+    [navProcedures.runways]
+  )
+  const filteredRunwayOptions = useMemo(() => {
+    const query = runwaySearch.trim().toLowerCase()
+    if (!query) return availableRunwayOptions
+    return availableRunwayOptions.filter((runway) => {
+      const haystack = `${runway.displayName} ${runway.name}`.toLowerCase()
+      return haystack.includes(query)
+    })
+  }, [availableRunwayOptions, runwaySearch])
+  const availableProcedureOptions = useMemo(
+    () =>
+      getProcedureOptionsByChartType(navProcedures, effectiveProcedureChartType).filter((procedure) =>
+        selectedRunwayNames.length === 0
+          ? true
+          : selectedRunwayNames.some((runwayName) => runwayMatches(procedure.runwayName, runwayName))
+      ),
+    [navProcedures, effectiveProcedureChartType, selectedRunwayNames]
+  )
+  const filteredProcedureOptions = useMemo(() => {
+    const query = procedureSearch.trim().toLowerCase()
+    if (!query) return availableProcedureOptions
+    return availableProcedureOptions.filter((procedure) => {
+      const haystack = `${procedure.name} ${procedure.runwayName ?? ''}`.toLowerCase()
+      return haystack.includes(query)
+    })
+  }, [availableProcedureOptions, procedureSearch])
+  const selectedRunwayOptions = useMemo(
+    () => availableRunwayOptions.filter((runway) => selectedRunwayNames.includes(runway.name)),
+    [availableRunwayOptions, selectedRunwayNames]
+  )
+  const selectedProcedureOptions = useMemo(
+    () => availableProcedureOptions.filter((procedure) => selectedProcedureIds.includes(procedure.id)),
+    [availableProcedureOptions, selectedProcedureIds]
+  )
+  const derivedProcedureTitle = useMemo(
+    () => buildProcedureDerivedTitle(selectedRunwayOptions, selectedProcedureOptions),
+    [selectedRunwayOptions, selectedProcedureOptions]
+  )
+  const allFilteredRunwaysSelected =
+    filteredRunwayOptions.length > 0 &&
+    filteredRunwayOptions.every((runway) => selectedRunwayNames.includes(runway.name))
+  const allFilteredProceduresSelected =
+    filteredProcedureOptions.length > 0 &&
+    filteredProcedureOptions.every((procedure) => selectedProcedureIds.includes(procedure.id))
+  const toggleRunwaySelection = (runwayName: string) => {
+    setSelectedRunwayNames((current) =>
+      current.includes(runwayName)
+        ? current.filter((name) => name !== runwayName)
+        : [...current, runwayName]
+    )
+  }
+  const toggleSelectAllFilteredRunways = () => {
+    if (filteredRunwayOptions.length === 0) return
+    setSelectedRunwayNames((current) => {
+      const filteredNames = filteredRunwayOptions.map((runway) => runway.name)
+      if (filteredNames.every((name) => current.includes(name))) {
+        return current.filter((name) => !filteredNames.includes(name))
+      }
+      return Array.from(new Set([...current, ...filteredNames]))
+    })
+  }
+  const toggleProcedureSelection = (procedureId: string) => {
+    setSelectedProcedureIds((current) =>
+      current.includes(procedureId)
+        ? current.filter((id) => id !== procedureId)
+        : [...current, procedureId]
+    )
+  }
+  const toggleSelectAllFilteredProcedures = () => {
+    if (filteredProcedureOptions.length === 0) return
+    setSelectedProcedureIds((current) => {
+      const filteredIds = filteredProcedureOptions.map((procedure) => procedure.id)
+      if (filteredIds.every((id) => current.includes(id))) {
+        return current.filter((id) => !filteredIds.includes(id))
+      }
+      return Array.from(new Set([...current, ...filteredIds]))
+    })
+  }
 
   useEffect(() => {
     setDraftMapPoints([])
@@ -293,28 +465,55 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
     const nextManualTitle = manualTitle.trim()
     const nextTitleMode: ChartTitleMode =
       canUseProcedureMode && titleMode === 'approach-procedure' ? 'approach-procedure' : 'manual'
-    const nextBoundProcedureId = nextTitleMode === 'approach-procedure' ? boundApproachProcedureId || null : null
-    const nextChartType: ChartType = nextTitleMode === 'approach-procedure' ? 'approach' : chartType
-    const selectedProcedureForSave =
-      nextTitleMode === 'approach-procedure' && nextBoundProcedureId
-        ? navProcedures.approaches.find((procedure) => procedure.id === nextBoundProcedureId) ??
-          (chart.boundApproachProcedureId === nextBoundProcedureId
-            ? { id: nextBoundProcedureId, name: chart.title }
-            : null)
-        : null
+    const nextBoundProcedureIds =
+      nextTitleMode === 'approach-procedure'
+        ? Array.from(new Set(selectedProcedureIds.filter((procedureId): procedureId is string => Boolean(procedureId))))
+        : []
+    const nextChartType: ChartType =
+      nextTitleMode === 'approach-procedure'
+        ? isBindableChartType(chartType)
+          ? chartType
+          : 'approach'
+        : chartType
+    const nextProcedureOptions = getProcedureOptionsByChartType(navProcedures, nextChartType)
+    const selectedProceduresForSave =
+      nextTitleMode === 'approach-procedure'
+        ? nextBoundProcedureIds
+            .map(
+              (procedureId) =>
+                nextProcedureOptions.find((procedure) => procedure.id === procedureId) ??
+                (chart.boundApproachProcedureIds.includes(procedureId)
+                  ? {
+                      id: procedureId,
+                      name: chart.title,
+                      procedureType:
+                        nextChartType === 'sid'
+                          ? 'departure'
+                          : nextChartType === 'star'
+                            ? 'arrival'
+                            : 'approach',
+                      runwayName: null
+                    }
+                  : null)
+            )
+            .filter((procedure): procedure is NonNullable<typeof procedure> => Boolean(procedure))
+        : []
 
     if (nextTitleMode === 'manual' && !nextManualTitle) {
       toast.error(t('chartDetail.titleRequired'))
       return
     }
 
-    if (nextTitleMode === 'approach-procedure' && (!nextBoundProcedureId || !selectedProcedureForSave)) {
+    if (nextTitleMode === 'approach-procedure' && selectedProceduresForSave.length === 0) {
       toast.error(t('chartDetail.procedureRequired'))
       return
     }
 
     try {
-        const titleToSave = nextTitleMode === 'approach-procedure' ? selectedProcedureForSave?.name ?? chart.title : nextManualTitle
+        const titleToSave =
+          nextTitleMode === 'approach-procedure'
+            ? buildProcedureDerivedTitle(selectedRunwayOptions, selectedProceduresForSave)
+            : nextManualTitle
 
         const updated = await appClient.updateChart({
           id: chart.id,
@@ -322,7 +521,7 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
           airportCode: airportCode || null,
           chartType: nextChartType,
           titleMode: nextTitleMode,
-          boundApproachProcedureId: nextBoundProcedureId
+          boundApproachProcedureIds: nextBoundProcedureIds
         })
       if (updated) {
         setChart(updated)
@@ -449,6 +648,13 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
                 className="chart-editor-map-toolbar-inner"
                 navLayerVisibility={navLayerVisibility}
                 onToggleLayer={toggleNavLayer}
+                onSearchSelect={(result) =>
+                  setMapSearchTarget({
+                    lat: result.lat,
+                    lon: result.lon,
+                    key: Date.now()
+                  })
+                }
               />
             </div>
             <MapContainer
@@ -496,6 +702,7 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
                 />
               ))}
               <AutoFitMapPoints points={draftMapPoints} fitKey={mapAutoFitKey} />
+              <FlyToSearchTarget target={mapSearchTarget} />
             </MapContainer>
           </div>
         </section>
@@ -566,7 +773,7 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
                 onValueChange={(value) => {
                   const nextMode = value as ChartTitleMode
                   setTitleMode(nextMode)
-                  if (nextMode === 'approach-procedure' && chartType !== 'approach') {
+                  if (nextMode === 'approach-procedure' && !isBindableChartType(chartType)) {
                     setChartType('approach')
                   }
                 }}
@@ -595,11 +802,21 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="general">{t('chartType.general')}</SelectItem>
-                        <SelectItem value="airport">{t('chartType.airport')}</SelectItem>
-                        <SelectItem value="sid">{t('chartType.sid')}</SelectItem>
-                        <SelectItem value="star">{t('chartType.star')}</SelectItem>
-                        <SelectItem value="approach">{t('chartType.approach')}</SelectItem>
+                        {titleMode === 'approach-procedure' ? (
+                          <>
+                            <SelectItem value="sid">{t('chartType.sid')}</SelectItem>
+                            <SelectItem value="star">{t('chartType.star')}</SelectItem>
+                            <SelectItem value="approach">{t('chartType.approach')}</SelectItem>
+                          </>
+                        ) : (
+                          <>
+                            <SelectItem value="general">{t('chartType.general')}</SelectItem>
+                            <SelectItem value="airport">{t('chartType.airport')}</SelectItem>
+                            <SelectItem value="sid">{t('chartType.sid')}</SelectItem>
+                            <SelectItem value="star">{t('chartType.star')}</SelectItem>
+                            <SelectItem value="approach">{t('chartType.approach')}</SelectItem>
+                          </>
+                        )}
                       </SelectContent>
                     </Select>
                   </label>
@@ -617,51 +834,152 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
                 </TabsContent>
 
                 <TabsContent value="approach-procedure" className="chart-meta-tab-panel">
-                  <label className="settings-field">
-                    <span>{t('chartDetail.procedureRunway')}</span>
-                    <Select
-                      value={boundApproachRunway || NONE_SELECT_VALUE}
-                      onValueChange={(value) =>
-                        setBoundApproachRunway(value === NONE_SELECT_VALUE ? '' : value)
-                      }
+                  <div className="chart-procedure-multiselect">
+                    <span className="chart-procedure-multiselect-label">
+                      {t('chartDetail.procedureRunway')}
+                    </span>
+                    <button
+                      type="button"
+                      className="chart-procedure-multiselect-trigger"
                       disabled={!canUseProcedureMode || navProceduresLoading}
+                      onClick={() => setIsRunwayPickerOpen((value) => !value)}
                     >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value={NONE_SELECT_VALUE}>{t('chartDetail.procedureAnyRunway')}</SelectItem>
-                        {navProcedures.runways.map((runway) => (
-                          <SelectItem key={runway.name} value={runway.name}>
-                            {runway.displayName}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </label>
+                      <span className="chart-procedure-multiselect-value">
+                        {selectedRunwayOptions.length > 0
+                          ? selectedRunwayOptions.map((runway) => runway.displayName).join(', ')
+                          : t('chartDetail.runwayMultiSelectPlaceholder')}
+                      </span>
+                      <svg viewBox="0 0 24 24" aria-hidden="true" className={isRunwayPickerOpen ? 'open' : ''}>
+                        <path d="M6 9L12 15L18 9" />
+                      </svg>
+                    </button>
 
-                  <label className="settings-field">
-                    <span>{t('chartDetail.procedureSelect')}</span>
-                    <Select
-                      value={boundApproachProcedureId || NONE_SELECT_VALUE}
-                      onValueChange={(value) =>
-                        setBoundApproachProcedureId(value === NONE_SELECT_VALUE ? '' : value)
-                      }
-                      disabled={!canUseProcedureMode || navProceduresLoading || filteredApproachProcedures.length === 0}
+                    {isRunwayPickerOpen ? (
+                      <div className="chart-procedure-multiselect-panel">
+                        <div className="chart-multiselect-tools">
+                          <Input
+                            value={runwaySearch}
+                            onChange={(event) => setRunwaySearch(event.target.value)}
+                            placeholder={t('chartDetail.multiSelectSearchPlaceholder')}
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="chart-multiselect-toggle"
+                            onClick={toggleSelectAllFilteredRunways}
+                            disabled={filteredRunwayOptions.length === 0}
+                          >
+                            {allFilteredRunwaysSelected
+                              ? t('chartDetail.multiSelectClearVisible')
+                              : t('chartDetail.multiSelectSelectVisible')}
+                          </Button>
+                        </div>
+                        {filteredRunwayOptions.length > 0 ? (
+                          filteredRunwayOptions.map((runway) => {
+                            const checked = selectedRunwayNames.includes(runway.name)
+                            return (
+                              <button
+                                key={runway.name}
+                                type="button"
+                                className={`chart-procedure-option ${checked ? 'selected' : ''}`}
+                                onClick={() => toggleRunwaySelection(runway.name)}
+                              >
+                                <span className={`chart-procedure-option-check ${checked ? 'selected' : ''}`}>
+                                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M20 6L9 17L4 12" />
+                                  </svg>
+                                </span>
+                                <span className="chart-procedure-option-copy">{runway.displayName}</span>
+                              </button>
+                            )
+                          })
+                        ) : (
+                          <div className="chart-meta-hint">
+                            {availableRunwayOptions.length > 0
+                              ? t('chartDetail.multiSelectNoSearchResult')
+                              : t('chartDetail.runwayEmpty')}
+                          </div>
+                        )}
+                      </div>
+                    ) : null}
+                  </div>
+
+                  <div className="chart-procedure-multiselect">
+                    <span className="chart-procedure-multiselect-label">
+                      {t(getProcedureLabelKeyByChartType(effectiveProcedureChartType))}
+                    </span>
+                    <button
+                      type="button"
+                      className="chart-procedure-multiselect-trigger"
+                      disabled={!canUseProcedureMode || navProceduresLoading}
+                      onClick={() => setIsProcedurePickerOpen((value) => !value)}
                     >
-                      <SelectTrigger>
-                        <SelectValue placeholder={t('chartDetail.procedureSelectPlaceholder')} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value={NONE_SELECT_VALUE}>{t('chartDetail.procedureNone')}</SelectItem>
-                        {filteredApproachProcedures.map((procedure) => (
-                          <SelectItem key={procedure.id} value={procedure.id}>
-                            {procedure.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </label>
+                      <span className="chart-procedure-multiselect-value">
+                        {selectedProcedureOptions.length > 0
+                          ? selectedProcedureOptions.map((procedure) => procedure.name).join(', ')
+                          : t('chartDetail.procedureMultiSelectPlaceholder')}
+                      </span>
+                      <svg viewBox="0 0 24 24" aria-hidden="true" className={isProcedurePickerOpen ? 'open' : ''}>
+                        <path d="M6 9L12 15L18 9" />
+                      </svg>
+                    </button>
+
+                    {isProcedurePickerOpen ? (
+                      <div className="chart-procedure-multiselect-panel">
+                        <div className="chart-multiselect-tools">
+                          <Input
+                            value={procedureSearch}
+                            onChange={(event) => setProcedureSearch(event.target.value)}
+                            placeholder={t('chartDetail.multiSelectSearchPlaceholder')}
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="chart-multiselect-toggle"
+                            onClick={toggleSelectAllFilteredProcedures}
+                            disabled={filteredProcedureOptions.length === 0}
+                          >
+                            {allFilteredProceduresSelected
+                              ? t('chartDetail.multiSelectClearVisible')
+                              : t('chartDetail.multiSelectSelectVisible')}
+                          </Button>
+                        </div>
+                        {filteredProcedureOptions.length > 0 ? (
+                          filteredProcedureOptions.map((procedure) => {
+                            const checked = selectedProcedureIds.includes(procedure.id)
+                            return (
+                              <button
+                                key={procedure.id}
+                                type="button"
+                                className={`chart-procedure-option ${checked ? 'selected' : ''}`}
+                                onClick={() => toggleProcedureSelection(procedure.id)}
+                              >
+                                <span className={`chart-procedure-option-check ${checked ? 'selected' : ''}`}>
+                                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M20 6L9 17L4 12" />
+                                  </svg>
+                                </span>
+                                <span className="chart-procedure-option-copy">{procedure.name}</span>
+                              </button>
+                            )
+                          })
+                        ) : (
+                          <div className="chart-meta-hint">
+                            {availableProcedureOptions.length > 0
+                              ? t('chartDetail.multiSelectNoSearchResult')
+                              : t('chartDetail.procedureEmpty')}
+                          </div>
+                        )}
+                      </div>
+                    ) : null}
+                  </div>
+
+                  <div className="chart-meta-derived-title">
+                    <span>{t('chartDetail.procedureDerivedTitle')}</span>
+                    <strong>
+                      {derivedProcedureTitle || t('chartDetail.procedureDerivedEmpty')}
+                    </strong>
+                  </div>
 
                   {navProceduresLoading ? (
                     <div className="chart-meta-hint">{t('chartDetail.procedureLoading')}</div>

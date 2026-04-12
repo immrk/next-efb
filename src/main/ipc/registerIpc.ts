@@ -11,7 +11,12 @@ import type {
   SimBriefImportInput,
   SimBriefImportResult
 } from '@shared/flight-plan-types'
-import type { NavMapFeatureCollection, NavMapQueryInput } from '@shared/nav-map-types'
+import type {
+  NavMapFeatureCollection,
+  NavMapQueryInput,
+  NavMapSearchInput,
+  NavMapSearchResult
+} from '@shared/nav-map-types'
 import type {
   ChartAssetPayload,
   ChartImportFromUrlInput,
@@ -103,6 +108,11 @@ export function registerIpc(options: RegisterIpcOptions): void {
     IPC_CHANNELS.navMapFeatures,
     (_event, input: NavMapQueryInput): NavMapFeatureCollection =>
       navDataService.getMapFeatures(settingsStore.get(), input)
+  )
+  ipcMain.handle(
+    IPC_CHANNELS.navMapSearch,
+    (_event, input: NavMapSearchInput): NavMapSearchResult[] =>
+      navDataService.searchMapPoints(settingsStore.get(), input)
   )
   ipcMain.handle(
     IPC_CHANNELS.simbriefImport,
@@ -218,7 +228,7 @@ export function registerIpc(options: RegisterIpcOptions): void {
         airportCode: null,
         chartType: 'general',
         titleMode: 'manual',
-        boundApproachProcedureId: null,
+        boundApproachProcedureIds: [],
         sourceFilePath: imported.destinationPath,
         previewImagePath: displayPath,
         fileFormat: displayFormat,

@@ -24,7 +24,12 @@ import type {
   SimBriefImportInput,
   SimBriefImportResult
 } from '@shared/flight-plan-types'
-import type { NavMapFeatureCollection, NavMapQueryInput } from '@shared/nav-map-types'
+import type {
+  NavMapFeatureCollection,
+  NavMapQueryInput,
+  NavMapSearchInput,
+  NavMapSearchResult
+} from '@shared/nav-map-types'
 import type { AppClient } from './AppClient'
 import type { SnapshotPayload } from './AppClient'
 
@@ -108,6 +113,13 @@ export class WebLanAppClient implements AppClient {
 
   getNavMapFeatures(input: NavMapQueryInput): Promise<NavMapFeatureCollection> {
     return this.fetchJson('/api/nav/map-features', {
+      method: 'POST',
+      body: JSON.stringify(input)
+    })
+  }
+
+  searchNavMapPoints(input: NavMapSearchInput): Promise<NavMapSearchResult[]> {
+    return this.fetchJson('/api/nav/search-points', {
       method: 'POST',
       body: JSON.stringify(input)
     })

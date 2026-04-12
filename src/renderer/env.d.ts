@@ -27,7 +27,12 @@ import type {
   SimBriefImportInput,
   SimBriefImportResult
 } from '@shared/flight-plan-types'
-import type { NavMapFeatureCollection, NavMapQueryInput } from '@shared/nav-map-types'
+import type {
+  NavMapFeatureCollection,
+  NavMapQueryInput,
+  NavMapSearchInput,
+  NavMapSearchResult
+} from '@shared/nav-map-types'
 
 declare global {
   interface Window {
@@ -40,6 +45,7 @@ declare global {
       getNavAirportProcedures: (airportIdent: string) => Promise<NavAirportProcedures>
       buildFlightPlan: (input: BuildFlightPlanInput) => Promise<BuildFlightPlanResult>
       getNavMapFeatures: (input: NavMapQueryInput) => Promise<NavMapFeatureCollection>
+      searchNavMapPoints: (input: NavMapSearchInput) => Promise<NavMapSearchResult[]>
       importSimBrief: (input: SimBriefImportInput) => Promise<SimBriefImportResult>
       getChart: (chartId: string) => Promise<ChartRecord | null>
       getChartAsset: (chartId: string) => Promise<ChartAssetPayload | null>

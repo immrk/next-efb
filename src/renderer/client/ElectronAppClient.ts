@@ -42,6 +42,10 @@ export class ElectronAppClient implements AppClient {
     return window.msfsApi.getNavMapFeatures(input)
   }
 
+  searchNavMapPoints(input: Parameters<typeof window.msfsApi.searchNavMapPoints>[0]) {
+    return window.msfsApi.searchNavMapPoints(input)
+  }
+
   importSimBrief(input: Parameters<typeof window.msfsApi.importSimBrief>[0]) {
     return window.msfsApi.importSimBrief(input)
   }

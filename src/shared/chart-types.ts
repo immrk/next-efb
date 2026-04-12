@@ -9,7 +9,7 @@ export interface ChartRecord {
   airportCode: string | null
   chartType: ChartType
   titleMode: ChartTitleMode
-  boundApproachProcedureId: string | null
+  boundApproachProcedureIds: string[]
   sourceFilePath: string
   previewImagePath: string | null
   fileFormat: ChartFileFormat
@@ -79,7 +79,7 @@ export interface ChartUpdateInput {
   airportCode: string | null
   chartType: ChartType
   titleMode: ChartTitleMode
-  boundApproachProcedureId: string | null
+  boundApproachProcedureIds: string[]
 }
 
 export interface ChartAssetPayload {

@@ -29,7 +29,12 @@ import type {
   SimBriefImportInput,
   SimBriefImportResult
 } from '@shared/flight-plan-types'
-import type { NavMapFeatureCollection, NavMapQueryInput } from '@shared/nav-map-types'
+import type {
+  NavMapFeatureCollection,
+  NavMapQueryInput,
+  NavMapSearchInput,
+  NavMapSearchResult
+} from '@shared/nav-map-types'
 
 const api = {
   getSnapshot: async (): Promise<{ aircraft: AircraftState; connection: ConnectionState }> =>
@@ -45,6 +50,8 @@ const api = {
     ipcRenderer.invoke(IPC_CHANNELS.navBuildPlan, input),
   getNavMapFeatures: async (input: NavMapQueryInput): Promise<NavMapFeatureCollection> =>
     ipcRenderer.invoke(IPC_CHANNELS.navMapFeatures, input),
+  searchNavMapPoints: async (input: NavMapSearchInput): Promise<NavMapSearchResult[]> =>
+    ipcRenderer.invoke(IPC_CHANNELS.navMapSearch, input),
   importSimBrief: async (input: SimBriefImportInput): Promise<SimBriefImportResult> =>
     ipcRenderer.invoke(IPC_CHANNELS.simbriefImport, input),
   getChart: async (chartId: string): Promise<ChartRecord | null> =>

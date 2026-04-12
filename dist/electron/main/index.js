@@ -34,6 +34,7 @@ const IPC_CHANNELS = {
   navAirportProcedures: "nav-data:airport:procedures",
   navBuildPlan: "nav-data:plan:build",
   navMapFeatures: "nav-data:map:features",
+  navMapSearch: "nav-data:map:search",
   simbriefImport: "simbrief:import",
   remoteAccessStatus: "remote-access:status",
   openExternal: "system:open-external",
@@ -230,6 +231,10 @@ function registerIpc(options) {
     (_event, input) => navDataService.getMapFeatures(settingsStore.get(), input)
   );
   electron.ipcMain.handle(
+    IPC_CHANNELS.navMapSearch,
+    (_event, input) => navDataService.searchMapPoints(settingsStore.get(), input)
+  );
+  electron.ipcMain.handle(
     IPC_CHANNELS.simbriefImport,
     async (_event, input) => navDataService.importFromSimBrief({
       username: input.username ?? settingsStore.get().simbrief.username,
@@ -328,7 +333,7 @@ function registerIpc(options) {
         airportCode: null,
         chartType: "general",
         titleMode: "manual",
-        boundApproachProcedureId: null,
+        boundApproachProcedureIds: [],
         sourceFilePath: imported.destinationPath,
         previewImagePath: displayPath,
         fileFormat: displayFormat,
@@ -903,9 +908,9 @@ class ChartRepository {
     this.db.prepare(
       `
         INSERT INTO charts (
-          id, title, airport_code, chart_type, title_mode, bound_approach_procedure_id, source_file_path, preview_image_path,
+          id, title, airport_code, chart_type, title_mode, bound_approach_procedure_id, bound_approach_procedure_ids, source_file_path, preview_image_path,
           file_format, width, height, is_georeferenced, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `
     ).run(
       chart.id,
@@ -913,7 +918,8 @@ class ChartRepository {
       chart.airportCode,
       chart.chartType,
       chart.titleMode,
-      chart.boundApproachProcedureId,
+      chart.boundApproachProcedureIds[0] ?? null,
+      JSON.stringify(chart.boundApproachProcedureIds),
       chart.sourceFilePath,
       chart.previewImagePath,
       chart.fileFormat,
@@ -930,7 +936,7 @@ class ChartRepository {
     this.db.prepare(
       `
         UPDATE charts
-        SET title = ?, airport_code = ?, chart_type = ?, title_mode = ?, bound_approach_procedure_id = ?, updated_at = ?
+        SET title = ?, airport_code = ?, chart_type = ?, title_mode = ?, bound_approach_procedure_id = ?, bound_approach_procedure_ids = ?, updated_at = ?
         WHERE id = ?
       `
     ).run(
@@ -938,7 +944,8 @@ class ChartRepository {
       input.airportCode,
       input.chartType,
       input.titleMode,
-      input.boundApproachProcedureId,
+      input.boundApproachProcedureIds[0] ?? null,
+      JSON.stringify(input.boundApproachProcedureIds),
       now,
       input.id
     );
@@ -1012,6 +1019,7 @@ class ChartRepository {
         chart_type TEXT NOT NULL,
         title_mode TEXT NOT NULL DEFAULT 'manual',
         bound_approach_procedure_id TEXT,
+        bound_approach_procedure_ids TEXT,
         source_file_path TEXT NOT NULL,
         preview_image_path TEXT,
         file_format TEXT NOT NULL,
@@ -1045,6 +1053,17 @@ class ChartRepository {
     if (!columns.has("bound_approach_procedure_id")) {
       this.db.prepare(`ALTER TABLE charts ADD COLUMN bound_approach_procedure_id TEXT`).run();
     }
+    if (!columns.has("bound_approach_procedure_ids")) {
+      this.db.prepare(`ALTER TABLE charts ADD COLUMN bound_approach_procedure_ids TEXT`).run();
+      this.db.prepare(`
+        UPDATE charts
+        SET bound_approach_procedure_ids =
+          CASE
+            WHEN bound_approach_procedure_id IS NULL OR TRIM(bound_approach_procedure_id) = '' THEN '[]'
+            ELSE json_array(bound_approach_procedure_id)
+          END
+      `).run();
+    }
   }
   toChartRecord(row) {
     return {
@@ -1053,7 +1072,10 @@ class ChartRepository {
       airportCode: row.airport_code,
       chartType: row.chart_type,
       titleMode: row.title_mode ?? "manual",
-      boundApproachProcedureId: row.bound_approach_procedure_id ?? null,
+      boundApproachProcedureIds: parseProcedureIds(
+        row.bound_approach_procedure_ids,
+        row.bound_approach_procedure_id
+      ),
       sourceFilePath: row.source_file_path,
       previewImagePath: row.preview_image_path,
       fileFormat: row.file_format,
@@ -1064,6 +1086,19 @@ class ChartRepository {
       updatedAt: row.updated_at
     };
   }
+}
+function parseProcedureIds(value, legacyValue) {
+  if (value) {
+    try {
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) {
+        return parsed.filter((item) => typeof item === "string" && item.trim().length > 0);
+      }
+    } catch {
+      return legacyValue ? [legacyValue] : [];
+    }
+  }
+  return legacyValue ? [legacyValue] : [];
 }
 class StorageService {
   constructor() {
@@ -1286,6 +1321,11 @@ class LanServer {
         this.sendJson(response, this.navDataService.getMapFeatures(this.settingsStore.get(), input));
         return;
       }
+      if (url.pathname === "/api/nav/search-points" && request.method === "POST") {
+        const input = await this.readJsonBody(request);
+        this.sendJson(response, this.navDataService.searchMapPoints(this.settingsStore.get(), input));
+        return;
+      }
       if (url.pathname === "/api/simbrief/import" && request.method === "POST") {
         const input = await this.readJsonBody(request);
         this.sendJson(
@@ -1457,7 +1497,7 @@ class LanServer {
       airportCode: null,
       chartType: "general",
       titleMode: "manual",
-      boundApproachProcedureId: null,
+      boundApproachProcedureIds: [],
       sourceFilePath: imported.destinationPath,
       previewImagePath: displayPath,
       fileFormat: displayFormat,
@@ -1722,10 +1762,10 @@ class NavDataService {
     ).all(ident);
     db.close();
     const runwayOptions = runways.map((row) => {
-      const displayName = row.paired_runway_name && row.paired_runway_name !== row.runway_name ? `${row.runway_name} · ${row.paired_runway_name}` : row.runway_name;
+      row.paired_runway_name && row.paired_runway_name !== row.runway_name ? `${row.runway_name} · ${row.paired_runway_name}` : row.runway_name;
       return {
         name: row.runway_name,
-        displayName,
+        displayName: row.runway_name,
         lengthM: asFiniteOrNull(row.length),
         widthM: asFiniteOrNull(row.width),
         surface: row.surface,
@@ -1918,6 +1958,27 @@ class NavDataService {
       overflow,
       fetchedAt: Date.now()
     };
+  }
+  searchMapPoints(settings, input) {
+    const db = this.openDatabase(settings);
+    if (!db) {
+      return [];
+    }
+    const query = input.query.trim().toUpperCase();
+    const limit = Math.max(1, Math.min(30, input.limit ?? 12));
+    const uniqueTypes = Array.from(new Set(input.types)).filter(isSearchablePointType);
+    if (!query || uniqueTypes.length === 0) {
+      db.close();
+      return [];
+    }
+    const perTypeLimit = Math.max(limit, 12);
+    const results = uniqueTypes.flatMap((type) => this.searchPointType(db, type, query, perTypeLimit));
+    db.close();
+    return [...results].sort((left, right) => {
+      const scoreDelta = left.score - right.score;
+      if (scoreDelta !== 0) return scoreDelta;
+      return left.ident.localeCompare(right.ident);
+    }).slice(0, limit).map(({ score: _score, ...result }) => result);
   }
   resolveProcedurePoint(db, procedureId) {
     if (!procedureId?.startsWith("approach:")) {
@@ -2368,6 +2429,119 @@ class NavDataService {
     const { querySql, queryParams } = compileViewportSql(sql, viewport, params);
     return db.prepare(querySql).all(queryParams);
   }
+  searchPointType(db, type, query, limit) {
+    const prefix = `${query}%`;
+    const wildcard = `%${query}%`;
+    switch (type) {
+      case "airports": {
+        const rows = db.prepare(
+          `
+            SELECT airport_id AS id, ident, name, laty, lonx
+            FROM airport
+            WHERE ident LIKE @prefix OR name LIKE @wild
+            ORDER BY
+              CASE
+                WHEN ident = @exact THEN 0
+                WHEN ident LIKE @prefix THEN 1
+                WHEN name = @exact THEN 2
+                ELSE 3
+              END,
+              ident
+            LIMIT @limit
+            `
+        ).all({ prefix, wild: wildcard, exact: query, limit });
+        return rows.map((row) => ({
+          id: `airport:${row.id}`,
+          type,
+          ident: row.ident,
+          name: row.name,
+          lat: row.laty,
+          lon: row.lonx,
+          score: getSearchScore(query, row.ident, row.name)
+        }));
+      }
+      case "waypoints": {
+        const rows = db.prepare(
+          `
+            SELECT waypoint_id AS id, ident, airport_ident, laty, lonx
+            FROM waypoint
+            WHERE ident LIKE @prefix OR ident LIKE @wild
+            ORDER BY
+              CASE
+                WHEN ident = @exact THEN 0
+                WHEN ident LIKE @prefix THEN 1
+                ELSE 2
+              END,
+              ident
+            LIMIT @limit
+            `
+        ).all({ prefix, wild: wildcard, exact: query, limit });
+        return rows.map((row) => ({
+          id: `waypoint:${row.id}`,
+          type,
+          ident: row.ident,
+          name: row.airport_ident,
+          lat: row.laty,
+          lon: row.lonx,
+          score: getSearchScore(query, row.ident, row.airport_ident)
+        }));
+      }
+      case "vors": {
+        const rows = db.prepare(
+          `
+            SELECT vor_id AS id, ident, type AS vor_type, laty, lonx
+            FROM vor
+            WHERE ident LIKE @prefix OR ident LIKE @wild
+            ORDER BY
+              CASE
+                WHEN ident = @exact THEN 0
+                WHEN ident LIKE @prefix THEN 1
+                ELSE 2
+              END,
+              ident
+            LIMIT @limit
+            `
+        ).all({ prefix, wild: wildcard, exact: query, limit });
+        return rows.filter((row) => Boolean(row.ident)).map((row) => ({
+          id: `vor:${row.id}`,
+          type,
+          ident: row.ident ?? "",
+          name: row.vor_type,
+          lat: row.laty,
+          lon: row.lonx,
+          score: getSearchScore(query, row.ident ?? "", row.vor_type)
+        }));
+      }
+      case "ndbs": {
+        const rows = db.prepare(
+          `
+            SELECT ndb_id AS id, ident, type AS ndb_type, laty, lonx
+            FROM ndb
+            WHERE ident LIKE @prefix OR ident LIKE @wild
+            ORDER BY
+              CASE
+                WHEN ident = @exact THEN 0
+                WHEN ident LIKE @prefix THEN 1
+                ELSE 2
+              END,
+              ident
+            LIMIT @limit
+            `
+        ).all({ prefix, wild: wildcard, exact: query, limit });
+        return rows.filter((row) => Boolean(row.ident)).map((row) => ({
+          id: `ndb:${row.id}`,
+          type,
+          ident: row.ident ?? "",
+          name: row.ndb_type,
+          lat: row.laty,
+          lon: row.lonx,
+          score: getSearchScore(query, row.ident ?? "", row.ndb_type)
+        }));
+      }
+      default:
+        return [];
+    }
+  }
 }
 function stripMissedFlag(point) {
   const { isMissed: _isMissed, ...rest } = point;
@@ -2434,6 +2608,20 @@ function normalizeMapQueryInput(input) {
       airways: Boolean(input.layers?.airways)
     }
   };
+}
+function isSearchablePointType(value) {
+  return value === "airports" || value === "waypoints" || value === "vors" || value === "ndbs";
+}
+function getSearchScore(query, ident, name) {
+  const normalizedIdent = ident.trim().toUpperCase();
+  const normalizedName = name?.trim().toUpperCase() ?? "";
+  if (normalizedIdent === query) return 0;
+  if (normalizedIdent.startsWith(query)) return 1;
+  if (normalizedName === query) return 2;
+  if (normalizedName.startsWith(query)) return 3;
+  if (normalizedIdent.includes(query)) return 4;
+  if (normalizedName.includes(query)) return 5;
+  return 6;
 }
 function normalizeViewport(viewport) {
   if (!viewport) return null;

@@ -22,7 +22,7 @@ import type {
   BuildFlightPlanInput,
   SimBriefImportInput
 } from '@shared/flight-plan-types'
-import type { NavMapQueryInput } from '@shared/nav-map-types'
+import type { NavMapQueryInput, NavMapSearchInput } from '@shared/nav-map-types'
 import { WebSocket, WebSocketServer } from 'ws'
 import { SettingsStore } from '../config/SettingsStore'
 import { SimConnectService } from '../simconnect/SimConnectService'
@@ -262,6 +262,12 @@ export class LanServer {
         return
       }
 
+      if (url.pathname === '/api/nav/search-points' && request.method === 'POST') {
+        const input = (await this.readJsonBody(request)) as NavMapSearchInput
+        this.sendJson(response, this.navDataService.searchMapPoints(this.settingsStore.get(), input))
+        return
+      }
+
       if (url.pathname === '/api/simbrief/import' && request.method === 'POST') {
         const input = (await this.readJsonBody(request)) as SimBriefImportInput
         this.sendJson(
@@ -473,7 +479,7 @@ export class LanServer {
       airportCode: null,
       chartType: 'general',
       titleMode: 'manual',
-      boundApproachProcedureId: null,
+      boundApproachProcedureIds: [],
       sourceFilePath: imported.destinationPath,
       previewImagePath: displayPath,
       fileFormat: displayFormat,
