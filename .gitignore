@@ -1,10 +1,12 @@
 node_modules/
-dist-electron/
-dist-renderer/
-release/
+dist/
+out/
+.cache/
 *.log
 *.tsbuildinfo
-*.env
+.env
+.env.*
+!.env.example
 *.env.local
 artifacts/
 data/

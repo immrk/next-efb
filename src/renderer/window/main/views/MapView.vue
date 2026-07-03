@@ -653,7 +653,8 @@ async function searchMapPoints(
   }
 }
 
-function focusSearchResult(item: NavMapSearchResult): void {
+function focusSearchResult(value: unknown): void {
+  const item = value as NavMapSearchResult
   followAircraft.value = false
   map?.setView([item.lat, item.lon], Math.max(map.getZoom(), 10))
 }
@@ -785,24 +786,28 @@ function toggleChart(chartId: string): void {
   activeChartId.value = activeChartId.value === chartId ? null : chartId
 }
 
-function dockCardChartId(card: DockCard): string | null {
+function dockCardChartId(value: unknown): string | null {
+  const card = value as DockCard
   return card.kind === 'manual' ? card.chart.id : card.chartId
 }
 
-function dockCardTagType(card: DockCard): 'success' | 'warning' | 'info' {
+function dockCardTagType(value: unknown): 'success' | 'warning' | 'info' {
+  const card = value as DockCard
   if (card.kind === 'manual' || card.state === 'active') return 'success'
   if (card.state === 'missing-georef') return 'warning'
   return 'info'
 }
 
-function dockCardStateLabel(card: DockCard): string {
+function dockCardStateLabel(value: unknown): string {
+  const card = value as DockCard
   if (card.kind === 'manual') return t('mapMount.manual')
   if (card.state === 'active') return t('mapMount.active')
   if (card.state === 'missing-georef') return t('mapMount.noGeoref')
   return t('mapMount.noChart')
 }
 
-function dockCardActionLabel(card: DockCard): string {
+function dockCardActionLabel(value: unknown): string {
+  const card = value as DockCard
   const chartId = dockCardChartId(card)
   if (chartId && activeChartId.value === chartId) return t('common.close')
   if (card.kind === 'procedure' && card.state === 'missing-chart') {
@@ -814,7 +819,8 @@ function dockCardActionLabel(card: DockCard): string {
   return t('mapMount.activate')
 }
 
-function handleDockCard(card: DockCard): void {
+function handleDockCard(value: unknown): void {
+  const card = value as DockCard
   if (card.kind === 'procedure' && card.state === 'missing-chart') {
     chartsVisible.value = false
     void router.push('/charts')

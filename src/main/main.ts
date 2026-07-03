@@ -1,9 +1,20 @@
-import { Menu, Tray, app, nativeImage, BrowserWindow, session, dialog, shell } from 'electron'
+import {
+  BrowserWindow,
+  Menu,
+  Tray,
+  app,
+  dialog,
+  nativeImage,
+  session
+} from 'electron'
 import { join } from 'node:path'
-import { IPC_CHANNELS } from '@shared/channels'
+import { WINDOW_NAMES } from '../config/windowConfig'
 import { APP_NAME } from '@shared/branding'
+import { IPC_CHANNELS } from '@shared/channels'
 import type { DesktopWindowState } from '@shared/types'
 import { registerIpc } from './ipc/registerIpc'
+import { registerTemplateIpc } from './ipc/registerTemplateIpc'
+import { windowManager } from './windowManager'
 import { FlightStateStore } from './services/state/FlightStateStore'
 import { SettingsStore } from './services/config/SettingsStore'
 import { SimConnectService } from './services/simconnect/SimConnectService'
@@ -11,14 +22,13 @@ import { ChartRepository } from './services/storage/ChartRepository'
 import { StorageService } from './services/storage/StorageService'
 import { LanServer } from './services/lan/LanServer'
 import { NavDataService } from './services/navigation/NavDataService'
-import { MAIN_WINDOW_CONFIG } from '../config/windowConfig'
 
-let mainWindow: BrowserWindow | null = null
 let appTray: Tray | null = null
 let isQuitting = false
 let hasShownSingleInstanceNotice = false
-const DEV_LOAD_RETRY_MS = 1200
-const DEV_LOAD_MAX_ATTEMPTS = 12
+let simConnectService: SimConnectService | null = null
+let lanServer: LanServer | null = null
+
 const TILE_REQUEST_URLS = [
   'https://server.arcgisonline.com/*',
   'https://tile.openstreetmap.org/*',
@@ -33,44 +43,34 @@ const TILE_REQUEST_URLS = [
   'https://c.basemaps.cartocdn.com/*',
   'https://d.basemaps.cartocdn.com/*'
 ]
-const APP_TILE_REFERER = 'https://nextefb.app/'
 
-async function delay(ms: number): Promise<void> {
-  await new Promise((resolve) => setTimeout(resolve, ms))
+const hasSingleInstanceLock = app.requestSingleInstanceLock()
+
+if (!hasSingleInstanceLock) {
+  app.quit()
+} else {
+  app.whenReady().then(initializeApplication)
 }
 
-async function loadRenderer(window: BrowserWindow): Promise<void> {
-  if (process.env.ELECTRON_RENDERER_URL) {
-    let lastError: unknown
+async function initializeApplication(): Promise<void> {
+  configureTileRequestHeaders()
+  registerTemplateIpc()
 
-    for (let attempt = 1; attempt <= DEV_LOAD_MAX_ATTEMPTS; attempt += 1) {
-      try {
-        await window.loadURL(process.env.ELECTRON_RENDERER_URL)
-        return
-      } catch (error) {
-        lastError = error
-        if (attempt < DEV_LOAD_MAX_ATTEMPTS) {
-          await delay(DEV_LOAD_RETRY_MS)
-        }
-      }
-    }
+  const instance = windowManager.createWindow(WINDOW_NAMES.main, {
+    icon: getBrandingAssetPath('app-icon-256.png')
+  })
+  if (!instance) throw new Error('MAIN_WINDOW_CREATE_FAILED')
+  const mainWindow = instance.window
 
-    throw lastError
-  }
-
-  await window.loadFile(join(__dirname, '../../renderer/index.html'))
-}
-
-async function createWindow(): Promise<void> {
   const settingsStore = new SettingsStore(resolveSystemLanguage(app.getLocale()))
   const flightStateStore = new FlightStateStore()
-  const simConnectService = new SimConnectService(settingsStore.get())
+  simConnectService = new SimConnectService(settingsStore.get())
   const storageService = new StorageService()
   const navDataService = new NavDataService()
   const chartRepository = new ChartRepository(storageService.getSummary())
-  const lanServer = new LanServer({
+  lanServer = new LanServer({
     settings: settingsStore.get(),
-    rendererRoot: join(__dirname, '../../renderer'),
+    rendererRoot: join(import.meta.dirname, '../renderer/window/main'),
     flightStateStore,
     settingsStore,
     simConnectService,
@@ -78,54 +78,6 @@ async function createWindow(): Promise<void> {
     storageService,
     navDataService
   })
-
-  mainWindow = new BrowserWindow({
-    ...MAIN_WINDOW_CONFIG,
-    title: APP_NAME,
-    icon: getBrandingAssetPath('app-icon-256.png'),
-    webPreferences: {
-      ...MAIN_WINDOW_CONFIG.webPreferences,
-      preload: join(__dirname, '../preload/index.js'),
-      contextIsolation: true,
-      nodeIntegration: false
-    }
-  })
-
-  const appUrl = process.env.ELECTRON_RENDERER_URL
-    ? process.env.ELECTRON_RENDERER_URL
-    : `file://${join(__dirname, '../../renderer/index.html').replace(/\\/g, '/')}`
-
-  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    if (isExternalUrl(url, appUrl)) {
-      void shell.openExternal(url)
-    }
-
-    return { action: 'deny' }
-  })
-
-  mainWindow.webContents.on('will-navigate', (event, url) => {
-    if (!isExternalUrl(url, appUrl)) {
-      return
-    }
-
-    event.preventDefault()
-    void shell.openExternal(url)
-  })
-
-  mainWindow.on('close', (event) => {
-    if (isQuitting) {
-      return
-    }
-
-    event.preventDefault()
-    mainWindow?.hide()
-  })
-
-  mainWindow.on('maximize', () => sendWindowState(mainWindow))
-  mainWindow.on('unmaximize', () => sendWindowState(mainWindow))
-
-  ensureTray()
-  sendWindowState(mainWindow)
 
   registerIpc({
     mainWindow,
@@ -138,89 +90,67 @@ async function createWindow(): Promise<void> {
     navDataService
   })
 
+  installMainWindowBehavior(mainWindow)
+  ensureTray()
   simConnectService.start()
   await lanServer.start()
-  await loadRenderer(mainWindow)
   sendWindowState(mainWindow)
+
+  app.on('activate', () => windowManager.showWindow(WINDOW_NAMES.main))
 }
 
-function resolveSystemLanguage(locale: string): 'zh-CN' | 'en-US' {
-  return locale.trim().toLowerCase().startsWith('zh') ? 'zh-CN' : 'en-US'
-}
-
-const hasSingleInstanceLock = app.requestSingleInstanceLock()
-
-if (!hasSingleInstanceLock) {
-  app.quit()
-} else {
-app.whenReady().then(async () => {
-  configureTileRequestHeaders()
-
-  app.on('before-quit', () => {
-    isQuitting = true
-  })
-
-  await createWindow()
-
-  app.on('activate', async () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      await createWindow()
-    }
-  })
+app.on('before-quit', () => {
+  isQuitting = true
+  simConnectService?.stop()
+  void lanServer?.stop()
 })
-}
 
 app.on('second-instance', () => {
-  showMainWindow()
-  notifyAlreadyRunning()
+  windowManager.showWindow(WINDOW_NAMES.main)
+  const mainWindow = windowManager.getWindow(WINDOW_NAMES.main)?.window
+  if (mainWindow) notifyAlreadyRunning(mainWindow)
 })
+
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') app.quit()
+})
+
+function installMainWindowBehavior(mainWindow: BrowserWindow): void {
+  mainWindow.on('close', (event) => {
+    if (isQuitting) return
+    event.preventDefault()
+    mainWindow.hide()
+  })
+  mainWindow.on('maximize', () => sendWindowState(mainWindow))
+  mainWindow.on('unmaximize', () => sendWindowState(mainWindow))
+}
 
 function configureTileRequestHeaders(): void {
   const userAgent = `${APP_NAME}/${app.getVersion()} (Electron ${process.versions.electron})`
-
   app.userAgentFallback = userAgent
-
-  session.defaultSession.webRequest.onBeforeSendHeaders({ urls: TILE_REQUEST_URLS }, (details, callback) => {
-    callback({
-      requestHeaders: {
-        ...details.requestHeaders,
-        'User-Agent': userAgent,
-        Referer: APP_TILE_REFERER
-      }
-    })
-  })
-}
-
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit()
-  }
-})
-
-function sendWindowState(window: BrowserWindow | null): void {
-  if (!window || window.isDestroyed()) {
-    return
-  }
-
-  const payload: DesktopWindowState = {
-    isMaximized: window.isMaximized()
-  }
-
-  window.webContents.send(IPC_CHANNELS.windowStateChanged, payload)
+  session.defaultSession.webRequest.onBeforeSendHeaders(
+    { urls: TILE_REQUEST_URLS },
+    (details, callback) => {
+      callback({
+        requestHeaders: {
+          ...details.requestHeaders,
+          'User-Agent': userAgent,
+          Referer: 'https://nextefb.app/'
+        }
+      })
+    }
+  )
 }
 
 function ensureTray(): void {
-  if (appTray) {
-    return
-  }
-
-  appTray = new Tray(createTrayIcon())
+  if (appTray) return
+  appTray = new Tray(nativeImage.createFromPath(getBrandingAssetPath('tray-icon-32.png')))
   appTray.setToolTip(APP_NAME)
   appTray.setContextMenu(
     Menu.buildFromTemplate([
       {
         label: `Show ${APP_NAME}`,
-        click: () => showMainWindow()
+        click: () => windowManager.showWindow(WINDOW_NAMES.main)
       },
       {
         label: 'Exit',
@@ -231,31 +161,19 @@ function ensureTray(): void {
       }
     ])
   )
-  appTray.on('double-click', () => showMainWindow())
-  appTray.on('click', () => showMainWindow())
+  appTray.on('click', () => windowManager.showWindow(WINDOW_NAMES.main))
+  appTray.on('double-click', () => windowManager.showWindow(WINDOW_NAMES.main))
 }
 
-function showMainWindow(): void {
-  if (!mainWindow || mainWindow.isDestroyed()) {
-    return
-  }
-
-  if (mainWindow.isMinimized()) {
-    mainWindow.restore()
-  }
-
-  mainWindow.show()
-  mainWindow.focus()
-  sendWindowState(mainWindow)
+function sendWindowState(window: BrowserWindow): void {
+  if (window.isDestroyed()) return
+  const payload: DesktopWindowState = { isMaximized: window.isMaximized() }
+  window.webContents.send(IPC_CHANNELS.windowStateChanged, payload)
 }
 
-function notifyAlreadyRunning(): void {
-  if (!mainWindow || mainWindow.isDestroyed() || hasShownSingleInstanceNotice) {
-    return
-  }
-
+function notifyAlreadyRunning(mainWindow: BrowserWindow): void {
+  if (hasShownSingleInstanceNotice) return
   hasShownSingleInstanceNotice = true
-
   void dialog
     .showMessageBox(mainWindow, {
       type: 'info',
@@ -271,38 +189,12 @@ function notifyAlreadyRunning(): void {
     })
 }
 
-function createTrayIcon() {
-  return nativeImage.createFromPath(getBrandingAssetPath('tray-icon-32.png'))
+function resolveSystemLanguage(locale: string): 'zh-CN' | 'en-US' {
+  return locale.trim().toLowerCase().startsWith('zh') ? 'zh-CN' : 'en-US'
 }
 
 function getBrandingAssetPath(fileName: string): string {
-  return join(app.getAppPath(), 'assets', 'branding', fileName)
-}
-
-function isExternalUrl(targetUrl: string, appUrl: string): boolean {
-  if (!isSupportedExternalUrl(targetUrl)) {
-    return false
-  }
-
-  try {
-    const target = new URL(targetUrl)
-    const appLocation = new URL(appUrl)
-
-    if (appLocation.protocol === 'file:') {
-      return target.protocol !== 'file:'
-    }
-
-    return target.origin !== appLocation.origin
-  } catch {
-    return false
-  }
-}
-
-function isSupportedExternalUrl(url: string): boolean {
-  try {
-    const { protocol } = new URL(url)
-    return protocol === 'http:' || protocol === 'https:' || protocol === 'mailto:' || protocol === 'tel:'
-  } catch {
-    return false
-  }
+  return app.isPackaged
+    ? join(process.resourcesPath, 'branding', fileName)
+    : join(app.getAppPath(), 'assets', 'branding', fileName)
 }

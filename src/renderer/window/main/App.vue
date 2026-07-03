@@ -1,7 +1,7 @@
 <template>
   <TitleBar />
   <div class="main-layout">
-    <LeftBar @login="loginVisible = true" />
+    <LeftBar @login="openLogin" />
     <main class="main-content">
       <router-view />
     </main>
@@ -23,6 +23,14 @@ const { initialize } = useAppState()
 onMounted(() => {
   void initialize().catch(() => ElMessage.error('应用数据加载失败'))
 })
+
+function openLogin(): void {
+  if (window.windowManager) {
+    void window.windowManager.createWindow('login')
+    return
+  }
+  loginVisible.value = true
+}
 </script>
 
 <style scoped>

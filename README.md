@@ -4,7 +4,7 @@ NextEFB 是面向 Microsoft Flight Simulator 的 Electron 桌面电子飞行包�
 
 ## 技术栈
 
-- Electron + electron-vite + TypeScript
+- Electron Forge + Vite 多窗口 + tsup + TypeScript
 - Vue 3 + Vue Router
 - Element Plus
 - Leaflet
@@ -54,12 +54,16 @@ npm install
 npm run dev
 ```
 
+`npm run dev` 与模板一致：读取 `src/config/windowConfig.ts`，为 `main`、`setting`、`login` 分别启动 Vite 服务。另开终端执行 `npm run watch`，由 nodemon 监听主进程并通过 tsup 持续重建。
+
+在 VS Code 中先执行 `renderer-dev` 任务，再启动 `Electron TS Development` 调试配置即可进入模板同款调试流程。单独调试窗口可使用 `npm run dev:main`、`npm run dev:setting` 或 `npm run dev:login`。
+
 ## 验证
 
 ```bash
 npm run typecheck
 npm test
-npm run build:bundle
+npm run build
 ```
 
 `npm run uat` 会启动带本地 Mock API 的浏览器验收环境，用于在没有 Electron、MSFS、SimConnect 或导航数据库时检查所有页面和交互。
@@ -67,7 +71,8 @@ npm run build:bundle
 ## 打包
 
 ```bash
-npm run build
+npm run package
+npm run make
 ```
 
-默认产出 Windows NSIS 安装包。原生依赖更新后可执行 `npm run rebuild-native`。
+项目使用与模板一致的 Electron Forge 打包链路：`package` 生成未安装应用，`make` 生成当前平台安装产物。原生依赖更新后可执行 `npm run rebuild-native`。

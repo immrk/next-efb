@@ -107,3 +107,31 @@ const api = {
 }
 
 contextBridge.exposeInMainWorld('msfsApi', api)
+
+contextBridge.exposeInMainWorld('windowManager', {
+  createWindow: (name: string, options?: Electron.BrowserWindowConstructorOptions) =>
+    ipcRenderer.invoke('window:create', name, options),
+  showWindow: (name: string) => ipcRenderer.invoke('window:show', name),
+  hideWindow: (name: string) => ipcRenderer.invoke('window:hide', name),
+  closeWindow: (name: string) => ipcRenderer.invoke('window:close', name),
+  focusWindow: (name: string) => ipcRenderer.invoke('window:focus', name),
+  minimizeWindow: (name: string) => ipcRenderer.invoke('window:minimize', name),
+  maximizeWindow: (name: string) => ipcRenderer.invoke('window:maximize', name),
+  restoreWindow: (name: string) => ipcRenderer.invoke('window:restore', name),
+  hasWindow: (name: string) => ipcRenderer.invoke('window:has', name),
+  isWindowVisible: (name: string) => ipcRenderer.invoke('window:isVisible', name),
+  getAllWindows: () => ipcRenderer.invoke('window:getAll'),
+  getVisibleWindowCount: () => ipcRenderer.invoke('window:getVisibleCount')
+})
+
+contextBridge.exposeInMainWorld('auth', {
+  login: (data: unknown) => ipcRenderer.invoke('auth:login', data),
+  logout: () => ipcRenderer.invoke('auth:logout'),
+  getToken: () => ipcRenderer.invoke('auth:getToken'),
+  tokenRefresh: () => ipcRenderer.invoke('auth:tokenRefresh'),
+  onTokenChange: (listener: (user: unknown) => void) => {
+    const wrapped = (_event: Electron.IpcRendererEvent, user: unknown) => listener(user)
+    ipcRenderer.on('auth:tokenChange', wrapped)
+    return () => ipcRenderer.removeListener('auth:tokenChange', wrapped)
+  }
+})

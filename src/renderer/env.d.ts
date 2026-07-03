@@ -35,7 +35,36 @@ import type {
 } from '@shared/nav-map-types'
 
 declare global {
+  interface TemplateIpcResponse<T = undefined> {
+    success: boolean
+    data?: T
+    error?: string
+  }
+
   interface Window {
+    windowManager?: {
+      createWindow: (name: string, options?: Electron.BrowserWindowConstructorOptions) => Promise<TemplateIpcResponse>
+      showWindow: (name: string) => Promise<TemplateIpcResponse>
+      hideWindow: (name: string) => Promise<TemplateIpcResponse>
+      closeWindow: (name: string) => Promise<TemplateIpcResponse>
+      focusWindow: (name: string) => Promise<TemplateIpcResponse>
+      minimizeWindow: (name: string) => Promise<TemplateIpcResponse>
+      maximizeWindow: (name: string) => Promise<TemplateIpcResponse>
+      restoreWindow: (name: string) => Promise<TemplateIpcResponse>
+      hasWindow: (name: string) => Promise<TemplateIpcResponse<boolean>>
+      isWindowVisible: (name: string) => Promise<TemplateIpcResponse<boolean>>
+      getAllWindows: () => Promise<TemplateIpcResponse<Array<{ name: string; isVisible: boolean }>>>
+      getVisibleWindowCount: () => Promise<TemplateIpcResponse<number>>
+    }
+    auth?: {
+      login: (data: unknown) => Promise<TemplateIpcResponse>
+      logout: () => Promise<TemplateIpcResponse>
+      getToken: () => Promise<TemplateIpcResponse<import('./composables/useAuth').MockUser | null>>
+      tokenRefresh: () => Promise<TemplateIpcResponse<import('./composables/useAuth').MockUser | null>>
+      onTokenChange: (
+        listener: (user: import('./composables/useAuth').MockUser | null) => void
+      ) => () => void
+    }
     msfsApi: {
       getSnapshot: () => Promise<{ aircraft: AircraftState; connection: ConnectionState }>
       getSettings: () => Promise<AppSettings>

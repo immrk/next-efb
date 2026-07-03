@@ -3,27 +3,39 @@
   "version": "0.1.0",
   "private": true,
   "description": "NextEFB desktop companion for map, chart, and flight-deck workflows.",
-  "main": "dist/electron/main/main.js",
+  "author": "Keyajian <keyajian@gmail.com>",
+  "main": "./dist/main/main.js",
+  "type": "module",
+  "license": "ISC",
+  "config": {
+    "forge": "./forge.config.ts"
+  },
   "scripts": {
     "branding:generate": "node scripts/generate-branding.mjs",
-    "dev": "npm run branding:generate && electron-vite dev",
-    "build:bundle": "npm run branding:generate && electron-vite build",
-    "clean:release": "node scripts/clean-release.mjs",
-    "build": "npm run clean:release && npm run build:bundle && electron-builder --win nsis",
-    "build:portable": "npm run clean:release && npm run build:bundle && electron-builder --win portable",
-    "preview": "npm run branding:generate && electron-vite preview",
+    "watch": "nodemon",
+    "dev": "node scripts/dev.js",
+    "dev:main": "WINDOW_NAME=main vite",
+    "dev:setting": "WINDOW_NAME=setting vite",
+    "dev:login": "WINDOW_NAME=login vite",
+    "build:renderer": "node scripts/rendererBuild.js",
+    "start": "electron ./dist/main/main.js",
+    "forge:start": "electron-forge start",
+    "package": "electron-forge package",
+    "tsup": "tsup",
+    "build:main": "node scripts/main.js",
+    "build": "rimraf dist && npm run build:main && npm run build:renderer",
+    "make": "rimraf dist && rimraf out && npm run branding:generate && npm run build:main && npm run build:renderer && electron-forge make",
     "rebuild-native": "electron-rebuild -f -w better-sqlite3",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && vue-tsc --noEmit -p tsconfig.web.json",
     "test": "vitest run",
     "test:watch": "vitest",
-    "uat": "vite --config vite.uat.config.ts",
-    "pack:dir": "npm run clean:release && npm run build:bundle && electron-builder --dir",
-    "package:win": "npm run build"
+    "uat": "vite --config vite.uat.config.ts"
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.1",
     "@types/ws": "^8.18.1",
     "better-sqlite3": "^12.8.0",
+    "electron-store": "^10.1.0",
     "element-plus": "^2.10.3",
     "leaflet": "^1.9.4",
     "node-simconnect": "^4.0.0",
@@ -35,57 +47,39 @@
     "ws": "^8.20.0"
   },
   "devDependencies": {
+    "@electron-forge/cli": "^7.8.1",
+    "@electron-forge/maker-deb": "^7.8.1",
+    "@electron-forge/maker-dmg": "^7.8.1",
+    "@electron-forge/maker-rpm": "^7.8.1",
+    "@electron-forge/maker-squirrel": "^7.8.1",
+    "@electron-forge/plugin-auto-unpack-natives": "^7.8.1",
+    "@electron-forge/plugin-fuses": "^7.8.1",
     "@electron/rebuild": "^4.0.3",
+    "@electron/fuses": "^1.8.0",
+    "@iconify-json/ep": "^1.2.2",
+    "@iconify-json/mdi": "^1.2.3",
     "@types/leaflet": "^1.9.21",
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^24.0.0",
     "@types/qrcode": "^1.5.6",
     "@vitejs/plugin-vue": "^5.2.4",
     "@vue/test-utils": "^2.4.6",
-    "electron": "^37.0.0",
-    "electron-builder": "^26.8.1",
-    "electron-vite": "^3.0.0",
+    "concurrently": "^9.1.0",
+    "dotenv": "^17.2.0",
+    "electron": "^36.5.0",
+    "esbuild": "^0.28.1",
     "jsdom": "^26.1.0",
+    "nodemon": "^3.1.10",
+    "rimraf": "^6.0.1",
     "sass": "^1.89.2",
+    "tsup": "^8.5.0",
     "typescript": "^5.8.0",
-    "vite": "^6.0.0",
+    "unplugin-auto-import": "^19.3.0",
+    "unplugin-icons": "^22.1.0",
+    "unplugin-vue-components": "^28.8.0",
+    "vite": "^6.3.5",
+    "vite-plugin-fake-server": "^2.2.0",
     "vitest": "^3.2.4",
     "vue-tsc": "^2.2.12"
-  },
-  "build": {
-    "appId": "com.nextflight.nextefb",
-    "productName": "NextEFB",
-    "artifactName": "NextEFB-${version}-${arch}.${ext}",
-    "executableName": "NextEFB",
-    "afterPack": "scripts/after-pack.cjs",
-    "directories": {
-      "output": "artifacts"
-    },
-    "files": [
-      "dist/**/*",
-      "assets/branding/**/*",
-      "package.json",
-      "node_modules/**/*"
-    ],
-    "asarUnpack": [
-      "node_modules/better-sqlite3/**/*"
-    ],
-    "win": {
-      "icon": "assets/branding/NextEFB.ico",
-      "signAndEditExecutable": false,
-      "target": [
-        "nsis"
-      ]
-    },
-    "nsis": {
-      "artifactName": "NextEFB-${version}-${arch}-installer.${ext}",
-      "installerIcon": "assets/branding/NextEFB.ico",
-      "uninstallerIcon": "assets/branding/NextEFB.ico",
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true
-    },
-    "portable": {
-      "artifactName": "NextEFB-${version}-${arch}-portable.${ext}"
-    }
   }
 }

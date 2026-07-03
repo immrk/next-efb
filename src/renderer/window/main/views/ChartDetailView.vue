@@ -420,7 +420,8 @@ async function searchMapPoints(
   }
 }
 
-function focusMapPoint(item: NavMapSearchResult): void {
+function focusMapPoint(value: unknown): void {
+  const item = value as NavMapSearchResult
   map?.setView([item.lat, item.lon], 12)
 }
 

@@ -136,13 +136,16 @@ export function registerIpc(options: RegisterIpcOptions): void {
     await shell.openExternal(url)
     return true
   })
-  ipcMain.handle(IPC_CHANNELS.windowStateGet, (): DesktopWindowState => getWindowState(mainWindow))
-  ipcMain.handle(IPC_CHANNELS.windowAction, (_event, action: DesktopWindowAction): DesktopWindowState => {
-    performWindowAction(mainWindow, action)
-    return getWindowState(mainWindow)
+  ipcMain.handle(IPC_CHANNELS.windowStateGet, (event): DesktopWindowState =>
+    getWindowState(BrowserWindow.fromWebContents(event.sender) ?? mainWindow)
+  )
+  ipcMain.handle(IPC_CHANNELS.windowAction, (event, action: DesktopWindowAction): DesktopWindowState => {
+    const targetWindow = BrowserWindow.fromWebContents(event.sender) ?? mainWindow
+    performWindowAction(targetWindow, action)
+    return getWindowState(targetWindow)
   })
-  ipcMain.handle(IPC_CHANNELS.devAction, (_event, action: DesktopDevAction): boolean => {
-    performDevAction(mainWindow, action)
+  ipcMain.handle(IPC_CHANNELS.devAction, (event, action: DesktopDevAction): boolean => {
+    performDevAction(BrowserWindow.fromWebContents(event.sender) ?? mainWindow, action)
     return true
   })
   ipcMain.handle(IPC_CHANNELS.chartsList, () => chartRepository.listCharts())

@@ -35,6 +35,9 @@ copyFileSync(resolve(brandingDir, 'icon-180.png'), resolve(brandingDir, 'apple-t
 
 writeFileSync(resolve(brandingDir, 'favicon.ico'), createIco([16, 32, 48], pngBuffers))
 writeFileSync(resolve(brandingDir, 'NextEFB.ico'), createIco([16, 32, 48, 64, 128, 256], pngBuffers))
+if (process.platform === 'darwin') {
+  generateIcns(resolve(brandingDir, 'NextEFB.icns'), pngBuffers)
+}
 writeFileSync(
   resolve(brandingDir, 'site.webmanifest'),
   JSON.stringify(
@@ -61,6 +64,7 @@ writeFileSync(
     '- `brand-mark.png`: UI branding image used in the renderer',
     '- `icon-*.png`: generated raster sizes for web and desktop use',
     '- `NextEFB.ico`: Windows application and installer icon',
+    '- `NextEFB.icns`: macOS application icon',
     '- `tray-icon-32.png`: system tray icon',
     '',
     'Regenerate everything with:',
@@ -76,7 +80,17 @@ function generatePngVariant(size, outputPath) {
   if (process.platform === 'darwin') {
     const result = spawnSync(
       'sips',
-      ['--resampleHeightWidth', String(size), String(size), sourceImagePath, '--out', outputPath],
+      [
+        '--setProperty',
+        'format',
+        'png',
+        '--resampleHeightWidth',
+        String(size),
+        String(size),
+        sourceImagePath,
+        '--out',
+        outputPath
+      ],
       { stdio: 'pipe', encoding: 'utf8' }
     )
     if (result.status !== 0) {
@@ -119,6 +133,35 @@ try {
   if (result.status !== 0) {
     throw new Error(result.stderr || result.stdout || `Failed to generate ${outputPath}`)
   }
+}
+
+function generateIcns(outputPath, pngBuffers) {
+  rmSync(resolve(brandingDir, 'NextEFB.iconset'), { recursive: true, force: true })
+  const iconTypes = new Map([
+    [16, 'icp4'],
+    [32, 'icp5'],
+    [64, 'icp6'],
+    [128, 'ic07'],
+    [256, 'ic08'],
+    [512, 'ic09']
+  ])
+  const entries = []
+
+  for (const [size, type] of iconTypes) {
+    const png = pngBuffers.get(size)
+    const entryHeader = Buffer.alloc(8)
+    entryHeader.write(type, 0, 4, 'ascii')
+    entryHeader.writeUInt32BE(png.length + entryHeader.length, 4)
+    entries.push(entryHeader, png)
+  }
+
+  const fileHeader = Buffer.alloc(8)
+  fileHeader.write('icns', 0, 4, 'ascii')
+  fileHeader.writeUInt32BE(
+    fileHeader.length + entries.reduce((total, entry) => total + entry.length, 0),
+    4
+  )
+  writeFileSync(outputPath, Buffer.concat([fileHeader, ...entries]))
 }
 
 function escapeForPowerShell(value) {

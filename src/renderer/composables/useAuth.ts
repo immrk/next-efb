@@ -10,8 +10,10 @@ export interface MockUser {
 
 const STORAGE_KEY = 'nextefb.mock-user'
 const user = ref<MockUser | null>(readStoredUser())
+let ipcInitialized = false
 
 export function useAuth() {
+  initializeIpcAuth()
   const isLoggedIn = computed(() => Boolean(user.value?.accessToken))
 
   async function login(_credentials: { email: string; password: string }): Promise<MockUser> {
@@ -24,13 +26,22 @@ export function useAuth() {
       refreshToken: '123456'
     }
     user.value = mockUser
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(mockUser))
+    if (window.auth) {
+      const response = await window.auth.login(mockUser)
+      if (!response.success) throw new Error(response.error || 'MOCK_LOGIN_FAILED')
+    } else {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(mockUser))
+    }
     return mockUser
   }
 
-  function logout(): void {
+  async function logout(): Promise<void> {
     user.value = null
-    window.localStorage.removeItem(STORAGE_KEY)
+    if (window.auth) {
+      await window.auth.logout()
+    } else {
+      window.localStorage.removeItem(STORAGE_KEY)
+    }
   }
 
   return {
@@ -39,6 +50,17 @@ export function useAuth() {
     login,
     logout
   }
+}
+
+function initializeIpcAuth(): void {
+  if (ipcInitialized || typeof window === 'undefined' || !window.auth) return
+  ipcInitialized = true
+  void window.auth.getToken().then((response) => {
+    if (response.success) user.value = response.data ?? null
+  })
+  window.auth.onTokenChange((nextUser) => {
+    user.value = nextUser
+  })
 }
 
 function readStoredUser(): MockUser | null {

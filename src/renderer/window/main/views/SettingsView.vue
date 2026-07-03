@@ -249,8 +249,8 @@ async function updateMapProvider(value: MapTileProvider): Promise<void> {
   await applySettings({ mapTileProvider: value })
 }
 
-async function updateChartOpacity(value: number): Promise<void> {
-  await applySettings({ chartOpacity: value })
+async function updateChartOpacity(value: number | number[]): Promise<void> {
+  await applySettings({ chartOpacity: Array.isArray(value) ? value[0] : value })
 }
 
 async function pickNavPath(): Promise<void> {
