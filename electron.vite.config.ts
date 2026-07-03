@@ -1,5 +1,5 @@
 import { defineConfig, externalizeDepsPlugin } from 'electron-vite'
-import react from '@vitejs/plugin-react'
+import vue from '@vitejs/plugin-vue'
 import { resolve } from 'node:path'
 
 export default defineConfig({
@@ -10,6 +10,9 @@ export default defineConfig({
       })
     ],
     build: {
+      lib: {
+        entry: resolve(__dirname, 'src/main/main.ts')
+      },
       outDir: 'dist/electron/main'
     },
     resolve: {
@@ -20,6 +23,9 @@ export default defineConfig({
   },
   preload: {
     build: {
+      lib: {
+        entry: resolve(__dirname, 'src/main/preload/index.ts')
+      },
       outDir: 'dist/electron/preload'
     },
     resolve: {
@@ -32,7 +38,7 @@ export default defineConfig({
     root: 'src/renderer',
     publicDir: resolve(__dirname, 'assets/branding'),
     base: './',
-    plugins: [react()],
+    plugins: [vue()],
     server: {
       host: '127.0.0.1'
     },

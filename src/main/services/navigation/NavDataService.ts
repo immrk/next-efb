@@ -456,7 +456,7 @@ export class NavDataService {
         : this.resolveAirportPoint(departure)
 
     const departureSegmentPoints = dedupeConsecutivePoints(collectPoints(departureStartPoint, ...departureLegs.main))
-    appendSegment(segments, routePoints, departureSegmentPoints, 'departure', FLIGHT_PLAN_COLORS.departure)
+    appendSegment(segments, routePoints, departureSegmentPoints, 'departure')
 
     const departureAnchor = lastPoint(departureSegmentPoints) ?? departureStartPoint
     const tokens = normalizeRouteTokens(input.enrouteText)
@@ -497,23 +497,23 @@ export class NavDataService {
     const enrouteSegmentPoints = dedupeConsecutivePoints(
       collectPoints(...enroutePoints, arrivalEntryPoint)
     )
-    appendSegment(segments, routePoints, enrouteSegmentPoints, 'enroute', FLIGHT_PLAN_COLORS.enroute)
+    appendSegment(segments, routePoints, enrouteSegmentPoints, 'enroute')
 
     const arrivalSegmentPoints = dedupeConsecutivePoints(
       collectPoints(arrivalEntryPoint, ...arrivalLegs.main.slice(1), transitionPoint)
     )
-    appendSegment(segments, routePoints, arrivalSegmentPoints, 'arrival', FLIGHT_PLAN_COLORS.arrival)
+    appendSegment(segments, routePoints, arrivalSegmentPoints, 'arrival')
 
     const arrivalAnchor = lastPoint(arrivalSegmentPoints) ?? enrouteAnchor
     const approachEntryPoint = transitionPoint ?? arrivalAnchor
     const approachSegmentPoints = dedupeConsecutivePoints(collectPoints(approachEntryPoint, ...approachLegs.main))
 
     const mainApproachPoints = dedupeConsecutivePoints(collectPoints(...approachSegmentPoints, destinationPoint))
-    appendSegment(segments, routePoints, mainApproachPoints, 'approach', FLIGHT_PLAN_COLORS.approach)
+    appendSegment(segments, routePoints, mainApproachPoints, 'approach')
 
     const missedStartPoint = destinationPoint
     const missedSegmentPoints = dedupeConsecutivePoints(collectPoints(missedStartPoint, ...approachLegs.missed))
-    appendSegment(segments, routePoints, missedSegmentPoints, 'missed', FLIGHT_PLAN_COLORS.missed, true)
+    appendSegment(segments, routePoints, missedSegmentPoints, 'missed', true)
 
     db.close()
 
@@ -1372,7 +1372,6 @@ function appendSegment(
   routePoints: FlightPlanPoint[],
   points: FlightPlanPoint[],
   phase: NonNullable<FlightPlanSegment['phase']>,
-  color: string,
   dashed = false
 ): void {
   const cleaned = dedupeConsecutivePoints(collectPoints(...points))
@@ -1383,7 +1382,7 @@ function appendSegment(
     return
   }
 
-  segments.push({ points: cleaned, phase, color, dashed })
+  segments.push({ points: cleaned, phase, dashed })
   routePoints.push(...cleaned)
 }
 
@@ -1394,14 +1393,6 @@ function lastPoint(points: FlightPlanPoint[]): FlightPlanPoint | null {
 function collectPoints(...points: Array<FlightPlanPoint | null | undefined>): FlightPlanPoint[] {
   return points.filter((point): point is FlightPlanPoint => Boolean(point))
 }
-
-const FLIGHT_PLAN_COLORS = {
-  departure: '#4fd1c5',
-  enroute: '#6aa8ff',
-  arrival: '#ffbf69',
-  approach: '#ff7b72',
-  missed: '#c084fc'
-} as const
 
 function normalizeNullablePath(pathValue: string | null | undefined): string | null {
   if (!pathValue) return null

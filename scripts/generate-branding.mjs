@@ -42,8 +42,6 @@ writeFileSync(
       name: 'NextEFB',
       short_name: 'NextEFB',
       display: 'standalone',
-      background_color: '#ffffff',
-      theme_color: '#1783ef',
       icons: [
         { src: './icon-192.png', sizes: '192x192', type: 'image/png' },
         { src: './icon-512.png', sizes: '512x512', type: 'image/png' }
@@ -75,6 +73,18 @@ writeFileSync(
 )
 
 function generatePngVariant(size, outputPath) {
+  if (process.platform === 'darwin') {
+    const result = spawnSync(
+      'sips',
+      ['--resampleHeightWidth', String(size), String(size), sourceImagePath, '--out', outputPath],
+      { stdio: 'pipe', encoding: 'utf8' }
+    )
+    if (result.status !== 0) {
+      throw new Error(result.stderr || result.stdout || `Failed to generate ${outputPath}`)
+    }
+    return
+  }
+
   const script = `
 Add-Type -AssemblyName System.Drawing
 $src = [System.Drawing.Image]::FromFile('${escapeForPowerShell(sourceImagePath)}')

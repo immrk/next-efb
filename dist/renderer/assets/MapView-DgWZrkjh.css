@@ -1,0 +1,60 @@
+
+.map-page[data-v-6ebf1bad] {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+.map-canvas[data-v-6ebf1bad] {
+  width: 100%;
+  height: 100%;
+}
+.map-toolbar[data-v-6ebf1bad] {
+  position: absolute;
+  top: var(--el-component-size-small);
+  left: var(--el-component-size-small);
+  right: var(--el-component-size-small);
+  z-index: 500;
+}
+.toolbar-row[data-v-6ebf1bad] {
+  display: flex;
+  align-items: center;
+  gap: var(--el-component-size-small);
+}
+.toolbar-row .el-autocomplete[data-v-6ebf1bad] {
+  flex: 1;
+}
+.provider-select[data-v-6ebf1bad] {
+  width: 220px;
+}
+.map-controls[data-v-6ebf1bad] {
+  position: absolute;
+  left: var(--el-component-size-small);
+  bottom: var(--el-component-size-small);
+  z-index: 500;
+}
+.map-actions[data-v-6ebf1bad] {
+  position: absolute;
+  right: var(--el-component-size-small);
+  top: 90px;
+  z-index: 500;
+}
+.map-actions .el-button[data-v-6ebf1bad] {
+  width: 100%;
+  margin-left: 0;
+}
+.flight-status[data-v-6ebf1bad] {
+  position: absolute;
+  right: var(--el-component-size-small);
+  bottom: var(--el-component-size-small);
+  z-index: 500;
+  min-width: 320px;
+}
+.drawer-form .el-select[data-v-6ebf1bad] {
+  width: 100%;
+}
+.drawer-footer[data-v-6ebf1bad] {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--el-component-size-small);
+}

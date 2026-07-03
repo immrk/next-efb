@@ -1,195 +1,73 @@
 # NextEFB
 
-An Electron + React + TypeScript desktop MVP for NextEFB map, chart, and flight-deck workflows around Microsoft Flight Simulator 2020.
+NextEFB 是面向 Microsoft Flight Simulator 的 Electron 桌面电子飞行包，提供地图、航路规划、航图管理、地理配准、SimConnect 遥测与局域网访问。
 
-## Current status
+## 技术栈
 
-The project is in MVP scaffold stage.
-
-What is already in place:
-
-- Electron desktop shell
-- React renderer with TypeScript
-- Chinese / English i18n
-- real map view with Leaflet + OpenStreetMap
-- settings persistence
-- mock aircraft data provider for UI development
-- `node-simconnect` integration entry in the main process
-- successful `npm run typecheck`
-- successful `npm run build`
-
-What is not fully validated yet:
-
-- end-to-end runtime verification inside a launched Electron window on this machine
-- live connection verification against a running MSFS 2020 instance
-- packaging / installer validation
-
-So the answer is:
-
-- the MVP project structure is ready and buildable
-- the mock mode should be enough for normal UI development
-- live SimConnect mode still needs real-machine integration testing with MSFS running
-
-## Tech stack
-
-- Electron
-- React
-- TypeScript
-- electron-vite
-- Zustand
-- i18next / react-i18next
-- Leaflet / react-leaflet
+- Electron + electron-vite + TypeScript
+- Vue 3 + Vue Router
+- Element Plus
+- Leaflet
+- better-sqlite3
 - node-simconnect
+- Vitest + Vue Test Utils
 
-## Features in the current MVP
+渲染层完全采用 `Electron-Modern-Template` 的 Vue、Element Plus、标题栏、侧边栏与 Tab 路由结构。业务界面使用 Element Plus 默认主题和语义色，不维护自定义颜色或字号体系。
 
-- desktop shell for Windows
-- aircraft map panel
-- aircraft status panel
-- Chinese / English language switching
-- provider switching between `simconnect` and `mock`
-- automatic SimConnect retry logic
-- local settings persistence
+## 页面
 
-## Project structure
+- 地图：实时飞机状态、导航数据图层、信息点搜索、底图切换、航路绘制、SimBrief 导入和航图挂载。
+- 航图：本地导入、网络链接导入、搜索、元数据编辑、程序绑定、地图/航图双点地理配准和删除。
+- 设置：语言、数据来源、底图、航图透明度、导航数据库、航图库路径、SimBrief 与局域网访问。
+- 登录：保留模板 Mock 登录，当前不接入真实认证服务。
+
+## 项目结构
 
 ```text
-docs/
-  MVP.md
 src/
+  config/
+    windowConfig.ts
   main/
-    index.ts
+    main.ts
+    preload/
     ipc/
     services/
-  preload/
-    index.ts
   renderer/
-    App.tsx
-    components/
-    hooks/
+    client/
+    composables/
     i18n/
     locales/
-    store/
+    utils/
+    window/
+      main/
+        components/
+        router/
+        views/
   shared/
-    channels.ts
-    types.ts
+tests/
 ```
 
-## Quick start
-
-### 1. Install dependencies
+## 开发
 
 ```bash
 npm install
-```
-
-### 2. Start the app in development mode
-
-```bash
 npm run dev
 ```
 
-### 3. Build the app
+## 验证
+
+```bash
+npm run typecheck
+npm test
+npm run build:bundle
+```
+
+`npm run uat` 会启动带本地 Mock API 的浏览器验收环境，用于在没有 Electron、MSFS、SimConnect 或导航数据库时检查所有页面和交互。
+
+## 打包
 
 ```bash
 npm run build
 ```
 
-### 4. Run type checks
-
-```bash
-npm run typecheck
-```
-
-## How to use the current MVP
-
-### Mock mode
-
-Use Mock mode when:
-
-- MSFS is not running
-- you want to develop UI and interactions first
-
-In Mock mode the app simulates aircraft position, heading, speed, and altitude updates.
-
-### SimConnect mode
-
-Use SimConnect mode when:
-
-- Microsoft Flight Simulator 2020 is running
-- SimConnect is available to the local machine
-
-The app currently attempts to connect through `node-simconnect` from the Electron main process.
-
-If connection fails, the app keeps running and reports disconnected state. You can switch back to Mock mode from the settings panel.
-
-## Map solution
-
-The MVP currently uses:
-
-- `Leaflet`
-- `react-leaflet`
-- OpenStreetMap raster tiles
-
-Why this was chosen:
-
-- free and open source
-- simple React integration
-- good enough for MVP aircraft display and follow mode
-- easy to replace later with another compatible tile source
-
-Important note:
-
-OpenStreetMap public tiles are fine for development and light usage, but for larger-scale desktop distribution you should plan to move to a more controlled tile source or self-hosted setup.
-
-Reference:
-
-- [Leaflet](https://leafletjs.com/)
-- [React Leaflet](https://react-leaflet.js.org/)
-- [OpenStreetMap tile usage policy](https://operations.osmfoundation.org/policies/tiles/)
-
-## SimConnect integration notes
-
-The project uses `node-simconnect` as the Node.js system-layer integration path.
-
-Current live data fields planned / wired for reading:
-
-- latitude
-- longitude
-- altitude
-- heading
-- ground speed
-- on-ground state
-
-Current implementation file:
-
-- `src/main/services/simconnect/NodeSimConnectProvider.ts`
-
-## Scripts
-
-- `npm run dev` - start Electron in development mode
-- `npm run build` - build main, preload, and renderer bundles
-- `npm run typecheck` - run TypeScript checks for node and web targets
-- `npm run preview` - preview built app
-
-## Known limitations
-
-- no real flight trail drawing yet
-- no map provider switcher yet
-- no tray workflow yet
-- no packaged installer yet
-- live SimConnect mode still needs verification with a running simulator
-
-## Suggested next steps
-
-1. Test `npm run dev` locally with MSFS closed and verify Mock mode UX.
-2. Start MSFS 2020 and verify SimConnect connection and aircraft position updates.
-3. Add aircraft trail drawing.
-4. Add selectable map sources.
-5. Add packaging with `electron-builder`.
-
-## Document
-
-The MVP design document is available at:
-
-- [MVP.md](D:\develop\nextFlight\nextCilent\docs\MVP.md)
+默认产出 Windows NSIS 安装包。原生依赖更新后可执行 `npm run rebuild-native`。

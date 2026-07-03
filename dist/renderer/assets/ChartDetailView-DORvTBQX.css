@@ -1,0 +1,65 @@
+
+.chart-detail[data-v-7ca9b440] {
+  height: 100%;
+  overflow: auto;
+}
+.point-card[data-v-7ca9b440] {
+  margin-top: var(--el-component-size-small);
+}
+.point-actions[data-v-7ca9b440],
+.map-search[data-v-7ca9b440],
+.chart-toolbar[data-v-7ca9b440] {
+  display: flex;
+  align-items: center;
+  gap: var(--el-component-size-small);
+  margin-top: var(--el-component-size-small);
+}
+.point-actions[data-v-7ca9b440] {
+  flex-wrap: wrap;
+}
+.workspace-tabs[data-v-7ca9b440] {
+  height: calc(100vh - 120px);
+}
+.reference-map[data-v-7ca9b440] {
+  width: 100%;
+  height: calc(100vh - 230px);
+  margin-top: var(--el-component-size-small);
+}
+.map-search .el-autocomplete[data-v-7ca9b440],
+.chart-toolbar .el-slider[data-v-7ca9b440] {
+  flex: 1;
+}
+.chart-image-scroll[data-v-7ca9b440] {
+  height: calc(100vh - 230px);
+  overflow: auto;
+  margin-top: var(--el-component-size-small);
+  border: 1px solid var(--el-border-color);
+}
+.chart-image-stage[data-v-7ca9b440] {
+  position: relative;
+  min-width: 100%;
+  cursor: crosshair;
+}
+.chart-image-stage img[data-v-7ca9b440] {
+  width: 100%;
+  height: auto;
+  display: block;
+  user-select: none;
+}
+.chart-point[data-v-7ca9b440],
+.chart-aircraft[data-v-7ca9b440] {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: var(--el-component-size);
+  height: var(--el-component-size);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--el-border-radius-circle);
+  color: var(--el-color-white);
+  background-color: var(--el-color-primary);
+  pointer-events: none;
+}
+.delete-input[data-v-7ca9b440] {
+  margin-top: var(--el-component-size);
+}

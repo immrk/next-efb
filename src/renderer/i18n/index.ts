@@ -1,19 +1,17 @@
-import i18n from 'i18next'
-import { initReactI18next } from 'react-i18next'
+import { createI18n } from 'vue-i18n'
 import zhCN from '../locales/zh-CN/common.json'
 import enUS from '../locales/en-US/common.json'
 
 const systemLanguage = resolveSystemLanguage()
 
-void i18n.use(initReactI18next).init({
-  resources: {
-    'zh-CN': { translation: zhCN },
-    'en-US': { translation: enUS }
-  },
-  lng: systemLanguage,
-  fallbackLng: 'en-US',
-  interpolation: {
-    escapeValue: false
+const i18n = createI18n({
+  legacy: false,
+  locale: systemLanguage,
+  fallbackLocale: 'en-US',
+  flatJson: true,
+  messages: {
+    'zh-CN': zhCN,
+    'en-US': enUS
   }
 })
 

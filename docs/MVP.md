@@ -12,10 +12,10 @@ Build a Windows desktop MVP for Microsoft Flight Simulator 2020 that:
 This MVP uses:
 
 - Electron
-- React
+- Vue 3
 - TypeScript
 - Node.js system layer
-- i18next / react-i18next
+- vue-i18n
 
 ## 2. Scope
 
@@ -53,7 +53,7 @@ Not included in MVP:
    - exposes a safe API to the renderer
 
 3. Renderer process
-   - React UI
+   - Vue 3 + Element Plus UI
    - map visualization
    - internationalization
    - connection and aircraft status
@@ -156,7 +156,7 @@ Phase 2:
 ## 10. Acceptance criteria
 
 - app launches as Electron desktop app
-- React renderer loads successfully
+- Vue renderer loads successfully
 - user can switch between Chinese and English
 - renderer receives aircraft updates from main process
 - map panel reflects aircraft position updates
