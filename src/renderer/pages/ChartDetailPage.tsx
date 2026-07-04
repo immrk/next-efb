@@ -839,8 +839,9 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
                     <span className="chart-procedure-multiselect-label">
                       {t('chartDetail.procedureRunway')}
                     </span>
-                    <button
+                    <Button
                       type="button"
+                      variant="outline"
                       className="chart-procedure-multiselect-trigger"
                       disabled={!canUseProcedureMode || navProceduresLoading}
                       onClick={() => setIsRunwayPickerOpen((value) => !value)}
@@ -853,7 +854,7 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
                       <svg viewBox="0 0 24 24" aria-hidden="true" className={isRunwayPickerOpen ? 'open' : ''}>
                         <path d="M6 9L12 15L18 9" />
                       </svg>
-                    </button>
+                    </Button>
 
                     {isRunwayPickerOpen ? (
                       <div className="chart-procedure-multiselect-panel">
@@ -879,9 +880,10 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
                           filteredRunwayOptions.map((runway) => {
                             const checked = selectedRunwayNames.includes(runway.name)
                             return (
-                              <button
+                              <Button
                                 key={runway.name}
                                 type="button"
+                                variant="ghost"
                                 className={`chart-procedure-option ${checked ? 'selected' : ''}`}
                                 onClick={() => toggleRunwaySelection(runway.name)}
                               >
@@ -891,7 +893,7 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
                                   </svg>
                                 </span>
                                 <span className="chart-procedure-option-copy">{runway.displayName}</span>
-                              </button>
+                              </Button>
                             )
                           })
                         ) : (
@@ -909,8 +911,9 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
                     <span className="chart-procedure-multiselect-label">
                       {t(getProcedureLabelKeyByChartType(effectiveProcedureChartType))}
                     </span>
-                    <button
+                    <Button
                       type="button"
+                      variant="outline"
                       className="chart-procedure-multiselect-trigger"
                       disabled={!canUseProcedureMode || navProceduresLoading}
                       onClick={() => setIsProcedurePickerOpen((value) => !value)}
@@ -923,7 +926,7 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
                       <svg viewBox="0 0 24 24" aria-hidden="true" className={isProcedurePickerOpen ? 'open' : ''}>
                         <path d="M6 9L12 15L18 9" />
                       </svg>
-                    </button>
+                    </Button>
 
                     {isProcedurePickerOpen ? (
                       <div className="chart-procedure-multiselect-panel">
@@ -949,9 +952,10 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
                           filteredProcedureOptions.map((procedure) => {
                             const checked = selectedProcedureIds.includes(procedure.id)
                             return (
-                              <button
+                              <Button
                                 key={procedure.id}
                                 type="button"
+                                variant="ghost"
                                 className={`chart-procedure-option ${checked ? 'selected' : ''}`}
                                 onClick={() => toggleProcedureSelection(procedure.id)}
                               >
@@ -961,7 +965,7 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
                                   </svg>
                                 </span>
                                 <span className="chart-procedure-option-copy">{procedure.name}</span>
-                              </button>
+                              </Button>
                             )
                           })
                         ) : (

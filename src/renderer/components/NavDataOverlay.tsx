@@ -66,7 +66,7 @@ export function NavDataOverlay({
             [airway.toLat, airway.toLon]
           ]}
           pathOptions={{
-            color: airway.airwayType === 'JET' ? '#89d0ff' : '#77e5c2',
+            color: 'var(--primary)',
             weight: 1.5,
             opacity: 0.55
           }}
@@ -81,9 +81,9 @@ export function NavDataOverlay({
           center={[airport.lat, airport.lon]}
           radius={5}
           pathOptions={{
-            color: '#06253a',
+            color: 'var(--background)',
             weight: 1,
-            fillColor: '#ff8f6a',
+            fillColor: 'var(--primary)',
             fillOpacity: 0.92
           }}
         >
@@ -100,9 +100,9 @@ export function NavDataOverlay({
           center={[vor.lat, vor.lon]}
           radius={4}
           pathOptions={{
-            color: '#073451',
+            color: 'var(--background)',
             weight: 1,
-            fillColor: '#7ec7ff',
+            fillColor: 'var(--primary)',
             fillOpacity: 0.88
           }}
         >
@@ -119,9 +119,9 @@ export function NavDataOverlay({
           center={[ndb.lat, ndb.lon]}
           radius={3.5}
           pathOptions={{
-            color: '#4a2d07',
+            color: 'var(--background)',
             weight: 1,
-            fillColor: '#f5c76d',
+            fillColor: 'var(--primary)',
             fillOpacity: 0.88
           }}
         >
@@ -138,9 +138,9 @@ export function NavDataOverlay({
           center={[waypoint.lat, waypoint.lon]}
           radius={3}
           pathOptions={{
-            color: '#234508',
+            color: 'var(--background)',
             weight: 1,
-            fillColor: '#c9f27d',
+            fillColor: 'var(--primary)',
             fillOpacity: 0.82
           }}
         >

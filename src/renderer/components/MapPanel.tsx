@@ -342,7 +342,7 @@ export function MapPanel({
                     key={`segment:${index}`}
                     positions={segment.points.map((point) => [point.lat, point.lon])}
                     pathOptions={{
-                      color: segment.color ?? '#ffcf5a',
+                      color: segment.color ?? 'var(--primary)',
                       weight: 3,
                       opacity: segment.dashed ? 0.75 : 0.92,
                       dashArray: segment.dashed ? '10 10' : undefined,
@@ -355,7 +355,7 @@ export function MapPanel({
             : routePoints.length > 1 ? (
                 <Polyline
                   positions={routePoints.map((point) => [point.lat, point.lon])}
-                  pathOptions={{ color: '#ffcf5a', weight: 3, opacity: 0.9 }}
+                  pathOptions={{ color: 'var(--primary)', weight: 3, opacity: 0.9 }}
                 />
               )
             : null}
@@ -365,9 +365,9 @@ export function MapPanel({
               center={[point.lat, point.lon]}
               radius={index === 0 || index === routePoints.length - 1 ? 6 : 4}
               pathOptions={{
-                color: '#0a1a2b',
+                color: 'var(--background)',
                 weight: 1,
-                fillColor: index === 0 || index === routePoints.length - 1 ? '#ff7f50' : '#ffd46c',
+                fillColor: 'var(--primary)',
                 fillOpacity: 0.95
               }}
             >

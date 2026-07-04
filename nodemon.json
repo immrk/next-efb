@@ -1,0 +1,7 @@
+{
+  "watch": ["src/config", "src/i18n", "src/main", "src/preload", "src/utils"],
+  "ext": "ts,tsx,js,json",
+  "execMap": {
+    "js": "node scripts/main.js"
+  }
+}

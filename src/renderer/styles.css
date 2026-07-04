@@ -1,13 +1,13 @@
 :root {
-  --ui-bg: #09090b;
-  --ui-panel: #111217;
-  --ui-popover: #12141b;
-  --ui-border: #2a3342;
-  --ui-border-soft: #1f2734;
-  --ui-fg: #f8fafc;
-  --ui-muted: #94a3b8;
-  --ui-accent: #1d4f7a;
-  --ui-accent-border: #3f79ab;
+  --ui-bg: var(--background);
+  --ui-panel: var(--card);
+  --ui-popover: var(--popover);
+  --ui-border: var(--border);
+  --ui-border-soft: var(--border);
+  --ui-fg: var(--foreground);
+  --ui-muted: var(--muted-foreground);
+  --ui-accent: var(--primary);
+  --ui-accent-border: var(--ring);
   --app-viewport-height: 100vh;
   --app-viewport-offset-top: 0px;
   --app-viewport-offset-bottom: 0px;
@@ -15,13 +15,8 @@
   --app-safe-area-top: max(env(safe-area-inset-top), var(--app-viewport-offset-top));
   --app-safe-area-bottom: max(env(safe-area-inset-bottom), var(--app-viewport-offset-bottom));
   --app-standalone-safe-area-top: max(env(safe-area-inset-top), var(--app-webapp-safe-area-top));
-  font-family: "Segoe UI", "PingFang SC", sans-serif;
-  color: #f4f7fb;
-  background:
-    radial-gradient(circle at top left, rgba(52, 152, 219, 0.35), transparent 35%),
-    radial-gradient(circle at bottom right, rgba(46, 204, 113, 0.18), transparent 30%),
-    linear-gradient(135deg, #08131f 0%, #112338 45%, #0f1c2c 100%);
-  color-scheme: dark;
+  color: var(--foreground);
+  background: var(--background);
 }
 
 * {
@@ -39,10 +34,7 @@
 html {
   height: var(--app-viewport-height);
   min-height: var(--app-viewport-height);
-  background:
-    radial-gradient(circle at top left, rgba(52, 152, 219, 0.35), transparent 35%),
-    radial-gradient(circle at bottom right, rgba(46, 204, 113, 0.18), transparent 30%),
-    linear-gradient(135deg, #08131f 0%, #112338 45%, #0f1c2c 100%);
+  background: var(--background);
   -webkit-text-size-adjust: 100%;
 }
 
@@ -99,10 +91,10 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  border-bottom: 1px solid rgba(139, 196, 255, 0.12);
+  border-bottom: 1px solid color-mix(in oklab, var(--primary) 12%, transparent);
   background:
-    radial-gradient(circle at top left, rgba(82, 213, 255, 0.14), transparent 26%),
-    linear-gradient(180deg, rgba(8, 15, 24, 0.96), rgba(8, 15, 24, 0.9));
+    radial-gradient(circle at top left, color-mix(in oklab, var(--primary) 14%, transparent), transparent 26%),
+    linear-gradient(180deg, color-mix(in oklab, var(--background) 96%, transparent), color-mix(in oklab, var(--background) 90%, transparent));
   backdrop-filter: blur(18px);
   -webkit-app-region: drag;
   user-select: none;
@@ -131,8 +123,8 @@ body {
   padding: 4px;
   overflow: hidden;
   flex: 0 0 auto;
-  background: #ffffff;
-  box-shadow: 0 2px 10px rgba(8, 15, 24, 0.18);
+  background: var(--foreground);
+  box-shadow: 0 2px 10px color-mix(in oklab, var(--background) 18%, transparent);
 }
 
 .desktop-titlebar-logo svg,
@@ -167,7 +159,7 @@ body {
 }
 
 .desktop-titlebar-copy span {
-  color: rgba(214, 231, 248, 0.62);
+  color: color-mix(in oklab, var(--primary) 62%, transparent);
   font-size: 11px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -187,10 +179,10 @@ body {
 .desktop-dev-button,
 .desktop-window-button {
   min-height: 34px;
-  border: 1px solid rgba(139, 196, 255, 0.14);
+  border: 1px solid color-mix(in oklab, var(--primary) 14%, transparent);
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.04);
-  color: #d7e9fb;
+  background: color-mix(in oklab, var(--primary) 4%, transparent);
+  color: var(--foreground);
   cursor: pointer;
   font: inherit;
   transition:
@@ -223,15 +215,15 @@ body {
 }
 
 .desktop-window-button-close:hover {
-  background: rgba(224, 96, 84, 0.2);
-  border-color: rgba(224, 96, 84, 0.36);
-  color: #ffd8d3;
+  background: color-mix(in oklab, var(--destructive) 20%, transparent);
+  border-color: color-mix(in oklab, var(--destructive) 36%, transparent);
+  color: var(--destructive-foreground, var(--foreground));
 }
 
 .desktop-dev-button:hover,
 .desktop-window-button:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(139, 196, 255, 0.24);
+  background: color-mix(in oklab, var(--primary) 8%, transparent);
+  border-color: color-mix(in oklab, var(--primary) 24%, transparent);
 }
 
 .app-shell {
@@ -279,8 +271,8 @@ body {
 }
 
 .route-view-page-surface {
-  --safe-area-top-inset-background: #0c121c;
-  background: #0c121c;
+  --safe-area-top-inset-background: var(--background);
+  background: var(--background);
 }
 
 .product-shell {
@@ -298,8 +290,8 @@ body {
 
 .app-sidebar {
   padding: 14px 10px;
-  border-right: 1px solid rgba(139, 196, 255, 0.14);
-  background: rgba(5, 12, 21, 0.8);
+  border-right: 1px solid color-mix(in oklab, var(--primary) 14%, transparent);
+  background: color-mix(in oklab, var(--background) 80%, transparent);
   backdrop-filter: blur(14px);
   display: flex;
   flex-direction: column;
@@ -343,7 +335,7 @@ body {
   height: 28px;
   display: grid;
   place-items: center;
-  color: #d7e9fb;
+  color: var(--foreground);
 }
 
 .sidebar-brand-icon svg,
@@ -361,9 +353,9 @@ body {
 
 .sidebar-brand-icon img {
   padding: 3px;
-  background: #ffffff;
+  background: var(--foreground);
   border-radius: 10px;
-  box-shadow: 0 2px 8px rgba(8, 15, 24, 0.16);
+  box-shadow: 0 2px 8px color-mix(in oklab, var(--background) 16%, transparent);
   object-fit: contain;
 }
 
@@ -379,10 +371,10 @@ body {
 .sidebar-collapse {
   width: 100%;
   min-height: 34px;
-  border: 1px solid rgba(139, 196, 255, 0.14);
+  border: 1px solid color-mix(in oklab, var(--primary) 14%, transparent);
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.03);
-  color: #d7e9fb;
+  background: color-mix(in oklab, var(--primary) 3%, transparent);
+  color: var(--foreground);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -416,10 +408,10 @@ body {
   width: 100%;
   min-height: 44px;
   padding: 0 12px;
-  border: 1px solid rgba(139, 196, 255, 0.14);
+  border: 1px solid color-mix(in oklab, var(--primary) 14%, transparent);
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.04);
-  color: #f4f7fb;
+  background: color-mix(in oklab, var(--primary) 4%, transparent);
+  color: var(--foreground);
   display: flex;
   align-items: center;
   justify-content: flex-start;
@@ -433,8 +425,8 @@ body {
 }
 
 .sidebar-link.active {
-  background: linear-gradient(135deg, rgba(57, 123, 219, 0.44), rgba(35, 181, 116, 0.24));
-  border-color: rgba(139, 196, 255, 0.28);
+  background: linear-gradient(135deg, color-mix(in oklab, var(--primary) 44%, transparent), color-mix(in oklab, var(--primary) 24%, transparent));
+  border-color: color-mix(in oklab, var(--primary) 28%, transparent);
 }
 
 .app-sidebar.collapsed .sidebar-brand-main {
@@ -470,15 +462,15 @@ body {
 }
 
 .primary-button {
-  border: 1px solid rgba(139, 196, 255, 0.22);
-  color: #f4f7fb;
-  background: linear-gradient(135deg, rgba(57, 123, 219, 0.5), rgba(35, 181, 116, 0.24));
+  border: 1px solid color-mix(in oklab, var(--primary) 22%, transparent);
+  color: var(--foreground);
+  background: linear-gradient(135deg, color-mix(in oklab, var(--primary) 50%, transparent), color-mix(in oklab, var(--primary) 24%, transparent));
 }
 
 .secondary-button {
-  border: 1px solid rgba(139, 196, 255, 0.16);
-  color: #f4f7fb;
-  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid color-mix(in oklab, var(--primary) 16%, transparent);
+  color: var(--foreground);
+  background: color-mix(in oklab, var(--primary) 4%, transparent);
 }
 
 .button,
@@ -519,16 +511,16 @@ body {
 }
 
 .button-default {
-  color: #f4f7fb;
-  border-color: rgba(139, 196, 255, 0.22);
-  background: linear-gradient(135deg, rgba(57, 123, 219, 0.5), rgba(35, 181, 116, 0.24));
+  color: var(--foreground);
+  border-color: color-mix(in oklab, var(--primary) 22%, transparent);
+  background: linear-gradient(135deg, color-mix(in oklab, var(--primary) 50%, transparent), color-mix(in oklab, var(--primary) 24%, transparent));
 }
 
 .button-secondary,
 .button-outline {
-  color: #f4f7fb;
-  border-color: rgba(139, 196, 255, 0.16);
-  background: rgba(255, 255, 255, 0.04);
+  color: var(--foreground);
+  border-color: color-mix(in oklab, var(--primary) 16%, transparent);
+  background: color-mix(in oklab, var(--primary) 4%, transparent);
 }
 
 .button-ghost {
@@ -537,9 +529,9 @@ body {
 }
 
 .button-destructive {
-  color: #ffd8d3;
-  border-color: rgba(224, 96, 84, 0.56);
-  background: rgba(64, 24, 22, 0.86);
+  color: var(--destructive-foreground, var(--foreground));
+  border-color: color-mix(in oklab, var(--destructive) 56%, transparent);
+  background: color-mix(in oklab, var(--background) 86%, transparent);
 }
 
 .button-icon,
@@ -596,27 +588,27 @@ body {
 }
 
 .badge-default {
-  color: #d8ffe6;
-  border-color: rgba(71, 173, 119, 0.45);
-  background: rgba(15, 44, 29, 0.92);
+  color: var(--foreground);
+  border-color: color-mix(in oklab, var(--primary) 45%, transparent);
+  background: color-mix(in oklab, var(--background) 92%, transparent);
 }
 
 .badge-secondary {
-  color: #d7e9fb;
-  border-color: rgba(139, 196, 255, 0.18);
-  background: rgba(29, 79, 122, 0.22);
+  color: var(--foreground);
+  border-color: color-mix(in oklab, var(--primary) 18%, transparent);
+  background: color-mix(in oklab, var(--primary) 22%, transparent);
 }
 
 .badge-outline {
   color: var(--ui-muted);
   border-color: var(--ui-border);
-  background: rgba(255, 255, 255, 0.02);
+  background: color-mix(in oklab, var(--primary) 2%, transparent);
 }
 
 .badge-destructive {
-  color: #ffd8d3;
-  border-color: rgba(224, 96, 84, 0.5);
-  background: rgba(64, 24, 22, 0.94);
+  color: var(--destructive-foreground, var(--foreground));
+  border-color: color-mix(in oklab, var(--destructive) 50%, transparent);
+  background: color-mix(in oklab, var(--background) 94%, transparent);
 }
 
 .input,
@@ -624,10 +616,10 @@ body {
 .select-trigger {
   width: 100%;
   min-height: 2.75rem;
-  border: 1px solid rgba(139, 196, 255, 0.2);
+  border: 1px solid color-mix(in oklab, var(--primary) 20%, transparent);
   border-radius: 0.875rem;
-  color: #f4f7fb;
-  background: rgba(10, 21, 35, 0.92);
+  color: var(--foreground);
+  background: color-mix(in oklab, var(--background) 92%, transparent);
   outline: none;
   appearance: none;
   -webkit-appearance: none;
@@ -652,14 +644,14 @@ body {
 
 .input::placeholder,
 .textarea::placeholder {
-  color: rgba(148, 163, 184, 0.78);
+  color: color-mix(in oklab, var(--primary) 78%, transparent);
 }
 
 .input:focus-visible,
 .textarea:focus-visible,
 .select-trigger:focus-visible {
-  border-color: rgba(139, 196, 255, 0.45);
-  box-shadow: 0 0 0 3px rgba(57, 123, 219, 0.18);
+  border-color: color-mix(in oklab, var(--primary) 45%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--primary) 18%, transparent);
 }
 
 .select-trigger {
@@ -674,7 +666,7 @@ body {
 }
 
 .select-trigger[data-placeholder] {
-  color: rgba(148, 163, 184, 0.78);
+  color: color-mix(in oklab, var(--primary) 78%, transparent);
 }
 
 .select-icon {
@@ -693,10 +685,10 @@ body {
   min-width: var(--radix-select-trigger-width);
   max-height: 320px;
   overflow: hidden;
-  border: 1px solid rgba(139, 196, 255, 0.18);
+  border: 1px solid color-mix(in oklab, var(--primary) 18%, transparent);
   border-radius: 0.875rem;
-  background: rgba(8, 15, 26, 0.98);
-  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
+  background: color-mix(in oklab, var(--background) 98%, transparent);
+  box-shadow: 0 18px 50px color-mix(in oklab, var(--background) 45%, transparent);
 }
 
 .select-viewport {
@@ -720,13 +712,13 @@ body {
   min-height: 2.25rem;
   padding: 0.5rem 0.75rem 0.5rem 2rem;
   border-radius: 0.625rem;
-  color: #f4f7fb;
+  color: var(--foreground);
   cursor: pointer;
   outline: none;
 }
 
 .select-item[data-highlighted] {
-  background: rgba(57, 123, 219, 0.18);
+  background: color-mix(in oklab, var(--primary) 18%, transparent);
 }
 
 .select-item[data-disabled] {
@@ -741,7 +733,7 @@ body {
   height: 1rem;
   display: grid;
   place-items: center;
-  color: #8bc4ff;
+  color: var(--primary);
 }
 
 .select-item-indicator svg {
@@ -757,7 +749,7 @@ body {
 .select-label {
   display: block;
   padding: 0.25rem 0.75rem 0.125rem;
-  color: rgba(244, 247, 251, 0.72);
+  color: color-mix(in oklab, var(--primary) 72%, transparent);
   font-size: 0.75rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -766,13 +758,13 @@ body {
 .select-separator {
   height: 1px;
   margin: 0.375rem 0;
-  background: rgba(139, 196, 255, 0.12);
+  background: color-mix(in oklab, var(--primary) 12%, transparent);
 }
 
 .danger-button {
-  border-color: rgba(224, 96, 84, 0.56);
-  color: #ffd8d3;
-  background: rgba(64, 24, 22, 0.86);
+  border-color: color-mix(in oklab, var(--destructive) 56%, transparent);
+  color: var(--destructive-foreground, var(--foreground));
+  background: color-mix(in oklab, var(--background) 86%, transparent);
 }
 
 .topbar {
@@ -780,7 +772,7 @@ body {
   align-items: center;
   min-height: 48px;
   margin-bottom: 14px;
-  color: rgba(244, 247, 251, 0.68);
+  color: color-mix(in oklab, var(--primary) 68%, transparent);
 }
 
 .map-toolbar {
@@ -808,7 +800,7 @@ body {
 
 .eyebrow {
   margin: 0 0 10px;
-  color: #8bc4ff;
+  color: var(--primary);
   text-transform: uppercase;
   letter-spacing: 0.18em;
   font-size: 12px;
@@ -823,7 +815,7 @@ body {
 .hero-copy {
   max-width: 720px;
   margin-top: 12px;
-  color: rgba(244, 247, 251, 0.78);
+  color: color-mix(in oklab, var(--primary) 78%, transparent);
 }
 
 .content-grid {
@@ -833,11 +825,11 @@ body {
 }
 
 .panel {
-  background: rgba(7, 16, 28, 0.72);
-  border: 1px solid rgba(139, 196, 255, 0.14);
+  background: color-mix(in oklab, var(--background) 72%, transparent);
+  border: 1px solid color-mix(in oklab, var(--primary) 14%, transparent);
   border-radius: 24px;
   backdrop-filter: blur(14px);
-  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.22);
+  box-shadow: 0 18px 60px color-mix(in oklab, var(--background) 22%, transparent);
 }
 
 .map-panel {
@@ -853,7 +845,7 @@ body {
   border: 0;
   border-radius: 0;
   box-shadow: none;
-  background: #07111b;
+  background: var(--background);
 }
 
 .status-panel,
@@ -868,7 +860,7 @@ body {
 
 .panel-header p {
   margin: 8px 0 0;
-  color: rgba(244, 247, 251, 0.7);
+  color: color-mix(in oklab, var(--primary) 70%, transparent);
 }
 
 .map-stage {
@@ -883,22 +875,22 @@ body {
   min-height: 420px;
   height: 100%;
   width: 100%;
-  background: #0f2538;
+  background: var(--card);
 }
 
 .leaflet-container {
-  font-family: "Segoe UI", "PingFang SC", sans-serif;
+  font-family: inherit;
 }
 
 .leaflet-control-attribution,
 .leaflet-control-zoom a {
-  background: rgba(7, 16, 28, 0.86) !important;
-  color: #f4f7fb !important;
-  border-color: rgba(139, 196, 255, 0.18) !important;
+  background: color-mix(in oklab, var(--background) 86%, transparent) !important;
+  color: var(--foreground) !important;
+  border-color: color-mix(in oklab, var(--primary) 18%, transparent) !important;
 }
 
 .leaflet-control-attribution a {
-  color: #8bc4ff !important;
+  color: var(--primary) !important;
 }
 
 .chart-overlay-container {
@@ -913,7 +905,7 @@ body {
   top: 0;
   transform-origin: 0 0;
   pointer-events: none;
-  filter: drop-shadow(0 14px 30px rgba(0, 0, 0, 0.32));
+  filter: drop-shadow(0 14px 30px color-mix(in oklab, var(--background) 32%, transparent));
   transition: opacity 180ms ease;
 }
 
@@ -932,9 +924,9 @@ body {
   width: 26px;
   height: 26px;
   margin-left: 1px;
-  background: #ff5fa9;
+  background: var(--primary);
   clip-path: polygon(50% 0%, 100% 100%, 66% 82%, 50% 92%, 34% 82%, 0% 100%);
-  filter: drop-shadow(0 0 14px rgba(255, 95, 169, 0.78));
+  filter: drop-shadow(0 0 14px color-mix(in oklab, var(--primary) 78%, transparent));
 }
 
 .chart-aircraft-arrow {
@@ -954,7 +946,7 @@ body {
   gap: 12px;
   padding: 10px 12px;
   border-radius: 999px;
-  background: rgba(0, 0, 0, 0.35);
+  background: color-mix(in oklab, var(--background) 35%, transparent);
   font-size: 13px;
 }
 
@@ -1007,10 +999,10 @@ body {
   max-height: 280px;
   overflow: auto;
   padding: 8px;
-  border: 1px solid rgba(139, 196, 255, 0.16);
+  border: 1px solid color-mix(in oklab, var(--primary) 16%, transparent);
   border-radius: 16px;
-  background: rgba(9, 14, 22, 0.98);
-  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.38);
+  background: color-mix(in oklab, var(--background) 98%, transparent);
+  box-shadow: 0 18px 42px color-mix(in oklab, var(--background) 38%, transparent);
   display: grid;
   gap: 8px;
 }
@@ -1018,10 +1010,10 @@ body {
 .map-search-item {
   width: 100%;
   padding: 10px 12px;
-  border: 1px solid rgba(139, 196, 255, 0.1);
+  border: 1px solid color-mix(in oklab, var(--primary) 10%, transparent);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.03);
-  color: #f4f7fb;
+  background: color-mix(in oklab, var(--primary) 3%, transparent);
+  color: var(--foreground);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1045,7 +1037,7 @@ body {
 }
 
 .map-search-item-main span {
-  color: rgba(244, 247, 251, 0.66);
+  color: color-mix(in oklab, var(--primary) 66%, transparent);
   font-size: 12px;
 }
 
@@ -1053,14 +1045,14 @@ body {
   flex: 0 0 auto;
   padding: 4px 8px;
   border-radius: 999px;
-  border: 1px solid rgba(139, 196, 255, 0.16);
-  color: rgba(244, 247, 251, 0.72);
+  border: 1px solid color-mix(in oklab, var(--primary) 16%, transparent);
+  color: color-mix(in oklab, var(--primary) 72%, transparent);
   font-size: 11px;
 }
 
 .map-search-empty {
   padding: 12px 10px;
-  color: rgba(244, 247, 251, 0.66);
+  color: color-mix(in oklab, var(--primary) 66%, transparent);
   font-size: 13px;
 }
 
@@ -1075,13 +1067,13 @@ body {
   min-height: 40px;
   padding: 0 12px;
   border-radius: 999px;
-  background: rgba(8, 21, 34, 0.82);
+  background: color-mix(in oklab, var(--background) 82%, transparent);
   backdrop-filter: blur(10px);
 }
 
 .map-nav-layer-button.button-default {
-  background: linear-gradient(135deg, rgba(33, 120, 189, 0.96), rgba(56, 164, 126, 0.9));
-  border-color: rgba(117, 214, 255, 0.4);
+  background: linear-gradient(135deg, color-mix(in oklab, var(--primary) 96%, transparent), color-mix(in oklab, var(--primary) 90%, transparent));
+  border-color: color-mix(in oklab, var(--primary) 40%, transparent);
 }
 
 .map-provider-chip {
@@ -1090,8 +1082,8 @@ body {
   min-width: 0;
   border: 1px solid var(--ui-border);
   border-radius: 10px;
-  background: rgba(11, 16, 24, 0.92);
-  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35);
+  background: color-mix(in oklab, var(--background) 92%, transparent);
+  box-shadow: 0 8px 22px color-mix(in oklab, var(--background) 35%, transparent);
 }
 
 .map-toolbar-inline .map-provider-trigger-icon {
@@ -1167,17 +1159,17 @@ body {
   height: 42px;
   border: 1px solid var(--ui-border);
   border-radius: 10px;
-  background: rgba(11, 16, 24, 0.92);
-  color: #ff7db8;
+  background: color-mix(in oklab, var(--background) 92%, transparent);
+  color: var(--primary);
   cursor: pointer;
   display: grid;
   place-items: center;
 }
 
 .map-recenter-button.is-active {
-  color: #52d5ff;
-  border-color: rgba(82, 213, 255, 0.45);
-  box-shadow: 0 0 0 1px rgba(82, 213, 255, 0.18);
+  color: var(--primary);
+  border-color: color-mix(in oklab, var(--primary) 45%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--primary) 18%, transparent);
 }
 
 .map-recenter-button svg,
@@ -1220,8 +1212,8 @@ body {
   z-index: 2200;
   border-top: 1px solid var(--ui-border);
   background:
-    linear-gradient(180deg, rgba(14, 18, 27, 0.97), rgba(9, 12, 18, 0.97)),
-    rgba(12, 15, 22, 0.92);
+    linear-gradient(180deg, color-mix(in oklab, var(--background) 97%, transparent), color-mix(in oklab, var(--background) 97%, transparent)),
+    color-mix(in oklab, var(--background) 92%, transparent);
   backdrop-filter: blur(12px);
   padding-bottom: env(safe-area-inset-bottom);
 }
@@ -1296,7 +1288,7 @@ body {
 
 .mounted-chart-card.active {
   border-color: var(--ui-accent-border);
-  background: linear-gradient(135deg, rgba(29, 79, 122, 0.62), rgba(16, 45, 69, 0.62));
+  background: linear-gradient(135deg, color-mix(in oklab, var(--primary) 62%, transparent), color-mix(in oklab, var(--primary) 62%, transparent));
 }
 
 .mounted-chart-card.disabled {
@@ -1308,7 +1300,7 @@ body {
 .mounted-chart-remove,
 .mounted-chart-action {
   border: 0;
-  color: #f4f7fb;
+  color: var(--foreground);
   background: transparent;
   font: inherit;
 }
@@ -1343,7 +1335,7 @@ body {
 }
 
 .mounted-chart-main span {
-  color: rgba(244, 247, 251, 0.68);
+  color: color-mix(in oklab, var(--primary) 68%, transparent);
   font-size: 12px;
   white-space: nowrap;
   overflow: hidden;
@@ -1356,25 +1348,25 @@ body {
   border-radius: 999px;
   font-size: 11px;
   line-height: 1;
-  color: #d7e9fb;
-  background: rgba(255, 255, 255, 0.07);
-  border: 1px solid rgba(139, 196, 255, 0.14);
+  color: var(--foreground);
+  background: color-mix(in oklab, var(--primary) 7%, transparent);
+  border: 1px solid color-mix(in oklab, var(--primary) 14%, transparent);
   white-space: nowrap;
 }
 
 .mounted-chart-pill.manual {
-  background: rgba(255, 255, 255, 0.05);
+  background: color-mix(in oklab, var(--primary) 5%, transparent);
 }
 
 .mounted-chart-pill.active {
-  background: rgba(72, 180, 122, 0.18);
-  border-color: rgba(72, 180, 122, 0.45);
+  background: color-mix(in oklab, var(--primary) 18%, transparent);
+  border-color: color-mix(in oklab, var(--primary) 45%, transparent);
 }
 
 .mounted-chart-pill.missing-chart,
 .mounted-chart-pill.missing-georef {
-  background: rgba(140, 148, 163, 0.16);
-  border-color: rgba(140, 148, 163, 0.28);
+  background: color-mix(in oklab, var(--muted-foreground) 16%, transparent);
+  border-color: color-mix(in oklab, var(--muted-foreground) 28%, transparent);
 }
 
 .mounted-chart-remove,
@@ -1393,7 +1385,7 @@ body {
 }
 
 .chart-dock-empty-inline {
-  color: rgba(214, 231, 248, 0.74);
+  color: color-mix(in oklab, var(--primary) 74%, transparent);
   font-size: 13px;
   letter-spacing: 0.03em;
 }
@@ -1426,9 +1418,9 @@ body {
   border-left: 0;
   border-radius: 0;
   background:
-    radial-gradient(circle at top right, rgba(42, 78, 112, 0.2), transparent 30%),
-    linear-gradient(180deg, rgba(16, 19, 26, 0.99), rgba(9, 12, 18, 0.99));
-  box-shadow: 20px 0 44px rgba(0, 0, 0, 0.5);
+    radial-gradient(circle at top right, color-mix(in oklab, var(--primary) 20%, transparent), transparent 30%),
+    linear-gradient(180deg, color-mix(in oklab, var(--background) 99%, transparent), color-mix(in oklab, var(--background) 99%, transparent));
+  box-shadow: 20px 0 44px color-mix(in oklab, var(--background) 50%, transparent);
 }
 
 .chart-picker-drawer-docked {
@@ -1439,8 +1431,8 @@ body {
   border-right: 1px solid var(--ui-border);
   border-radius: 0;
   background:
-    radial-gradient(circle at top right, rgba(42, 78, 112, 0.2), transparent 30%),
-    linear-gradient(180deg, rgba(16, 19, 26, 0.99), rgba(9, 12, 18, 0.99));
+    radial-gradient(circle at top right, color-mix(in oklab, var(--primary) 20%, transparent), transparent 30%),
+    linear-gradient(180deg, color-mix(in oklab, var(--background) 99%, transparent), color-mix(in oklab, var(--background) 99%, transparent));
   position: relative;
 }
 
@@ -1457,7 +1449,7 @@ body {
   min-height: 44px;
   border: 1px solid var(--ui-border);
   border-radius: 8px;
-  background: rgba(18, 20, 27, 0.88);
+  background: color-mix(in oklab, var(--background) 88%, transparent);
   color: var(--ui-fg);
   padding: 0 14px;
   font: inherit;
@@ -1497,7 +1489,7 @@ body {
   gap: 10px;
   padding: 10px 14px;
   border-bottom: 1px solid var(--ui-border-soft);
-  background: rgba(10, 14, 21, 0.72);
+  background: color-mix(in oklab, var(--background) 72%, transparent);
   align-items: center;
 }
 
@@ -1537,7 +1529,7 @@ body {
 .chart-airport-group {
   border: 1px solid var(--ui-border-soft);
   border-radius: 8px;
-  background: rgba(12, 14, 20, 0.72);
+  background: color-mix(in oklab, var(--background) 72%, transparent);
   overflow: hidden;
 }
 
@@ -1547,7 +1539,7 @@ body {
   gap: 8px;
   min-height: 38px;
   padding: 0 10px;
-  background: rgba(16, 20, 27, 0.96);
+  background: color-mix(in oklab, var(--background) 96%, transparent);
   border-bottom: 1px solid var(--ui-border-soft);
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -1574,7 +1566,7 @@ body {
   gap: 8px;
   min-height: 34px;
   padding: 0 10px;
-  color: rgba(200, 214, 233, 0.84);
+  color: color-mix(in oklab, var(--primary) 84%, transparent);
   font-size: 12px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1659,7 +1651,7 @@ body {
 }
 
 .chart-candidate-item.selected {
-  background: rgba(20, 46, 70, 0.45);
+  background: color-mix(in oklab, var(--primary) 45%, transparent);
 }
 
 .chart-candidate-actions {
@@ -1674,8 +1666,8 @@ body {
   padding: 0;
   border: 1px solid var(--ui-border);
   border-radius: 8px;
-  background: rgba(19, 23, 31, 0.88);
-  color: #c5dcf3;
+  background: color-mix(in oklab, var(--background) 88%, transparent);
+  color: var(--foreground);
   cursor: pointer;
   display: grid;
   place-items: center;
@@ -1694,7 +1686,7 @@ body {
 }
 
 .chart-candidate-main span {
-  color: rgba(203, 223, 242, 0.65);
+  color: color-mix(in oklab, var(--primary) 65%, transparent);
   font-size: 12px;
 }
 
@@ -1705,8 +1697,8 @@ body {
   padding: 0;
   border: 1px solid var(--ui-border);
   border-radius: 8px;
-  background: rgba(19, 23, 31, 0.88);
-  color: #c5dcf3;
+  background: color-mix(in oklab, var(--background) 88%, transparent);
+  color: var(--foreground);
   font: inherit;
   cursor: pointer;
   display: grid;
@@ -1721,8 +1713,8 @@ body {
 
 .chart-pin-button.mounted {
   border-color: var(--ui-accent-border);
-  background: rgba(29, 79, 122, 0.88);
-  color: #f0f7ff;
+  background: color-mix(in oklab, var(--primary) 88%, transparent);
+  color: var(--foreground);
 }
 
 .chart-pin-button:disabled {
@@ -1734,7 +1726,7 @@ body {
   min-height: 160px;
   display: grid;
   place-items: center;
-  color: rgba(203, 223, 242, 0.78);
+  color: color-mix(in oklab, var(--primary) 78%, transparent);
 }
 
 .charts-workspace {
@@ -1759,7 +1751,7 @@ body {
   border: 0;
   border-radius: 0;
   padding: 0;
-  background: #0c121c;
+  background: var(--background);
 }
 
 .connection-badge {
@@ -1773,19 +1765,19 @@ body {
   border: 1px solid var(--ui-border);
   font-weight: 600;
   backdrop-filter: blur(4px);
-  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 8px 22px color-mix(in oklab, var(--background) 35%, transparent);
 }
 
 .connection-badge.badge-default {
-  background: rgba(15, 44, 29, 0.92);
-  color: #d8ffe6;
-  border-color: rgba(71, 173, 119, 0.45);
+  background: color-mix(in oklab, var(--background) 92%, transparent);
+  color: var(--foreground);
+  border-color: color-mix(in oklab, var(--primary) 45%, transparent);
 }
 
 .connection-badge.badge-destructive {
-  background: rgba(64, 24, 22, 0.94);
-  color: #ffd8d3;
-  border-color: rgba(224, 96, 84, 0.5);
+  background: color-mix(in oklab, var(--background) 94%, transparent);
+  color: var(--destructive-foreground, var(--foreground));
+  border-color: color-mix(in oklab, var(--destructive) 50%, transparent);
 }
 
 .connection-dot {
@@ -1808,11 +1800,11 @@ body {
   gap: 8px;
   padding: 16px;
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.05);
+  background: color-mix(in oklab, var(--primary) 5%, transparent);
 }
 
 .stat-card span {
-  color: rgba(244, 247, 251, 0.65);
+  color: color-mix(in oklab, var(--primary) 65%, transparent);
   font-size: 13px;
 }
 
@@ -1830,29 +1822,29 @@ body {
 .settings-field select {
   appearance: none;
   padding: 12px 14px;
-  border: 1px solid rgba(139, 196, 255, 0.2);
+  border: 1px solid color-mix(in oklab, var(--primary) 20%, transparent);
   border-radius: 14px;
-  color: #f4f7fb;
-  background: rgba(10, 21, 35, 0.92);
+  color: var(--foreground);
+  background: color-mix(in oklab, var(--background) 92%, transparent);
 }
 
 .settings-note {
   margin-top: 18px;
-  color: rgba(244, 247, 251, 0.72);
+  color: color-mix(in oklab, var(--primary) 72%, transparent);
   line-height: 1.6;
 }
 
 .settings-note-inline {
-  color: rgba(244, 247, 251, 0.72);
+  color: color-mix(in oklab, var(--primary) 72%, transparent);
   line-height: 1.5;
 }
 
 .settings-note-card {
   margin-top: 0;
   padding: 16px;
-  border: 1px solid rgba(139, 196, 255, 0.14);
+  border: 1px solid color-mix(in oklab, var(--primary) 14%, transparent);
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.04);
+  background: color-mix(in oklab, var(--primary) 4%, transparent);
   display: grid;
   gap: 10px;
 }
@@ -1877,17 +1869,17 @@ body {
 .map-route-launcher-button {
   min-height: 46px;
   padding: 0 16px;
-  border: 1px solid rgba(139, 196, 255, 0.22);
+  border: 1px solid color-mix(in oklab, var(--primary) 22%, transparent);
   border-radius: 999px;
-  background: linear-gradient(135deg, rgba(15, 26, 38, 0.92), rgba(26, 48, 70, 0.92));
-  color: #f4f7fb;
+  background: linear-gradient(135deg, color-mix(in oklab, var(--background) 92%, transparent), color-mix(in oklab, var(--primary) 92%, transparent));
+  color: var(--foreground);
   display: inline-flex;
   align-items: center;
   gap: 10px;
   font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.02em;
-  box-shadow: 0 14px 28px rgba(5, 10, 18, 0.32);
+  box-shadow: 0 14px 28px color-mix(in oklab, var(--background) 32%, transparent);
 }
 
 .map-route-launcher-button svg {
@@ -1904,7 +1896,7 @@ body {
   padding: 0;
   border: 0;
   background: transparent;
-  color: #8bc4ff;
+  color: var(--primary);
   text-align: left;
   cursor: pointer;
   font: inherit;
@@ -1924,7 +1916,7 @@ body {
   height: 180px;
   padding: 10px;
   border-radius: 16px;
-  background: #ffffff;
+  background: var(--foreground);
   justify-self: end;
 }
 
@@ -1954,9 +1946,9 @@ body {
   display: block;
   padding: 10px 12px;
   border-radius: 10px;
-  background: rgba(7, 16, 28, 0.92);
-  border: 1px solid rgba(139, 196, 255, 0.14);
-  color: #d7e9fb;
+  background: color-mix(in oklab, var(--background) 92%, transparent);
+  border: 1px solid color-mix(in oklab, var(--primary) 14%, transparent);
+  color: var(--foreground);
   word-break: break-all;
 }
 
@@ -1982,8 +1974,8 @@ body {
   margin-top: 20px;
   padding: 20px;
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.04);
-  color: rgba(244, 247, 251, 0.78);
+  background: color-mix(in oklab, var(--primary) 4%, transparent);
+  color: color-mix(in oklab, var(--primary) 78%, transparent);
 }
 
 .checklist-card {
@@ -1992,7 +1984,7 @@ body {
   margin-top: 20px;
   padding: 18px;
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.04);
+  background: color-mix(in oklab, var(--primary) 4%, transparent);
 }
 
 .storage-grid {
@@ -2011,7 +2003,7 @@ body {
   height: 100%;
   overflow: auto;
   display: grid;
-  background: #0c121c;
+  background: var(--background);
   min-height: 0;
 }
 
@@ -2049,13 +2041,13 @@ body {
   gap: 16px;
   padding: 16px;
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.05);
+  background: color-mix(in oklab, var(--primary) 5%, transparent);
 }
 
 .chart-card-button {
   width: 100%;
-  border: 1px solid rgba(139, 196, 255, 0.1);
-  color: #f4f7fb;
+  border: 1px solid color-mix(in oklab, var(--primary) 10%, transparent);
+  color: var(--foreground);
   text-align: left;
   cursor: pointer;
 }
@@ -2080,7 +2072,7 @@ body {
   height: 40px;
   border: 1px solid var(--ui-border);
   border-radius: 10px;
-  background: rgba(18, 23, 32, 0.92);
+  background: color-mix(in oklab, var(--background) 92%, transparent);
   color: var(--ui-fg);
   cursor: pointer;
   display: grid;
@@ -2099,10 +2091,10 @@ body {
 
 .text-input {
   padding: 12px 14px;
-  border: 1px solid rgba(139, 196, 255, 0.2);
+  border: 1px solid color-mix(in oklab, var(--primary) 20%, transparent);
   border-radius: 14px;
-  color: #f4f7fb;
-  background: rgba(10, 21, 35, 0.92);
+  color: var(--foreground);
+  background: color-mix(in oklab, var(--background) 92%, transparent);
 }
 
 .detail-layout {
@@ -2116,7 +2108,7 @@ body {
   display: grid;
   grid-template-rows: auto 1fr;
   overflow: hidden;
-  background: #0c121c;
+  background: var(--background);
   min-height: 0;
 }
 
@@ -2128,7 +2120,7 @@ body {
   gap: 10px;
   padding: 10px 12px;
   border-bottom: 1px solid var(--ui-border);
-  background: rgba(12, 17, 25, 0.95);
+  background: color-mix(in oklab, var(--background) 95%, transparent);
 }
 
 .chart-editor-summary {
@@ -2197,7 +2189,7 @@ body {
   gap: 8px;
   padding: 8px 12px;
   border-bottom: 1px solid var(--ui-border-soft);
-  background: rgba(13, 19, 28, 0.9);
+  background: color-mix(in oklab, var(--background) 90%, transparent);
 }
 
 .chart-editor-pane-head h2 {
@@ -2237,7 +2229,7 @@ body {
   z-index: 2500;
   display: grid;
   place-items: center;
-  background: rgba(3, 8, 15, 0.74);
+  background: color-mix(in oklab, var(--background) 74%, transparent);
 }
 
 .chart-meta-modal {
@@ -2245,7 +2237,7 @@ body {
   max-height: min(760px, calc(100vh - 32px));
   border: 1px solid var(--ui-border);
   border-radius: 14px;
-  background: rgba(13, 19, 28, 0.98);
+  background: color-mix(in oklab, var(--background) 98%, transparent);
   overflow: hidden;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
@@ -2281,9 +2273,9 @@ body {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
   padding: 6px;
-  border: 1px solid rgba(139, 196, 255, 0.14);
+  border: 1px solid color-mix(in oklab, var(--primary) 14%, transparent);
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.04);
+  background: color-mix(in oklab, var(--primary) 4%, transparent);
 }
 
 .tabs-trigger {
@@ -2291,7 +2283,7 @@ body {
   border: 1px solid transparent;
   border-radius: 10px;
   background: transparent;
-  color: rgba(244, 247, 251, 0.7);
+  color: color-mix(in oklab, var(--primary) 70%, transparent);
   cursor: pointer;
   font: inherit;
   padding: 0 12px;
@@ -2303,15 +2295,15 @@ body {
 }
 
 .tabs-trigger:hover:not(:disabled) {
-  color: #f4f7fb;
-  background: rgba(255, 255, 255, 0.05);
+  color: var(--foreground);
+  background: color-mix(in oklab, var(--primary) 5%, transparent);
 }
 
 .tabs-trigger.active,
 .tabs-trigger[data-state='active'] {
-  color: #f8fafc;
-  background: linear-gradient(135deg, rgba(57, 123, 219, 0.42), rgba(35, 181, 116, 0.2));
-  border-color: rgba(139, 196, 255, 0.28);
+  color: var(--foreground);
+  background: linear-gradient(135deg, color-mix(in oklab, var(--primary) 42%, transparent), color-mix(in oklab, var(--primary) 20%, transparent));
+  border-color: color-mix(in oklab, var(--primary) 28%, transparent);
 }
 
 .tabs-trigger:disabled {
@@ -2336,7 +2328,7 @@ body {
 }
 
 .chart-procedure-multiselect-label {
-  color: #f4f7fb;
+  color: var(--foreground);
   font-size: 14px;
 }
 
@@ -2344,10 +2336,10 @@ body {
   width: 100%;
   min-height: 44px;
   padding: 0.75rem 0.875rem;
-  border: 1px solid rgba(139, 196, 255, 0.2);
+  border: 1px solid color-mix(in oklab, var(--primary) 20%, transparent);
   border-radius: 0.875rem;
-  color: #f4f7fb;
-  background: rgba(10, 21, 35, 0.92);
+  color: var(--foreground);
+  background: color-mix(in oklab, var(--background) 92%, transparent);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -2380,7 +2372,7 @@ body {
 
 .chart-procedure-multiselect-value {
   min-width: 0;
-  color: rgba(244, 247, 251, 0.78);
+  color: color-mix(in oklab, var(--primary) 78%, transparent);
   line-height: 1.45;
 }
 
@@ -2388,9 +2380,9 @@ body {
   max-height: 280px;
   overflow: auto;
   padding: 8px;
-  border: 1px solid rgba(139, 196, 255, 0.14);
+  border: 1px solid color-mix(in oklab, var(--primary) 14%, transparent);
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.03);
+  background: color-mix(in oklab, var(--primary) 3%, transparent);
   display: grid;
   gap: 8px;
 }
@@ -2403,7 +2395,7 @@ body {
   top: 0;
   z-index: 1;
   padding-bottom: 4px;
-  background: rgba(13, 19, 28, 0.98);
+  background: color-mix(in oklab, var(--background) 98%, transparent);
 }
 
 .chart-multiselect-toggle {
@@ -2414,10 +2406,10 @@ body {
 .chart-procedure-option {
   width: 100%;
   padding: 10px 12px;
-  border: 1px solid rgba(139, 196, 255, 0.12);
+  border: 1px solid color-mix(in oklab, var(--primary) 12%, transparent);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.02);
-  color: #f4f7fb;
+  background: color-mix(in oklab, var(--primary) 2%, transparent);
+  color: var(--foreground);
   display: flex;
   align-items: center;
   gap: 10px;
@@ -2431,26 +2423,26 @@ body {
 }
 
 .chart-procedure-option.selected {
-  border-color: rgba(139, 196, 255, 0.28);
-  background: linear-gradient(135deg, rgba(57, 123, 219, 0.16), rgba(35, 181, 116, 0.1));
+  border-color: color-mix(in oklab, var(--primary) 28%, transparent);
+  background: linear-gradient(135deg, color-mix(in oklab, var(--primary) 16%, transparent), color-mix(in oklab, var(--primary) 10%, transparent));
 }
 
 .chart-procedure-option-check {
   width: 18px;
   height: 18px;
   flex: 0 0 auto;
-  border: 1px solid rgba(139, 196, 255, 0.18);
+  border: 1px solid color-mix(in oklab, var(--primary) 18%, transparent);
   border-radius: 5px;
   display: grid;
   place-items: center;
   color: transparent;
-  background: rgba(9, 14, 22, 0.92);
+  background: color-mix(in oklab, var(--background) 92%, transparent);
 }
 
 .chart-procedure-option-check.selected {
-  color: #d8ffe6;
-  border-color: rgba(71, 173, 119, 0.42);
-  background: rgba(15, 44, 29, 0.92);
+  color: var(--foreground);
+  border-color: color-mix(in oklab, var(--primary) 42%, transparent);
+  background: color-mix(in oklab, var(--background) 92%, transparent);
 }
 
 .chart-procedure-option-check svg {
@@ -2473,17 +2465,17 @@ body {
   gap: 6px;
   padding: 12px 14px;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(139, 196, 255, 0.12);
+  background: color-mix(in oklab, var(--primary) 5%, transparent);
+  border: 1px solid color-mix(in oklab, var(--primary) 12%, transparent);
 }
 
 .chart-meta-derived-title span {
-  color: rgba(244, 247, 251, 0.68);
+  color: color-mix(in oklab, var(--primary) 68%, transparent);
   font-size: 13px;
 }
 
 .chart-meta-hint {
-  color: rgba(244, 247, 251, 0.72);
+  color: color-mix(in oklab, var(--primary) 72%, transparent);
   line-height: 1.5;
 }
 
@@ -2496,7 +2488,7 @@ body {
 
 .danger-copy {
   margin: 0;
-  color: #ffd8d3;
+  color: var(--destructive-foreground, var(--foreground));
 }
 
 .reference-checklist,
@@ -2506,7 +2498,7 @@ body {
   margin-top: 20px;
   padding: 18px;
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.04);
+  background: color-mix(in oklab, var(--primary) 4%, transparent);
 }
 
 .detail-map-stage {
@@ -2539,9 +2531,9 @@ body {
   width: min(520px, calc(100% - 24px));
   border-left: 1px solid var(--ui-border);
   background:
-    radial-gradient(circle at top left, rgba(252, 188, 84, 0.16), transparent 30%),
-    linear-gradient(180deg, rgba(16, 19, 26, 0.98), rgba(9, 12, 18, 0.98));
-  box-shadow: -16px 0 40px rgba(0, 0, 0, 0.48);
+    radial-gradient(circle at top left, color-mix(in oklab, var(--muted-foreground) 16%, transparent), transparent 30%),
+    linear-gradient(180deg, color-mix(in oklab, var(--background) 98%, transparent), color-mix(in oklab, var(--background) 98%, transparent));
+  box-shadow: -16px 0 40px color-mix(in oklab, var(--background) 48%, transparent);
   display: grid;
   grid-template-rows: auto 1fr;
   pointer-events: auto;
@@ -2577,10 +2569,10 @@ body {
 }
 
 .flight-plan-alert {
-  border-color: rgba(236, 179, 101, 0.35);
+  border-color: color-mix(in oklab, var(--muted-foreground) 35%, transparent);
   background:
-    radial-gradient(circle at top right, rgba(236, 179, 101, 0.12), transparent 28%),
-    rgba(255, 255, 255, 0.04);
+    radial-gradient(circle at top right, color-mix(in oklab, var(--muted-foreground) 12%, transparent), transparent 28%),
+    color-mix(in oklab, var(--primary) 4%, transparent);
 }
 
 .flight-plan-flow {
@@ -2589,11 +2581,11 @@ body {
   flex-wrap: wrap;
   gap: 8px;
   padding: 12px 14px;
-  border: 1px solid rgba(139, 196, 255, 0.14);
+  border: 1px solid color-mix(in oklab, var(--primary) 14%, transparent);
   border-radius: 16px;
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.015)),
-    rgba(7, 16, 28, 0.5);
+    linear-gradient(135deg, color-mix(in oklab, var(--primary) 3%, transparent), color-mix(in oklab, var(--primary) 2%, transparent)),
+    color-mix(in oklab, var(--background) 50%, transparent);
 }
 
 .flight-plan-flow-chip {
@@ -2602,25 +2594,25 @@ body {
   min-height: 28px;
   padding: 0 10px;
   border-radius: 999px;
-  border: 1px solid rgba(139, 196, 255, 0.18);
-  background: rgba(255, 255, 255, 0.04);
-  color: #d7e9fb;
+  border: 1px solid color-mix(in oklab, var(--primary) 18%, transparent);
+  background: color-mix(in oklab, var(--primary) 4%, transparent);
+  color: var(--foreground);
   font-size: 12px;
   letter-spacing: 0.02em;
 }
 
 .flight-plan-flow-arrow {
-  color: rgba(148, 163, 184, 0.86);
+  color: color-mix(in oklab, var(--primary) 86%, transparent);
   font-size: 12px;
 }
 
 .flight-plan-section {
   padding: 14px;
-  border: 1px solid rgba(139, 196, 255, 0.14);
+  border: 1px solid color-mix(in oklab, var(--primary) 14%, transparent);
   border-radius: 18px;
   background:
-    radial-gradient(circle at top right, rgba(56, 132, 224, 0.08), transparent 24%),
-    rgba(255, 255, 255, 0.03);
+    radial-gradient(circle at top right, color-mix(in oklab, var(--primary) 8%, transparent), transparent 24%),
+    color-mix(in oklab, var(--primary) 3%, transparent);
   display: grid;
 }
 
@@ -2637,7 +2629,7 @@ body {
 }
 
 .flight-plan-section-head span {
-  color: rgba(244, 247, 251, 0.62);
+  color: color-mix(in oklab, var(--primary) 62%, transparent);
   font-size: 12px;
   line-height: 1.4;
 }
@@ -2651,7 +2643,7 @@ body {
 }
 
 .flight-plan-summary-card {
-  border-color: rgba(120, 183, 255, 0.24);
+  border-color: color-mix(in oklab, var(--primary) 24%, transparent);
 }
 
 .map-reference-pin {
@@ -2690,10 +2682,10 @@ body {
   height: 24px;
   transform: translateX(-50%);
   border-radius: 50%;
-  background: linear-gradient(160deg, #dbf1ff, #7cc0f4 62%, #5fa7de);
+  background: linear-gradient(160deg, var(--foreground), var(--primary) 62%, var(--primary));
   box-shadow:
-    0 0 0 2px rgba(8, 19, 31, 0.5),
-    0 5px 10px rgba(0, 0, 0, 0.35);
+    0 0 0 2px color-mix(in oklab, var(--background) 50%, transparent),
+    0 5px 10px color-mix(in oklab, var(--background) 35%, transparent);
 }
 
 .map-reference-pin::after,
@@ -2707,8 +2699,8 @@ body {
   transform: translateX(-50%);
   border-left: 7px solid transparent;
   border-right: 7px solid transparent;
-  border-top: 16px solid #74b8ea;
-  filter: drop-shadow(0 1px 0 rgba(8, 19, 31, 0.6));
+  border-top: 16px solid var(--primary);
+  filter: drop-shadow(0 1px 0 color-mix(in oklab, var(--background) 60%, transparent));
 }
 
 .map-reference-pin span,
@@ -2720,8 +2712,8 @@ body {
   z-index: 1;
   font-size: 12px;
   font-weight: 700;
-  color: #0b1a29;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
+  color: var(--background);
+  text-shadow: 0 1px 0 color-mix(in oklab, var(--primary) 35%, transparent);
 }
 
 .chart-viewer-shell {
@@ -2734,7 +2726,7 @@ body {
   max-width: 100%;
   overflow: visible;
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.04);
+  background: color-mix(in oklab, var(--primary) 4%, transparent);
 }
 
 .chart-image,
@@ -2761,7 +2753,7 @@ body {
   padding: 6px;
   border: 1px solid var(--ui-border);
   border-radius: 10px;
-  background: rgba(11, 16, 24, 0.88);
+  background: color-mix(in oklab, var(--background) 88%, transparent);
 }
 
 .chart-zoom-button {
@@ -2772,7 +2764,7 @@ body {
   padding: 0 10px;
   border: 1px solid var(--ui-border);
   border-radius: 8px;
-  background: rgba(18, 23, 32, 0.92);
+  background: color-mix(in oklab, var(--background) 92%, transparent);
   color: var(--ui-fg);
   cursor: pointer;
   font: inherit;
@@ -2831,7 +2823,7 @@ body {
   min-height: 720px;
   border: 0;
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.04);
+  background: color-mix(in oklab, var(--primary) 4%, transparent);
 }
 
 .map-recenter-button:disabled,

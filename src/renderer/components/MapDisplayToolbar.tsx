@@ -122,9 +122,10 @@ export function MapDisplayToolbar({
               </div>
             ) : results.length > 0 ? (
               results.map((result) => (
-                <button
+                <Button
                   key={result.id}
                   type="button"
+                  variant="ghost"
                   className="map-search-item"
                   onClick={() => {
                     setSearch(result.ident)
@@ -137,7 +138,7 @@ export function MapDisplayToolbar({
                     {result.name ? <span>{result.name}</span> : null}
                   </span>
                   <span className="map-search-item-type">{getTypeLabel(result.type)}</span>
-                </button>
+                </Button>
               ))
             ) : (
               <div className="map-search-empty">

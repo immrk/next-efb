@@ -1396,11 +1396,11 @@ function collectPoints(...points: Array<FlightPlanPoint | null | undefined>): Fl
 }
 
 const FLIGHT_PLAN_COLORS = {
-  departure: '#4fd1c5',
-  enroute: '#6aa8ff',
-  arrival: '#ffbf69',
-  approach: '#ff7b72',
-  missed: '#c084fc'
+  departure: 'var(--primary)',
+  enroute: 'var(--ring)',
+  arrival: 'var(--muted-foreground)',
+  approach: 'var(--destructive)',
+  missed: 'var(--secondary-foreground)'
 } as const
 
 function normalizeNullablePath(pathValue: string | null | undefined): string | null {

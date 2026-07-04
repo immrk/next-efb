@@ -1,0 +1,168 @@
+{
+  "hello": "你好，世界",
+  "main": {
+    "login": {
+      "logined": "已登录",
+      "unlogin": "未登录",
+      "toLogin": "前往登录",
+      "logout": "退出登录"
+    },
+    "navigation": {
+      "home": "首页",
+      "system": "系统信息",
+      "window": "窗口管理",
+      "apiTest": "API 测试",
+      "setting": "设置"
+    },
+    "home": {
+      "title": "Electron-Modern-Template",
+      "description": "现代化Electron开发框架，让桌面应用开发更简单高效",
+      "coreFeatures": "核心特性",
+      "features": {
+        "modernDev": {
+          "title": "现代化开发体验",
+          "description": "基于 React + TypeScript + Vite 构建，提供热重载、类型安全等现代化开发体验"
+        },
+        "crossPlatform": {
+          "title": "跨平台兼容",
+          "description": "支持Windows、macOS、Linux三大主流操作系统，一次开发，多平台部署"
+        },
+        "uiComponents": {
+          "title": "现代化 UI 组件",
+          "description": "集成 shadcn/ui 与 Lucide 图标，提供一致、可访问且支持统一主题配置的用户界面"
+        },
+        "i18n": {
+          "title": "i18n国际化支持",
+          "description": "Electron主进程、渲染进程、UI组件均已集成国际化，支持多语言切换；快速构建多语言应用"
+        }
+      }
+    },
+    "system": {
+      "alert": "该页面信息来源于主进程，通过 preload 文件暴露给渲染进程，作为主进程与渲染进程通信样例",
+      "title": "系统信息",
+      "nodeVersion": "Node.js 版本",
+      "chromeVersion": "Chrome 版本",
+      "electronVersion": "Electron 版本",
+      "pingResult": "Ping 结果",
+      "loading": "加载中...",
+      "notTested": "暂未测试",
+      "ping": "Ping",
+      "pingSuccess": "Ping 成功: {result}",
+      "pingFailed": "Ping 失败"
+    },
+    "window": {
+      "alert": "该页面演示窗口管理API的使用，通过preload文件暴露的windowManager接口与主进程通信",
+      "operations": {
+        "title": "窗口操作",
+        "refreshList": "刷新窗口列表",
+        "basicOperations": "基础窗口操作",
+        "createSetting": "创建设置窗口",
+        "showAll": "显示所有窗口",
+        "hideAll": "隐藏所有窗口",
+        "closeAll": "关闭所有窗口",
+        "statusControl": "窗口状态控制",
+        "focusMain": "聚焦主窗口",
+        "minimizeMain": "最小化主窗口",
+        "maximizeMain": "最大化主窗口",
+        "restoreMain": "恢复主窗口",
+        "infoQuery": "窗口信息查询",
+        "checkStatus": "检查窗口状态",
+        "getVisibleCount": "获取可见窗口数",
+        "getAllWindows": "获取所有窗口"
+      },
+      "status": {
+        "title": "窗口状态",
+        "currentWindowInfo": "当前窗口信息",
+        "mainExists": "主窗口存在",
+        "mainVisible": "主窗口可见",
+        "visibleCount": "可见窗口数量",
+        "totalCount": "总窗口数量",
+        "windowList": "窗口列表",
+        "windowName": "窗口名称",
+        "visibleStatus": "可见状态",
+        "visible": "可见",
+        "hidden": "隐藏",
+        "actions": "操作",
+        "focus": "聚焦",
+        "close": "关闭"
+      },
+      "messages": {
+        "windowManagerUnavailable": "windowManager API 不可用",
+        "listRefreshed": "窗口列表已刷新",
+        "refreshFailed": "刷新窗口列表失败",
+        "createSettingFailed": "创建设置窗口失败",
+        "allWindowsShown": "所有窗口已显示",
+        "showWindowsFailed": "显示窗口失败",
+        "allWindowsHidden": "所有窗口已隐藏",
+        "hideWindowsFailed": "隐藏窗口失败",
+        "nonMainWindowsClosed": "所有非主窗口已关闭",
+        "closeWindowsFailed": "关闭窗口失败",
+        "mainWindowFocused": "主窗口已聚焦",
+        "focusMainFailed": "聚焦主窗口失败",
+        "mainWindowMinimized": "主窗口已最小化",
+        "minimizeMainFailed": "最小化主窗口失败",
+        "mainWindowMaximized": "主窗口已最大化",
+        "maximizeMainFailed": "最大化主窗口失败",
+        "mainWindowRestored": "主窗口已恢复",
+        "restoreMainFailed": "恢复主窗口失败",
+        "statusChecked": "窗口状态已检查",
+        "visibleCountInfo": "当前可见窗口数量: {count}",
+        "getVisibleCountFailed": "获取可见窗口数失败",
+        "totalWindowsInfo": "当前共有 {count} 个窗口",
+        "windowFocused": "窗口 {name} 已聚焦",
+        "focusWindowFailed": "聚焦窗口 {name} 失败",
+        "windowClosed": "窗口 {name} 已关闭",
+        "closeWindowFailed": "关闭窗口 {name} 失败",
+        "windowStateChanged": "窗口状态变化: {windowName} - {action}"
+      }
+    },
+    "apiTest": {
+      "title": "API 测试",
+      "description": "该测试页面使用封装好的请求方法，请求mock服务，用于展示该框架的API使用方法",
+      "testGetRenderer": "发送GET请求（渲染进程）",
+      "testGetMain": "发送GET请求（主进程）",
+      "testResult": "响应结果",
+      "testFailed": "请求失败",
+      "loading": "请求中..."
+    }
+  },
+  "setting": {
+    "title": "设置",
+    "theme": {
+      "label": "主题",
+      "description": "切换软件配色主题，默认跟随系统",
+      "light": "明亮",
+      "dark": "暗黑",
+      "system": "跟随系统"
+    },
+    "language": {
+      "label": "语言",
+      "description": "语言更改立即生效",
+      "placeholder": "请选择语言",
+      "system": "跟随系统",
+      "chinese": "中文",
+      "english": "英文"
+    }
+  },
+  "login": {
+    "title": "登录",
+    "email": "邮箱",
+    "password": "密码",
+    "login": "登录",
+    "register": "注册",
+    "validation": {
+      "emailRequired": "请输入邮箱",
+      "emailInvalid": "请输入正确的邮箱",
+      "passwordRequired": "请输入密码"
+    },
+    "messages": {
+      "success": "登录成功",
+      "failed": "登录失败",
+      "registerUnavailable": "暂未开放注册"
+    }
+  },
+  "common": {
+    "yes": "是",
+    "no": "否"
+  }
+}

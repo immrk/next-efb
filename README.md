@@ -1,195 +1,80 @@
 # NextEFB
 
-An Electron + React + TypeScript desktop MVP for NextEFB map, chart, and flight-deck workflows around Microsoft Flight Simulator 2020.
+NextEFB 是基于 Electron Modern Template 迁移的桌面 EFB。项目保留了原有的 MSFS SimConnect、航路规划、导航数据、航图管理、地理配准、地图叠加与局域网访问能力，并统一使用 Electron Forge、Vite、tsup、React、Tailwind CSS v4 和 shadcn/ui。
 
-## Current status
+## 技术栈
 
-The project is in MVP scaffold stage.
+- Electron 36 + Electron Forge
+- React 19 + TypeScript
+- Vite 6 + tsup
+- Tailwind CSS v4 + shadcn/ui + Lucide
+- React Router（HashRouter）
+- Zustand + i18next
+- Leaflet + React Leaflet
+- better-sqlite3 + node-simconnect
 
-What is already in place:
-
-- Electron desktop shell
-- React renderer with TypeScript
-- Chinese / English i18n
-- real map view with Leaflet + OpenStreetMap
-- settings persistence
-- mock aircraft data provider for UI development
-- `node-simconnect` integration entry in the main process
-- successful `npm run typecheck`
-- successful `npm run build`
-
-What is not fully validated yet:
-
-- end-to-end runtime verification inside a launched Electron window on this machine
-- live connection verification against a running MSFS 2020 instance
-- packaging / installer validation
-
-So the answer is:
-
-- the MVP project structure is ready and buildable
-- the mock mode should be enough for normal UI development
-- live SimConnect mode still needs real-machine integration testing with MSFS running
-
-## Tech stack
-
-- Electron
-- React
-- TypeScript
-- electron-vite
-- Zustand
-- i18next / react-i18next
-- Leaflet / react-leaflet
-- node-simconnect
-
-## Features in the current MVP
-
-- desktop shell for Windows
-- aircraft map panel
-- aircraft status panel
-- Chinese / English language switching
-- provider switching between `simconnect` and `mock`
-- automatic SimConnect retry logic
-- local settings persistence
-
-## Project structure
+## 项目结构
 
 ```text
-docs/
-  MVP.md
 src/
-  main/
-    index.ts
-    ipc/
-    services/
-  preload/
-    index.ts
-  renderer/
-    App.tsx
-    components/
-    hooks/
-    i18n/
-    locales/
-    store/
-  shared/
-    channels.ts
-    types.ts
+├─ config/                 # 模板窗口、菜单与 i18n 配置
+├─ main/
+│  ├─ ipc/                 # 模板 IPC 与 NextEFB IPC
+│  ├─ preload/             # 多窗口 preload API
+│  ├─ services/            # SimConnect、导航、存储、LAN 服务
+│  ├─ main.ts              # 主进程入口
+│  └─ windowManager.ts     # 模板窗口管理器
+├─ renderer/
+│  ├─ components/ui/       # shadcn/ui 组件
+│  ├─ pages/               # 地图、航图、设置与航图编辑页面
+│  ├─ styles/              # 模板主题
+│  └─ window/
+│     ├─ main/             # 主窗口
+│     ├─ setting/          # 设置窗口
+│     └─ login/            # 模板登录窗口
+└─ shared/                 # 主进程、preload、renderer 共享类型
 ```
 
-## Quick start
-
-### 1. Install dependencies
+## 安装
 
 ```bash
 npm install
+npm run rebuild-native
 ```
 
-### 2. Start the app in development mode
+## 开发
+
+开发方式与 Electron Modern Template 一致：
+
+1. 运行 `npm run dev`，启动 main、setting、login 三个 Vite 窗口。
+2. 在 VS Code 中启动 `Electron TS Development` 调试配置。
+3. 如需持续重编译主进程，可另开终端运行 `npm run watch`。
+
+也可以只启动指定窗口：
 
 ```bash
-npm run dev
+npm run dev -- --only=main,setting
 ```
 
-### 3. Build the app
-
-```bash
-npm run build
-```
-
-### 4. Run type checks
+## 检查与构建
 
 ```bash
 npm run typecheck
+npm run build
+npm run start
 ```
 
-## How to use the current MVP
+生成当前平台安装包：
 
-### Mock mode
+```bash
+npm run make
+```
 
-Use Mock mode when:
+构建输出位于 `dist/`，Electron Forge 输出位于 `out/`。
 
-- MSFS is not running
-- you want to develop UI and interactions first
+## 页面与交互
 
-In Mock mode the app simulates aircraft position, heading, speed, and altitude updates.
-
-### SimConnect mode
-
-Use SimConnect mode when:
-
-- Microsoft Flight Simulator 2020 is running
-- SimConnect is available to the local machine
-
-The app currently attempts to connect through `node-simconnect` from the Electron main process.
-
-If connection fails, the app keeps running and reports disconnected state. You can switch back to Mock mode from the settings panel.
-
-## Map solution
-
-The MVP currently uses:
-
-- `Leaflet`
-- `react-leaflet`
-- OpenStreetMap raster tiles
-
-Why this was chosen:
-
-- free and open source
-- simple React integration
-- good enough for MVP aircraft display and follow mode
-- easy to replace later with another compatible tile source
-
-Important note:
-
-OpenStreetMap public tiles are fine for development and light usage, but for larger-scale desktop distribution you should plan to move to a more controlled tile source or self-hosted setup.
-
-Reference:
-
-- [Leaflet](https://leafletjs.com/)
-- [React Leaflet](https://react-leaflet.js.org/)
-- [OpenStreetMap tile usage policy](https://operations.osmfoundation.org/policies/tiles/)
-
-## SimConnect integration notes
-
-The project uses `node-simconnect` as the Node.js system-layer integration path.
-
-Current live data fields planned / wired for reading:
-
-- latitude
-- longitude
-- altitude
-- heading
-- ground speed
-- on-ground state
-
-Current implementation file:
-
-- `src/main/services/simconnect/NodeSimConnectProvider.ts`
-
-## Scripts
-
-- `npm run dev` - start Electron in development mode
-- `npm run build` - build main, preload, and renderer bundles
-- `npm run typecheck` - run TypeScript checks for node and web targets
-- `npm run preview` - preview built app
-
-## Known limitations
-
-- no real flight trail drawing yet
-- no map provider switcher yet
-- no tray workflow yet
-- no packaged installer yet
-- live SimConnect mode still needs verification with a running simulator
-
-## Suggested next steps
-
-1. Test `npm run dev` locally with MSFS closed and verify Mock mode UX.
-2. Start MSFS 2020 and verify SimConnect connection and aircraft position updates.
-3. Add aircraft trail drawing.
-4. Add selectable map sources.
-5. Add packaging with `electron-builder`.
-
-## Document
-
-The MVP design document is available at:
-
-- [MVP.md](D:\develop\nextFlight\nextCilent\docs\MVP.md)
+- 主窗口保持模板的无边框 TitleBar、固定 64px 左侧导航栏、HashRouter 与主题布局。
+- 通用按钮、输入框、选择器、标签页、提示、滑块和开关均使用 shadcn/ui。
+- 自定义 CSS 只用于地图、Leaflet 图层、航图画布、地理配准和业务抽屉等专用布局，颜色与字体均来自模板主题 token。
+- 桌面端设置按钮打开独立设置窗口；LAN 网页端仍在主窗口内打开设置页。

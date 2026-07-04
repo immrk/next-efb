@@ -9,7 +9,10 @@ import type { StorageSummary } from '@shared/chart-types'
 import { useAppStore } from '../store/useAppStore'
 import { toast } from './ui/use-toast'
 import { Button } from './ui/button'
+import { Card } from './ui/card'
 import { Input } from './ui/input'
+import { Slider } from './ui/slider'
+import { Switch } from './ui/switch'
 import {
   Select,
   SelectContent,
@@ -199,7 +202,7 @@ export function SettingsPanel() {
   }
 
   return (
-    <section className="panel settings-panel settings-panel-compact" aria-label={t('settings.title')}>
+    <Card className="settings-panel settings-panel-compact" aria-label={t('settings.title')}>
       <div className="settings-field">
         <label htmlFor="language-select">{t('settings.language')}</label>
         <Select
@@ -243,17 +246,16 @@ export function SettingsPanel() {
       <div className="settings-field">
         <label htmlFor="chart-opacity-range">{t('settings.chartOpacity')}</label>
         <div className="settings-note settings-note-card">
-          <input
+          <Slider
             id="chart-opacity-range"
-            type="range"
             className="settings-chart-opacity-range"
             min={20}
             max={100}
             step={5}
-            value={settings?.chartOpacity ?? 100}
+            value={[settings?.chartOpacity ?? 100]}
             disabled={!runtime.canWrite}
-            onChange={(event) => {
-              void updateChartOpacity(Number(event.target.value))
+            onValueChange={([value]) => {
+              void updateChartOpacity(value)
             }}
           />
           <div className="settings-inline-row settings-chart-opacity-row">
@@ -436,21 +438,19 @@ export function SettingsPanel() {
             {runtime.host === 'electron' && settings?.lanAccess ? (
               <>
                 <label className="settings-toggle">
-                  <input
-                    type="checkbox"
+                  <Switch
                     checked={settings.lanAccess.enabled}
-                    onChange={(event) => {
-                      void updateLanAccess({ enabled: event.target.checked })
+                    onCheckedChange={(checked) => {
+                      void updateLanAccess({ enabled: checked })
                     }}
                   />
                   <span>{t('settings.remoteAccessEnabledToggle')}</span>
                 </label>
                 <label className="settings-toggle">
-                  <input
-                    type="checkbox"
+                  <Switch
                     checked={settings.lanAccess.authEnabled}
-                    onChange={(event) => {
-                      void updateLanAccess({ authEnabled: event.target.checked })
+                    onCheckedChange={(checked) => {
+                      void updateLanAccess({ authEnabled: checked })
                     }}
                   />
                   <span>{t('settings.remoteAccessAuthToggle')}</span>
@@ -494,6 +494,6 @@ export function SettingsPanel() {
       ) : null}
 
       {!runtime.canWrite ? <p className="settings-note">{t('settings.remoteReadonlyMode')}</p> : null}
-    </section>
+    </Card>
   )
 }

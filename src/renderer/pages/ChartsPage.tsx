@@ -7,6 +7,7 @@ import { useAppStore } from '../store/useAppStore'
 import { useChartDetailData } from '../hooks/useChartDetailData'
 import { useChartLibraryData } from '../hooks/useChartLibraryData'
 import { toast } from '../components/ui/use-toast'
+import { Card } from '../components/ui/card'
 
 interface ChartsPageProps {
   selectedChartId: string | null
@@ -89,7 +90,7 @@ export function ChartsPage({
       />
 
       <section className="chart-preview-pane">
-        <section className="panel charts-panel chart-preview-panel">
+        <Card className="charts-panel chart-preview-panel">
           {chart ? (
             <ChartImagePreview
               chartTitle={chart.title}
@@ -103,7 +104,7 @@ export function ChartsPage({
               <p>{t('charts.emptyDescription')}</p>
             </div>
           )}
-        </section>
+        </Card>
       </section>
     </section>
   )

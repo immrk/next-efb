@@ -1,0 +1,36 @@
+{
+    "compilerOptions": {
+      "module": "esnext",
+      "target": "esnext",
+      "moduleResolution": "bundler",
+      "allowArbitraryExtensions": true,
+      "strict": true,
+      "jsx": "preserve",
+      "esModuleInterop": true,
+      "skipLibCheck": true,
+      "forceConsistentCasingInFileNames": true,
+      "useDefineForClassFields": true,
+      "noImplicitAny": true,
+      "sourceMap": true,
+      "outDir": "./dist",
+    "baseUrl": ".",
+    "paths": {
+      "@shared/*": ["src/shared/*"]
+    },
+      "types": ["vite/client", "node"],
+      "allowSyntheticDefaultImports": true
+    },
+    "include": [
+      "src/main/**/*.ts",
+      "src/config/**/*.ts",
+      "src/shared/**/*.ts",
+      "src/utils/**/*.ts",
+      "vite-env.d.ts"
+    ],
+    "exclude": [
+      "src/renderer",
+      "node_modules",
+      "dist",
+      "out"
+    ]
+  }
