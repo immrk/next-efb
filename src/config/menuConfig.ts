@@ -49,16 +49,6 @@ export const fileMenuConfig: MenuConfig = {
         console.log('请通过窗口管理界面创建新窗口')
       }
     },
-    {
-      label: '打开设置窗口',
-      accelerator: 'CmdOrCtrl+,',
-      click: () => {
-        console.log('打开设置窗口')
-        // 这里需要通过全局变量或事件来创建窗口
-        // 暂时使用 console.log 提示
-        console.log('请通过窗口管理界面创建设置窗口')
-      }
-    },
     { type: 'separator' as const },
     process.platform === 'darwin' ? { role: 'close' as const } : { role: 'quit' as const }
   ]
@@ -128,4 +118,4 @@ export const getAllMenuConfigs = (): MenuConfig[] => {
     windowMenuConfig,
     helpMenuConfig
   ]
-} 
+}

@@ -5,6 +5,7 @@ import type {
 } from '@shared/nav-map-types'
 import type { MapTileProvider } from '@shared/types'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { Map as MapIcon, Search } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { getAppClient } from '../client'
 import { useAppStore } from '../store/useAppStore'
@@ -103,6 +104,7 @@ export function MapDisplayToolbar({
   return (
     <div className={className}>
       <div className="map-search-shell" ref={rootRef}>
+        <Search className="map-search-icon" aria-hidden="true" />
         <Input
           className="map-search-input"
           value={search}
@@ -113,6 +115,10 @@ export function MapDisplayToolbar({
           onFocus={() => setIsOpen(true)}
           placeholder={placeholder}
           disabled={activeSearchTypes.length === 0}
+          autoComplete="off"
+          autoCorrect="off"
+          enterKeyHint="search"
+          spellCheck={false}
         />
         {isOpen && search.trim() && activeSearchTypes.length > 0 ? (
           <div className="map-search-panel">
@@ -166,10 +172,7 @@ export function MapDisplayToolbar({
           aria-label={t('settings.mapTileProvider')}
           title={t('settings.mapTileProvider')}
         >
-          <svg viewBox="0 0 24 24" aria-hidden="true" className="map-provider-icon">
-            <path d="M3 6L9 3L15 6L21 3V18L15 21L9 18L3 21V6Z" />
-            <path d="M9 3V18M15 6V21" />
-          </svg>
+          <MapIcon className="map-provider-icon" />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="esriWorldStreet">{t('settings.mapTileProviderEsriWorldStreet')}</SelectItem>

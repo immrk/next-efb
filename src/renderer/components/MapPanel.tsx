@@ -1,5 +1,6 @@
 import { DomUtil } from 'leaflet'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { LocateFixed, Maximize2 } from 'lucide-react'
 import { CircleMarker, MapContainer, Marker, Polyline, TileLayer, Tooltip, useMap } from 'react-leaflet'
 import { useTranslation } from 'react-i18next'
 import type { GeoReferencePoint } from '@shared/chart-types'
@@ -397,9 +398,7 @@ export function MapPanel({
               setRouteViewTrigger((current) => current + 1)
             }}
           >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M4 4H9V6H6V9H4V4ZM15 4H20V9H18V6H15V4ZM4 15H6V18H9V20H4V15ZM18 15H20V20H15V18H18V15Z" />
-            </svg>
+            <Maximize2 className="size-4" />
           </Button>
           <Button
             type="button"
@@ -412,9 +411,7 @@ export function MapPanel({
             aria-pressed={isFollowActive}
             onClick={() => setIsFollowActive((current) => !current)}
           >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 2.75A9.25 9.25 0 1 0 21.25 12A9.26 9.26 0 0 0 12 2.75Zm0 2A7.25 7.25 0 1 1 4.75 12A7.26 7.26 0 0 1 12 4.75Zm0 1.75A5.5 5.5 0 1 0 17.5 12A5.51 5.51 0 0 0 12 6.5Zm0 2A3.5 3.5 0 1 1 8.5 12A3.5 3.5 0 0 1 12 8.5Z" />
-            </svg>
+            <LocateFixed className="size-4" />
           </Button>
         </div>
         <div className="map-floating-toolbar">

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import QRCode from 'qrcode'
 import { getAppClient } from '../client'
 import i18n from '../i18n'
+import { useTheme, type ThemeColor } from '../composables/useTheme'
 import type { AppLanguage, AircraftSource, RemoteAccessStatus } from '@shared/types'
 import type { NavDataStatus } from '@shared/flight-plan-types'
 import type { StorageSummary } from '@shared/chart-types'
@@ -25,6 +26,7 @@ export function SettingsPanel() {
   const appClient = getAppClient()
   const runtime = appClient.getRuntime()
   const { t } = useTranslation()
+  const { themeColor, changeTheme } = useTheme()
   const settings = useAppStore((state) => state.settings)
   const setSettings = useAppStore((state) => state.setSettings)
   const [remoteAccessStatus, setRemoteAccessStatus] = useState<RemoteAccessStatus | null>(null)
@@ -203,6 +205,25 @@ export function SettingsPanel() {
 
   return (
     <Card className="settings-panel settings-panel-compact" aria-label={t('settings.title')}>
+      <div className="settings-field">
+        <label htmlFor="theme-select">{t('settings.theme')}</label>
+        <Select
+          value={themeColor}
+          onValueChange={(value) => {
+            void changeTheme(value as ThemeColor)
+          }}
+        >
+          <SelectTrigger id="theme-select">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="dark">{t('settings.themeDark')}</SelectItem>
+            <SelectItem value="light">{t('settings.themeLight')}</SelectItem>
+            <SelectItem value="system">{t('settings.themeSystem')}</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
       <div className="settings-field">
         <label htmlFor="language-select">{t('settings.language')}</label>
         <Select

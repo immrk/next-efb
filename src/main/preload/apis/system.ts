@@ -5,9 +5,11 @@ export function exposeSystemAPI() {
     changeTheme: (theme: string) => ipcRenderer.invoke("system:changeTheme", theme),
     getTheme: () => ipcRenderer.invoke("system:getTheme"),
     onChangeTheme: (callback: (theme: string) => void) => {
-      ipcRenderer.on("system:changeTheme", (event, theme: string) => {
+      const listener = (_event: Electron.IpcRendererEvent, theme: string) => {
         callback(theme);
-      });
+      };
+      ipcRenderer.on("system:changeTheme", listener);
+      return () => ipcRenderer.removeListener("system:changeTheme", listener);
     },
     changeLanguage: (language: string) => ipcRenderer.invoke("system:changeLanguage", language),
     getLanguage: () => ipcRenderer.invoke("system:getLanguage"),

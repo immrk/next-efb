@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { divIcon } from 'leaflet'
+import { ArrowLeft, Check, ChevronDown, Pencil, X } from 'lucide-react'
 import { MapContainer, Marker, TileLayer, useMap, useMapEvents } from 'react-leaflet'
 import { useTranslation } from 'react-i18next'
 import type { ChartTitleMode, ChartType, GeoReferencePoint } from '@shared/chart-types'
@@ -52,6 +53,33 @@ function createMapDot(label: string) {
 
 function isBindableChartType(value: ChartType): boolean {
   return BINDABLE_CHART_TYPES.includes(value)
+}
+
+function createReferencePointId(): string {
+  if (typeof globalThis.crypto?.randomUUID === 'function') {
+    return globalThis.crypto.randomUUID()
+  }
+
+  const bytes = new Uint8Array(16)
+  if (typeof globalThis.crypto?.getRandomValues === 'function') {
+    globalThis.crypto.getRandomValues(bytes)
+  } else {
+    for (let index = 0; index < bytes.length; index += 1) {
+      bytes[index] = Math.floor(Math.random() * 256)
+    }
+  }
+
+  bytes[6] = (bytes[6] & 0x0f) | 0x40
+  bytes[8] = (bytes[8] & 0x3f) | 0x80
+  const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')
+
+  return [
+    hex.slice(0, 8),
+    hex.slice(8, 12),
+    hex.slice(12, 16),
+    hex.slice(16, 20),
+    hex.slice(20)
+  ].join('-')
 }
 
 function getProcedureOptionsByChartType(
@@ -539,17 +567,17 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
   const saveReferencePoints = async () => {
     if (!chart || draftMapPoints.length !== 2 || draftChartPoints.length !== 2) return
 
-    const nextPoints: GeoReferencePoint[] = [0, 1].map((index) => ({
-      id: crypto.randomUUID(),
-      chartId: chart.id,
-      index: (index + 1) as 1 | 2,
-      mapLat: draftMapPoints[index].lat,
-      mapLon: draftMapPoints[index].lon,
-      chartX: draftChartPoints[index].x,
-      chartY: draftChartPoints[index].y
-    }))
-
     try {
+      const nextPoints: GeoReferencePoint[] = [0, 1].map((index) => ({
+        id: createReferencePointId(),
+        chartId: chart.id,
+        index: (index + 1) as 1 | 2,
+        mapLat: draftMapPoints[index].lat,
+        mapLon: draftMapPoints[index].lon,
+        chartX: draftChartPoints[index].x,
+        chartY: draftChartPoints[index].y
+      }))
+
       const saved = await appClient.saveChartReferencePoints(chart.id, nextPoints)
       setPoints(saved)
       notifyChartChanged()
@@ -578,9 +606,7 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
     <section className="chart-editor-page">
       <header className="chart-editor-topbar">
         <Button type="button" variant="outline" size="icon" onClick={onBack} aria-label={t('common.back')}>
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M15 6L9 12L15 18" />
-          </svg>
+          <ArrowLeft className="size-4" />
         </Button>
 
         <div className="chart-editor-summary">
@@ -597,10 +623,7 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
             }}
             aria-label={t('chartDetail.editMeta')}
           >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M4 16.5V20H7.5L17.81 9.69L14.31 6.19L4 16.5Z" />
-              <path d="M13.5 7L17 10.5" />
-            </svg>
+            <Pencil className="size-4" />
           </Button>
         </div>
 
@@ -757,14 +780,13 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
               <h3>{t('chartDetail.metaTitle')}</h3>
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="ghost"
                   size="icon"
+                  className="text-muted-foreground hover:text-foreground"
                   onClick={closeMetaModal}
                   aria-label={t('common.close')}
                 >
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M6 6L18 18M18 6L6 18" />
-                </svg>
+                <X className="size-4" />
               </Button>
             </header>
 
@@ -851,9 +873,7 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
                           ? selectedRunwayOptions.map((runway) => runway.displayName).join(', ')
                           : t('chartDetail.runwayMultiSelectPlaceholder')}
                       </span>
-                      <svg viewBox="0 0 24 24" aria-hidden="true" className={isRunwayPickerOpen ? 'open' : ''}>
-                        <path d="M6 9L12 15L18 9" />
-                      </svg>
+                      <ChevronDown className={isRunwayPickerOpen ? 'open' : ''} />
                     </Button>
 
                     {isRunwayPickerOpen ? (
@@ -888,9 +908,7 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
                                 onClick={() => toggleRunwaySelection(runway.name)}
                               >
                                 <span className={`chart-procedure-option-check ${checked ? 'selected' : ''}`}>
-                                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                                    <path d="M20 6L9 17L4 12" />
-                                  </svg>
+                                  <Check className="size-4" />
                                 </span>
                                 <span className="chart-procedure-option-copy">{runway.displayName}</span>
                               </Button>
@@ -923,9 +941,7 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
                           ? selectedProcedureOptions.map((procedure) => procedure.name).join(', ')
                           : t('chartDetail.procedureMultiSelectPlaceholder')}
                       </span>
-                      <svg viewBox="0 0 24 24" aria-hidden="true" className={isProcedurePickerOpen ? 'open' : ''}>
-                        <path d="M6 9L12 15L18 9" />
-                      </svg>
+                      <ChevronDown className={isProcedurePickerOpen ? 'open' : ''} />
                     </Button>
 
                     {isProcedurePickerOpen ? (
@@ -960,9 +976,7 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
                                 onClick={() => toggleProcedureSelection(procedure.id)}
                               >
                                 <span className={`chart-procedure-option-check ${checked ? 'selected' : ''}`}>
-                                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                                    <path d="M20 6L9 17L4 12" />
-                                  </svg>
+                                  <Check className="size-4" />
                                 </span>
                                 <span className="chart-procedure-option-copy">{procedure.name}</span>
                               </Button>
@@ -1024,14 +1038,13 @@ export function ChartDetailPage({ chartId, onBack, onSaved, onDeleted }: ChartDe
               <h3>{t('chartDetail.deleteDialogTitle')}</h3>
               <Button
                 type="button"
-                variant="outline"
+                variant="ghost"
                 size="icon"
+                className="text-muted-foreground hover:text-foreground"
                 onClick={() => setIsDeleteModalOpen(false)}
                 aria-label={t('common.close')}
               >
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M6 6L18 18M18 6L6 18" />
-                </svg>
+                <X className="size-4" />
               </Button>
             </header>
 

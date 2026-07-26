@@ -1,5 +1,4 @@
 import { Menu, MenuItemConstructorOptions, BrowserWindow, app } from 'electron'
-import { getAllMenuConfigs } from '../config/menuConfig.js'
 import { WindowManager } from './windowManager.js'
 import { t } from './i18n/index.js'
 
@@ -34,14 +33,6 @@ const createMainMenuTemplate = (windowManager: WindowManager): MenuItemConstruct
           click: () => {
             console.log('创建新主窗口')
             windowManager.createWindow('main')
-          }
-        },
-        {
-          label: t('menu.openSettingWindow'),
-          accelerator: 'CmdOrCtrl+,',
-          click: () => {
-            console.log('打开设置窗口')
-            windowManager.createWindow('setting')
           }
         },
         { type: 'separator' as const },
@@ -170,4 +161,4 @@ export const setupContextMenu = (window: BrowserWindow): void => {
   window.webContents.on('context-menu', (event, params) => {
     contextMenu.popup({ window })
   })
-} 
+}

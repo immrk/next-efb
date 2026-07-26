@@ -13,7 +13,8 @@ export default defineConfig({
   target: 'node20',
   format: ['esm'],
   bundle: true,
-  clean: true,
+  // The LAN server serves the Vite bundle from dist/renderer during development.
+  clean: ['!renderer/**/*'],
   dts: false,
   sourcemap: false,
   external: [

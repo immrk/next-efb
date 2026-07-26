@@ -8,7 +8,6 @@ import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/h
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { APP_NAME } from "@shared/branding"
 import { BRAND_ICON_URL } from "@/branding"
-import { getAppClient } from "@/client"
 
 interface NavigationItem {
   path: string
@@ -25,7 +24,6 @@ export function LeftBar() {
   const { t } = useTranslation()
   const location = useLocation()
   const navigate = useNavigate()
-  const runtime = getAppClient().getRuntime()
 
   return (
     <aside className="flex h-full w-16 shrink-0 flex-col items-center border-r bg-muted/30 px-2 pb-4 pt-10">
@@ -71,17 +69,15 @@ export function LeftBar() {
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
-            variant="ghost"
+            variant={location.pathname === "/settings" ? "default" : "ghost"}
             size="icon"
-            className="w-full text-muted-foreground hover:text-foreground"
+            className={location.pathname === "/settings"
+              ? "w-full shadow-sm"
+              : "w-full text-muted-foreground hover:text-foreground"
+            }
             aria-label={t("nav.settings")}
-            onClick={() => {
-              if (runtime.host === "electron" && window.windowManager) {
-                void window.windowManager.createWindow("setting")
-              } else {
-                navigate("/settings")
-              }
-            }}
+            aria-current={location.pathname === "/settings" ? "page" : undefined}
+            onClick={() => navigate("/settings")}
           >
             <Settings className="size-5" />
           </Button>

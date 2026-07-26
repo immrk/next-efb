@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { ExternalLink, Plus, Route, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import type { ChartRecord } from '@shared/chart-types'
 import type { BuildFlightPlanInput, BuildFlightPlanResult, FlightPlanPoint, FlightPlanSegment, FlightPlanSelection } from '@shared/flight-plan-types'
@@ -355,16 +356,13 @@ export function MapPage({
           <SafeAreaTopInset className="map-safe-area-top" />
           <Button
             type="button"
-            variant="outline"
+            variant="default"
             className="map-route-launcher-button"
             onClick={() => setIsFlightPlanDrawerOpen(true)}
             aria-label={t('flightPlan.launchEditor')}
             title={t('flightPlan.launchEditor')}
           >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M3 7H7L10 13L14 9L17 13H21" />
-              <path d="M7 7L9 5M17 13L19 11" />
-            </svg>
+            <Route className="size-4" />
             <span>{t('flightPlan.launchEditor')}</span>
           </Button>
         </div>
@@ -390,7 +388,12 @@ export function MapPage({
         />
 
         {pendingDisabledCard ? (
-          <div className="chart-meta-modal-backdrop" role="presentation" onClick={() => setPendingDisabledCard(null)}>
+          <div
+            className="chart-meta-modal-backdrop"
+            role="presentation"
+            onPointerDown={(event) => event.stopPropagation()}
+            onClick={() => setPendingDisabledCard(null)}
+          >
             <section
               className="chart-meta-modal chart-mount-reason-modal"
               role="dialog"
@@ -402,14 +405,13 @@ export function MapPage({
                 <h3>{t('mapMount.reasonTitle')}</h3>
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="ghost"
                   size="icon"
+                  className="text-muted-foreground hover:text-foreground"
                   onClick={() => setPendingDisabledCard(null)}
                   aria-label={t('common.close')}
                 >
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M6 6L18 18M18 6L6 18" />
-                  </svg>
+                  <X className="size-4" />
                 </Button>
               </header>
 
@@ -456,9 +458,7 @@ export function MapPage({
             onClick={() => setIsChartDrawerOpen(true)}
             aria-label={t('charts.add')}
           >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 5V19M5 12H19" />
-            </svg>
+            <Plus className="size-4" />
           </Button>
 
           {dockCards.length > 0 ? (
@@ -511,10 +511,7 @@ export function MapPage({
                           title: card.kind === 'manual' ? card.chart.title : card.procedureName
                         })}
                       >
-                        <svg viewBox="0 0 24 24" aria-hidden="true">
-                          <path d="M5 12h10M11 7l5 5-5 5" />
-                          <path d="M14 5h5v5" />
-                        </svg>
+                        <ExternalLink className="size-4" />
                       </Button>
                     ) : null}
 
@@ -527,7 +524,7 @@ export function MapPage({
                         onClick={() => unmountChart(card.chart.id)}
                         aria-label={t('charts.unmountAria', { title: card.chart.title })}
                       >
-                        x
+                        <X className="size-4" />
                       </Button>
                     ) : null}
                   </article>

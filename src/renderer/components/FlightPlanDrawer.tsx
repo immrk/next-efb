@@ -1,4 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent
+} from 'react'
+import { Download, MapPin, Settings, Trash2, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import type {
   BuildFlightPlanInput,
@@ -10,7 +18,6 @@ import type {
 } from '@shared/flight-plan-types'
 import { getAppClient } from '../client'
 import { useAppStore } from '../store/useAppStore'
-import { SettingsIcon } from './icons/SettingsIcon'
 import { filterProceduresByRunway, parseApproachProcedureId, runwayMatches } from '../utils/navProcedures'
 import { toast } from './ui/use-toast'
 import { Button } from './ui/button'
@@ -42,6 +49,130 @@ const EMPTY_PROCEDURES: NavAirportProcedures = {
 }
 
 const NONE_SELECT_VALUE = '__none__'
+
+function AirportCombobox({
+  id,
+  value,
+  candidates,
+  placeholder,
+  disabled,
+  onValueChange
+}: {
+  id: string
+  value: string
+  candidates: string[]
+  placeholder: string
+  disabled: boolean
+  onValueChange: (value: string) => void
+}) {
+  const listId = useId()
+  const rootRef = useRef<HTMLDivElement | null>(null)
+  const [isOpen, setIsOpen] = useState(false)
+  const [activeIndex, setActiveIndex] = useState(-1)
+
+  useEffect(() => {
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown)
+    return () => document.removeEventListener('pointerdown', handlePointerDown)
+  }, [])
+
+  useEffect(() => {
+    setActiveIndex((current) => {
+      if (candidates.length === 0) return -1
+      if (current < 0) return 0
+      return Math.min(current, candidates.length - 1)
+    })
+  }, [candidates])
+
+  const selectCandidate = (candidate: string) => {
+    onValueChange(candidate)
+    setIsOpen(false)
+    setActiveIndex(-1)
+  }
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Escape') {
+      setIsOpen(false)
+      return
+    }
+
+    if (candidates.length === 0) return
+
+    if (event.key === 'ArrowDown') {
+      event.preventDefault()
+      setIsOpen(true)
+      setActiveIndex((current) => (current + 1) % candidates.length)
+      return
+    }
+
+    if (event.key === 'ArrowUp') {
+      event.preventDefault()
+      setIsOpen(true)
+      setActiveIndex((current) => (current <= 0 ? candidates.length - 1 : current - 1))
+      return
+    }
+
+    if (event.key === 'Enter' && isOpen && activeIndex >= 0) {
+      event.preventDefault()
+      selectCandidate(candidates[activeIndex])
+    }
+  }
+
+  return (
+    <div className="flight-plan-airport-combobox" ref={rootRef}>
+      <MapPin className="flight-plan-airport-icon" aria-hidden="true" />
+      <Input
+        id={id}
+        className="flight-plan-airport-input"
+        value={value}
+        onChange={(event) => {
+          onValueChange(event.target.value.toUpperCase())
+          setIsOpen(true)
+        }}
+        onFocus={() => setIsOpen(candidates.length > 0)}
+        onKeyDown={handleKeyDown}
+        placeholder={placeholder}
+        disabled={disabled}
+        role="combobox"
+        aria-autocomplete="list"
+        aria-expanded={isOpen && candidates.length > 0}
+        aria-controls={listId}
+        aria-activedescendant={
+          isOpen && activeIndex >= 0 ? `${listId}-option-${activeIndex}` : undefined
+        }
+        autoComplete="off"
+        autoCapitalize="characters"
+        autoCorrect="off"
+        spellCheck={false}
+      />
+      {isOpen && candidates.length > 0 ? (
+        <div id={listId} className="flight-plan-airport-options" role="listbox">
+          {candidates.map((candidate, index) => (
+            <Button
+              key={candidate}
+              id={`${listId}-option-${index}`}
+              type="button"
+              variant="ghost"
+              className={`flight-plan-airport-option ${index === activeIndex ? 'is-active' : ''}`}
+              role="option"
+              aria-selected={index === activeIndex}
+              onPointerMove={() => setActiveIndex(index)}
+              onClick={() => selectCandidate(candidate)}
+            >
+              <MapPin aria-hidden="true" />
+              <span>{candidate}</span>
+            </Button>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  )
+}
 
 export function FlightPlanDrawer({
   isOpen,
@@ -404,6 +535,20 @@ export function FlightPlanDrawer({
     }
   }
 
+  const clearDraft = () => {
+    onDraftChange({
+      departureAirport: '',
+      destinationAirport: '',
+      enrouteText: '',
+      departureRunway: null,
+      departureProcedureId: null,
+      arrivalRunway: null,
+      arrivalProcedureId: null,
+      approachProcedureId: null,
+      arrivalTransitionId: null
+    })
+  }
+
   if (!isOpen) {
     return null
   }
@@ -413,21 +558,49 @@ export function FlightPlanDrawer({
       <aside className="flight-plan-drawer">
         <header className="flight-plan-head">
           <strong>{t('flightPlan.title')}</strong>
-          <div className="settings-inline-row">
+          <div className="flight-plan-head-actions">
             <Button
               type="button"
-              variant="outline"
+              variant="secondary"
+              size="sm"
+              className="flight-plan-head-command"
+              disabled={isLoading || !navDataReady}
+              onClick={handleImportSimBrief}
+            >
+              <Download className="size-4" />
+              <span>{t('flightPlan.importSimbrief')}</span>
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="flight-plan-head-command"
+              disabled={isLoading}
+              onClick={clearDraft}
+            >
+              <Trash2 className="size-4" />
+              <span>{t('flightPlan.clear')}</span>
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
               size="icon"
+              className="text-muted-foreground hover:text-foreground"
               onClick={onOpenSettings}
               aria-label={t('flightPlan.openSettings')}
               title={t('flightPlan.openSettings')}
             >
-              <SettingsIcon />
+              <Settings className="size-4" />
             </Button>
-            <Button type="button" variant="outline" size="icon" onClick={onClose} aria-label={t('flightPlan.close')}>
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M6 6L18 18M18 6L6 18" />
-              </svg>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="text-muted-foreground hover:text-foreground"
+              onClick={onClose}
+              aria-label={t('flightPlan.close')}
+            >
+              <X className="size-4" />
             </Button>
           </div>
         </header>
@@ -451,27 +624,25 @@ export function FlightPlanDrawer({
               <span>{t('flightPlan.departureSectionHint')}</span>
             </div>
 
-            <label className="settings-field">
-              <span>{t('flightPlan.departureAirport')}</span>
-              <Input
+            <div className="settings-field">
+              <label htmlFor="flight-plan-departure-airport">
+                {t('flightPlan.departureAirport')}
+              </label>
+              <AirportCombobox
+                id="flight-plan-departure-airport"
                 value={departureAirport}
-                onChange={(event) =>
+                candidates={depCandidates}
+                onValueChange={(value) =>
                   updateDraft({
-                    departureAirport: event.target.value.toUpperCase(),
+                    departureAirport: value,
                     departureRunway: null,
                     departureProcedureId: null
                   })
                 }
-                list="departure-airports"
                 placeholder={t('flightPlan.airportPlaceholder')}
                 disabled={!navDataReady}
               />
-              <datalist id="departure-airports">
-                {depCandidates.map((ident) => (
-                  <option key={ident} value={ident} />
-                ))}
-              </datalist>
-            </label>
+            </div>
 
             <label className="settings-field">
               <span>{t('flightPlan.departureRunway')}</span>
@@ -553,29 +724,27 @@ export function FlightPlanDrawer({
               <span>{t('flightPlan.arrivalSectionHint')}</span>
             </div>
 
-            <label className="settings-field">
-              <span>{t('flightPlan.destinationAirport')}</span>
-              <Input
+            <div className="settings-field">
+              <label htmlFor="flight-plan-destination-airport">
+                {t('flightPlan.destinationAirport')}
+              </label>
+              <AirportCombobox
+                id="flight-plan-destination-airport"
                 value={destinationAirport}
-                onChange={(event) =>
+                candidates={destCandidates}
+                onValueChange={(value) =>
                   updateDraft({
-                    destinationAirport: event.target.value.toUpperCase(),
+                    destinationAirport: value,
                     arrivalRunway: null,
                     arrivalProcedureId: null,
                     approachProcedureId: null,
                     arrivalTransitionId: null
                   })
                 }
-                list="destination-airports"
                 placeholder={t('flightPlan.airportPlaceholder')}
                 disabled={!navDataReady}
               />
-              <datalist id="destination-airports">
-                {destCandidates.map((ident) => (
-                  <option key={ident} value={ident} />
-                ))}
-              </datalist>
-            </label>
+            </div>
 
             <label className="settings-field">
               <span>{t('flightPlan.arrivalRunway')}</span>
@@ -682,31 +851,6 @@ export function FlightPlanDrawer({
             </label>
           </section>
 
-          <div className="button-row">
-            <Button type="button" variant="secondary" disabled={isLoading || !navDataReady} onClick={handleImportSimBrief}>
-              {t('flightPlan.importSimbrief')}
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              disabled={isLoading}
-              onClick={() => {
-                onDraftChange({
-                  departureAirport: '',
-                  destinationAirport: '',
-                  enrouteText: '',
-                  departureRunway: null,
-                  departureProcedureId: null,
-                  arrivalRunway: null,
-                  arrivalProcedureId: null,
-                  approachProcedureId: null,
-                  arrivalTransitionId: null
-                })
-              }}
-            >
-              {t('flightPlan.clear')}
-            </Button>
-          </div>
         </div>
       </aside>
     </section>

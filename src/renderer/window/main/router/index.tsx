@@ -58,7 +58,7 @@ export function MainRouter() {
       </section>
 
       <section
-        className={`route-view route-view-with-safe-area route-view-page-surface pt-10 ${
+        className={`route-view route-view-with-safe-area route-view-page-surface pt-7 ${
           route === "charts" ? "active" : ""
         }`}
       >
@@ -74,7 +74,7 @@ export function MainRouter() {
       </section>
 
       <section
-        className={`route-view route-view-with-safe-area route-view-page-surface pt-10 ${
+        className={`route-view route-view-with-safe-area route-view-page-surface pt-7 ${
           route === "settings" ? "active" : ""
         }`}
       >
@@ -83,7 +83,7 @@ export function MainRouter() {
       </section>
 
       {detailChartId ? (
-        <section className="route-view route-view-with-safe-area route-view-page-surface active pt-10">
+        <section className="route-view route-view-with-safe-area route-view-page-surface active pt-7">
           <SafeAreaTopInset className="route-safe-area-top" />
           <ChartDetailPage
             chartId={detailChartId}

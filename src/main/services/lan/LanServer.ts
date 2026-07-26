@@ -430,7 +430,7 @@ export class LanServer {
 
     if (!existsSync(targetPath)) {
       response.writeHead(503, { 'Content-Type': 'text/plain; charset=utf-8' })
-      response.end('LAN renderer assets are unavailable. Run npm run build:bundle or npm run build first.')
+      response.end('LAN renderer assets are unavailable. Run npm run build:lan or npm run build first.')
       return
     }
 

@@ -19,6 +19,12 @@
   background: var(--background);
 }
 
+@supports (height: 100dvh) {
+  :root {
+    --app-viewport-height: 100dvh;
+  }
+}
+
 * {
   box-sizing: border-box;
   scrollbar-width: none;
@@ -32,24 +38,35 @@
 }
 
 html {
+  width: 100%;
   height: var(--app-viewport-height);
   min-height: var(--app-viewport-height);
+  max-height: var(--app-viewport-height);
+  overflow: hidden;
   background: var(--background);
   -webkit-text-size-adjust: 100%;
 }
 
 body {
+  position: fixed;
+  inset: 0;
+  width: 100%;
   margin: 0;
   height: var(--app-viewport-height);
-  min-height: var(--app-viewport-height);
+  min-height: 0;
+  max-height: var(--app-viewport-height);
   overflow: hidden;
   overscroll-behavior: none;
   background: transparent;
 }
 
+#app,
 #root {
-  height: var(--app-viewport-height);
-  min-height: var(--app-viewport-height);
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  max-height: 100%;
+  overflow: hidden;
 }
 
 .desktop-shell {
@@ -92,9 +109,7 @@ body {
   justify-content: space-between;
   gap: 16px;
   border-bottom: 1px solid color-mix(in oklab, var(--primary) 12%, transparent);
-  background:
-    radial-gradient(circle at top left, color-mix(in oklab, var(--primary) 14%, transparent), transparent 26%),
-    linear-gradient(180deg, color-mix(in oklab, var(--background) 96%, transparent), color-mix(in oklab, var(--background) 90%, transparent));
+  background: var(--background);
   backdrop-filter: blur(18px);
   -webkit-app-region: drag;
   user-select: none;
@@ -425,7 +440,7 @@ body {
 }
 
 .sidebar-link.active {
-  background: linear-gradient(135deg, color-mix(in oklab, var(--primary) 44%, transparent), color-mix(in oklab, var(--primary) 24%, transparent));
+  background: var(--primary);
   border-color: color-mix(in oklab, var(--primary) 28%, transparent);
 }
 
@@ -463,8 +478,8 @@ body {
 
 .primary-button {
   border: 1px solid color-mix(in oklab, var(--primary) 22%, transparent);
-  color: var(--foreground);
-  background: linear-gradient(135deg, color-mix(in oklab, var(--primary) 50%, transparent), color-mix(in oklab, var(--primary) 24%, transparent));
+  color: var(--primary-foreground);
+  background: var(--primary);
 }
 
 .secondary-button {
@@ -511,9 +526,9 @@ body {
 }
 
 .button-default {
-  color: var(--foreground);
+  color: var(--primary-foreground);
   border-color: color-mix(in oklab, var(--primary) 22%, transparent);
-  background: linear-gradient(135deg, color-mix(in oklab, var(--primary) 50%, transparent), color-mix(in oklab, var(--primary) 24%, transparent));
+  background: var(--primary);
 }
 
 .button-secondary,
@@ -903,8 +918,12 @@ body {
   position: absolute;
   left: 0;
   top: 0;
+  max-width: none !important;
+  max-height: none !important;
   transform-origin: 0 0;
   pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
   filter: drop-shadow(0 14px 30px color-mix(in oklab, var(--background) 32%, transparent));
   transition: opacity 180ms ease;
 }
@@ -980,15 +999,54 @@ body {
 
 .map-search-shell {
   position: relative;
-  width: 188px;
-  min-width: 188px;
+  width: 220px;
+  min-width: 220px;
+}
+
+.map-search-icon {
+  position: absolute;
+  left: 13px;
+  top: 50%;
+  z-index: 2;
+  width: 16px;
+  height: 16px;
+  color: var(--muted-foreground);
+  pointer-events: none;
+  transform: translateY(-50%);
 }
 
 .map-search-input {
   min-height: 40px;
-  padding: 0.6rem 0.75rem;
+  padding: 0.6rem 0.85rem 0.6rem 2.35rem;
+  border: 1px solid color-mix(in oklab, var(--foreground) 18%, var(--border));
   border-radius: 999px;
+  background: color-mix(in oklab, var(--card) 96%, transparent);
+  color: var(--card-foreground);
+  box-shadow: 0 4px 16px color-mix(in oklab, var(--foreground) 12%, transparent);
+  backdrop-filter: blur(12px);
   font-size: 14px;
+}
+
+.map-search-input::placeholder {
+  color: color-mix(in oklab, var(--muted-foreground) 88%, transparent);
+}
+
+.map-search-input:focus-visible {
+  border-color: var(--primary);
+  background: var(--card);
+  box-shadow:
+    0 0 0 3px color-mix(in oklab, var(--primary) 22%, transparent),
+    0 6px 20px color-mix(in oklab, var(--foreground) 14%, transparent);
+}
+
+.map-search-input:disabled {
+  border-color: color-mix(in oklab, var(--foreground) 12%, var(--border));
+  background: color-mix(in oklab, var(--card) 90%, transparent);
+  opacity: 0.78;
+}
+
+.map-search-shell:focus-within .map-search-icon {
+  color: var(--primary);
 }
 
 .map-search-panel {
@@ -1067,13 +1125,22 @@ body {
   min-height: 40px;
   padding: 0 12px;
   border-radius: 999px;
-  background: color-mix(in oklab, var(--background) 82%, transparent);
+  border-color: var(--border);
+  background: var(--card);
+  color: var(--card-foreground);
+  box-shadow: 0 4px 14px color-mix(in oklab, var(--foreground) 10%, transparent);
   backdrop-filter: blur(10px);
 }
 
-.map-nav-layer-button.button-default {
-  background: linear-gradient(135deg, color-mix(in oklab, var(--primary) 96%, transparent), color-mix(in oklab, var(--primary) 90%, transparent));
-  border-color: color-mix(in oklab, var(--primary) 40%, transparent);
+.map-nav-layer-button[data-variant='default'] {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.map-nav-layer-button[data-variant='outline']:hover {
+  background: var(--accent);
+  color: var(--accent-foreground);
 }
 
 .map-provider-chip {
@@ -1116,6 +1183,15 @@ body {
   min-height: 46px;
   padding: 0;
   justify-content: center;
+  border-color: var(--border);
+  background: var(--card);
+  color: var(--card-foreground);
+  box-shadow: 0 4px 14px color-mix(in oklab, var(--foreground) 10%, transparent);
+}
+
+.map-provider-trigger-icon:hover {
+  background: var(--accent);
+  color: var(--accent-foreground);
 }
 
 .map-provider-trigger-icon .map-provider-icon {
@@ -1128,7 +1204,7 @@ body {
   stroke-linejoin: round;
 }
 
-.map-provider-trigger-icon .select-icon {
+.map-provider-trigger-icon > svg:last-child {
   display: none;
 }
 
@@ -1159,16 +1235,18 @@ body {
   height: 42px;
   border: 1px solid var(--ui-border);
   border-radius: 10px;
-  background: color-mix(in oklab, var(--background) 92%, transparent);
-  color: var(--primary);
+  background: var(--card);
+  color: var(--card-foreground);
+  box-shadow: 0 4px 14px color-mix(in oklab, var(--foreground) 10%, transparent);
   cursor: pointer;
   display: grid;
   place-items: center;
 }
 
 .map-recenter-button.is-active {
-  color: var(--primary);
-  border-color: color-mix(in oklab, var(--primary) 45%, transparent);
+  color: var(--primary-foreground);
+  background: var(--primary);
+  border-color: var(--primary);
   box-shadow: 0 0 0 1px color-mix(in oklab, var(--primary) 18%, transparent);
 }
 
@@ -1176,15 +1254,20 @@ body {
 .map-route-fit-button svg {
   width: 18px;
   height: 18px;
-  fill: currentColor;
+  stroke: currentColor;
+  fill: none;
 }
 
 .map-workspace {
   --chart-dock-height: calc(69px + env(safe-area-inset-bottom));
   position: relative;
+  width: 100%;
+  max-width: 100%;
   height: 100%;
+  min-width: 0;
   min-height: 0;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr) auto;
   overflow: hidden;
 }
@@ -1200,6 +1283,7 @@ body {
   min-height: 0;
   z-index: 1600;
   pointer-events: none;
+  isolation: isolate;
 }
 
 .map-workspace-panel {
@@ -1210,20 +1294,26 @@ body {
 .chart-dock {
   position: relative;
   z-index: 2200;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
   border-top: 1px solid var(--ui-border);
-  background:
-    linear-gradient(180deg, color-mix(in oklab, var(--background) 97%, transparent), color-mix(in oklab, var(--background) 97%, transparent)),
-    color-mix(in oklab, var(--background) 92%, transparent);
+  background: var(--background);
   backdrop-filter: blur(12px);
   padding-bottom: env(safe-area-inset-bottom);
 }
 
 .chart-dock-main {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 10px;
   min-height: 56px;
   padding: 6px 10px;
+  overflow: hidden;
 }
 
 .chart-dock-add-button {
@@ -1254,10 +1344,18 @@ body {
 }
 
 .chart-dock-bar {
-  flex: 1;
+  flex: 1 1 0;
+  width: 0;
+  min-width: 0;
+  max-width: 100%;
   display: flex;
   gap: 6px;
   overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x;
+  scroll-snap-type: x proximity;
   padding-bottom: 0;
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -1273,10 +1371,14 @@ body {
 }
 
 .mounted-chart-card {
+  flex: 0 0 280px;
+  width: 280px;
   display: flex;
   align-items: stretch;
   min-width: 280px;
+  max-width: 280px;
   min-height: 56px;
+  scroll-snap-align: start;
   border: 1px solid var(--ui-border);
   border-radius: 8px;
   background: var(--ui-panel);
@@ -1288,7 +1390,7 @@ body {
 
 .mounted-chart-card.active {
   border-color: var(--ui-accent-border);
-  background: linear-gradient(135deg, color-mix(in oklab, var(--primary) 62%, transparent), color-mix(in oklab, var(--primary) 62%, transparent));
+  background: color-mix(in oklab, var(--primary) 16%, var(--card));
 }
 
 .mounted-chart-card.disabled {
@@ -1402,8 +1504,10 @@ body {
 }
 
 .chart-picker-drawer {
-  display: grid;
-  grid-template-rows: auto auto 1fr;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: 100%;
   overflow: hidden;
   pointer-events: auto;
 }
@@ -1417,9 +1521,7 @@ body {
   border: 1px solid var(--ui-border);
   border-left: 0;
   border-radius: 0;
-  background:
-    radial-gradient(circle at top right, color-mix(in oklab, var(--primary) 20%, transparent), transparent 30%),
-    linear-gradient(180deg, color-mix(in oklab, var(--background) 99%, transparent), color-mix(in oklab, var(--background) 99%, transparent));
+  background: var(--background);
   box-shadow: 20px 0 44px color-mix(in oklab, var(--background) 50%, transparent);
 }
 
@@ -1430,13 +1532,12 @@ body {
   border: 0;
   border-right: 1px solid var(--ui-border);
   border-radius: 0;
-  background:
-    radial-gradient(circle at top right, color-mix(in oklab, var(--primary) 20%, transparent), transparent 30%),
-    linear-gradient(180deg, color-mix(in oklab, var(--background) 99%, transparent), color-mix(in oklab, var(--background) 99%, transparent));
+  background: var(--background);
   position: relative;
 }
 
 .chart-picker-head {
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -1460,18 +1561,22 @@ body {
 }
 
 .chart-picker-close {
-  width: 44px;
-  height: 44px;
-  min-height: 44px;
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
   padding: 0;
-  border: 1px solid var(--ui-border);
-  border-radius: 8px;
-  background: var(--ui-panel);
-  color: var(--ui-fg);
+  border: 0;
+  background: transparent;
+  color: var(--muted-foreground);
   font: inherit;
   cursor: pointer;
   display: grid;
   place-items: center;
+}
+
+.chart-picker-close:hover {
+  background: var(--accent);
+  color: var(--accent-foreground);
 }
 
 .chart-picker-close svg {
@@ -1484,6 +1589,7 @@ body {
 }
 
 .chart-import-url-bar {
+  flex: 0 0 auto;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 10px;
@@ -1520,20 +1626,40 @@ body {
 }
 
 .chart-picker-body {
-  overflow: auto;
-  padding: 12px 12px 72px;
-  display: grid;
+  flex: 1 1 0;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  padding: 12px;
+}
+
+.chart-picker-list {
+  display: flex;
+  flex-direction: column;
   gap: 12px;
+  width: 100%;
 }
 
 .chart-airport-group {
+  flex: 0 0 auto;
+  width: 100%;
+  height: auto;
+  max-height: none;
   border: 1px solid var(--ui-border-soft);
   border-radius: 8px;
   background: color-mix(in oklab, var(--background) 72%, transparent);
-  overflow: hidden;
+  overflow: visible;
 }
 
 .chart-airport-head {
+  width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1542,13 +1668,21 @@ body {
   background: color-mix(in oklab, var(--background) 96%, transparent);
   border-bottom: 1px solid var(--ui-border-soft);
   font-weight: 700;
+  color: inherit;
+  font-family: inherit;
+  font-size: inherit;
+  text-align: left;
+  border-top: 0;
+  border-right: 0;
+  border-left: 0;
+  border-radius: 7px 7px 0 0;
   letter-spacing: 0.04em;
   cursor: pointer;
-  list-style: none;
 }
 
-.chart-airport-head::-webkit-details-marker {
-  display: none;
+.chart-airport-group:not(.is-open) > .chart-airport-head {
+  border-bottom-color: transparent;
+  border-radius: 7px;
 }
 
 .chart-airport-code {
@@ -1556,26 +1690,30 @@ body {
 }
 
 .chart-type-group {
-  display: grid;
+  display: block;
+  height: auto;
+  max-height: none;
   border-top: 1px solid var(--ui-border-soft);
 }
 
 .chart-type-head {
+  width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
   display: flex;
   align-items: center;
   gap: 8px;
   min-height: 34px;
   padding: 0 10px;
   color: color-mix(in oklab, var(--primary) 84%, transparent);
+  border: 0;
+  background: transparent;
+  font-family: inherit;
   font-size: 12px;
+  text-align: left;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   cursor: pointer;
-  list-style: none;
-}
-
-.chart-type-head::-webkit-details-marker {
-  display: none;
 }
 
 .collapse-chevron {
@@ -1597,13 +1735,13 @@ body {
   stroke-linejoin: round;
 }
 
-.chart-airport-group[open] > .chart-airport-head .collapse-chevron,
-.chart-type-group[open] > .chart-type-head .collapse-chevron {
+.chart-airport-group.is-open > .chart-airport-head .collapse-chevron,
+.chart-type-group.is-open > .chart-type-head .collapse-chevron {
   transform: rotate(0deg);
 }
 
-.chart-airport-group:not([open]) > .chart-airport-head .collapse-chevron,
-.chart-type-group:not([open]) > .chart-type-head .collapse-chevron {
+.chart-airport-group:not(.is-open) > .chart-airport-head .collapse-chevron,
+.chart-type-group:not(.is-open) > .chart-type-head .collapse-chevron {
   transform: rotate(-90deg);
 }
 
@@ -1621,7 +1759,9 @@ body {
 }
 
 .chart-candidate-list {
-  display: grid;
+  display: block;
+  height: auto;
+  max-height: none;
 }
 
 .chart-candidate-item {
@@ -1656,27 +1796,37 @@ body {
 
 .chart-candidate-actions {
   display: flex;
-  gap: 6px;
+  flex: 0 0 auto;
+  gap: 2px;
 }
 
-.chart-action-button {
+.chart-action-button,
+.chart-pin-button {
   width: 36px;
   height: 36px;
   min-height: 36px;
   padding: 0;
-  border: 1px solid var(--ui-border);
-  border-radius: 8px;
-  background: color-mix(in oklab, var(--background) 88%, transparent);
-  color: var(--foreground);
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted-foreground);
   cursor: pointer;
   display: grid;
   place-items: center;
 }
 
-.chart-action-button svg {
+.chart-action-button:hover,
+.chart-pin-button:hover:not(:disabled) {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.chart-action-button svg,
+.chart-pin-button svg {
   width: 16px;
   height: 16px;
-  fill: currentColor;
+  stroke: currentColor;
+  fill: none;
 }
 
 .chart-candidate-main strong {
@@ -1690,31 +1840,8 @@ body {
   font-size: 12px;
 }
 
-.chart-pin-button {
-  width: 36px;
-  height: 36px;
-  min-height: 36px;
-  padding: 0;
-  border: 1px solid var(--ui-border);
-  border-radius: 8px;
-  background: color-mix(in oklab, var(--background) 88%, transparent);
-  color: var(--foreground);
-  font: inherit;
-  cursor: pointer;
-  display: grid;
-  place-items: center;
-}
-
-.chart-pin-button svg {
-  width: 16px;
-  height: 16px;
-  fill: currentColor;
-}
-
 .chart-pin-button.mounted {
-  border-color: var(--ui-accent-border);
-  background: color-mix(in oklab, var(--primary) 88%, transparent);
-  color: var(--foreground);
+  color: var(--primary);
 }
 
 .chart-pin-button:disabled {
@@ -1723,10 +1850,33 @@ body {
 }
 
 .chart-picker-empty {
-  min-height: 160px;
+  width: 100%;
+  min-height: 100%;
+  padding: 32px 20px;
   display: grid;
   place-items: center;
+  align-content: center;
+  gap: 8px;
+  text-align: center;
   color: color-mix(in oklab, var(--primary) 78%, transparent);
+}
+
+.chart-picker-empty svg {
+  width: 24px;
+  height: 24px;
+  margin-bottom: 4px;
+  stroke: currentColor;
+  fill: none;
+}
+
+.chart-picker-empty strong {
+  color: var(--foreground);
+  font-size: 14px;
+}
+
+.chart-picker-empty span {
+  color: var(--muted-foreground);
+  font-size: 12px;
 }
 
 .charts-workspace {
@@ -1871,8 +2021,8 @@ body {
   padding: 0 16px;
   border: 1px solid color-mix(in oklab, var(--primary) 22%, transparent);
   border-radius: 999px;
-  background: linear-gradient(135deg, color-mix(in oklab, var(--background) 92%, transparent), color-mix(in oklab, var(--primary) 92%, transparent));
-  color: var(--foreground);
+  background: var(--primary);
+  color: var(--primary-foreground);
   display: inline-flex;
   align-items: center;
   gap: 10px;
@@ -2229,15 +2379,20 @@ body {
   z-index: 2500;
   display: grid;
   place-items: center;
+  pointer-events: auto;
+  touch-action: none;
   background: color-mix(in oklab, var(--background) 74%, transparent);
 }
 
 .chart-meta-modal {
+  position: relative;
   width: min(520px, calc(100% - 24px));
   max-height: min(760px, calc(100vh - 32px));
   border: 1px solid var(--ui-border);
   border-radius: 14px;
-  background: color-mix(in oklab, var(--background) 98%, transparent);
+  background: var(--popover);
+  color: var(--popover-foreground);
+  box-shadow: 0 24px 64px color-mix(in oklab, var(--foreground) 22%, transparent);
   overflow: hidden;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
@@ -2301,8 +2456,8 @@ body {
 
 .tabs-trigger.active,
 .tabs-trigger[data-state='active'] {
-  color: var(--foreground);
-  background: linear-gradient(135deg, color-mix(in oklab, var(--primary) 42%, transparent), color-mix(in oklab, var(--primary) 20%, transparent));
+  color: var(--primary-foreground);
+  background: var(--primary);
   border-color: color-mix(in oklab, var(--primary) 28%, transparent);
 }
 
@@ -2424,7 +2579,7 @@ body {
 
 .chart-procedure-option.selected {
   border-color: color-mix(in oklab, var(--primary) 28%, transparent);
-  background: linear-gradient(135deg, color-mix(in oklab, var(--primary) 16%, transparent), color-mix(in oklab, var(--primary) 10%, transparent));
+  background: color-mix(in oklab, var(--primary) 12%, var(--card));
 }
 
 .chart-procedure-option-check {
@@ -2530,9 +2685,7 @@ body {
   bottom: 0;
   width: min(520px, calc(100% - 24px));
   border-left: 1px solid var(--ui-border);
-  background:
-    radial-gradient(circle at top left, color-mix(in oklab, var(--muted-foreground) 16%, transparent), transparent 30%),
-    linear-gradient(180deg, color-mix(in oklab, var(--background) 98%, transparent), color-mix(in oklab, var(--background) 98%, transparent));
+  background: var(--background);
   box-shadow: -16px 0 40px color-mix(in oklab, var(--background) 48%, transparent);
   display: grid;
   grid-template-rows: auto 1fr;
@@ -2544,8 +2697,26 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
   padding: 10px 12px;
   border-bottom: 1px solid var(--ui-border);
+}
+
+.flight-plan-head > strong {
+  flex: 0 0 auto;
+}
+
+.flight-plan-head-actions {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.flight-plan-head-command {
+  min-width: 0;
+  padding-inline: 9px;
 }
 
 .flight-plan-body {
@@ -2570,9 +2741,7 @@ body {
 
 .flight-plan-alert {
   border-color: color-mix(in oklab, var(--muted-foreground) 35%, transparent);
-  background:
-    radial-gradient(circle at top right, color-mix(in oklab, var(--muted-foreground) 12%, transparent), transparent 28%),
-    color-mix(in oklab, var(--primary) 4%, transparent);
+  background: var(--muted);
 }
 
 .flight-plan-flow {
@@ -2583,9 +2752,7 @@ body {
   padding: 12px 14px;
   border: 1px solid color-mix(in oklab, var(--primary) 14%, transparent);
   border-radius: 16px;
-  background:
-    linear-gradient(135deg, color-mix(in oklab, var(--primary) 3%, transparent), color-mix(in oklab, var(--primary) 2%, transparent)),
-    color-mix(in oklab, var(--background) 50%, transparent);
+  background: var(--card);
 }
 
 .flight-plan-flow-chip {
@@ -2610,9 +2777,7 @@ body {
   padding: 14px;
   border: 1px solid color-mix(in oklab, var(--primary) 14%, transparent);
   border-radius: 18px;
-  background:
-    radial-gradient(circle at top right, color-mix(in oklab, var(--primary) 8%, transparent), transparent 24%),
-    color-mix(in oklab, var(--primary) 3%, transparent);
+  background: var(--card);
   display: grid;
 }
 
@@ -2640,6 +2805,68 @@ body {
 
 .flight-plan-section .settings-field:first-of-type {
   margin-top: 12px;
+}
+
+.flight-plan-airport-combobox {
+  position: relative;
+  width: 100%;
+}
+
+.flight-plan-airport-icon {
+  position: absolute;
+  left: 12px;
+  top: 18px;
+  z-index: 2;
+  width: 16px;
+  height: 16px;
+  color: var(--muted-foreground);
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.flight-plan-airport-input {
+  padding-left: 2.25rem;
+  background: var(--background);
+}
+
+.flight-plan-airport-combobox:focus-within > .flight-plan-airport-icon {
+  color: var(--primary);
+}
+
+.flight-plan-airport-options {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 6;
+  max-height: 188px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--popover);
+  color: var(--popover-foreground);
+  box-shadow: 0 12px 28px color-mix(in oklab, var(--foreground) 16%, transparent);
+}
+
+.flight-plan-airport-option {
+  width: 100%;
+  min-height: 36px;
+  justify-content: flex-start;
+  padding: 0 10px;
+  border-radius: 4px;
+  color: var(--popover-foreground);
+}
+
+.flight-plan-airport-option.is-active {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.flight-plan-airport-option svg {
+  color: var(--muted-foreground);
 }
 
 .flight-plan-summary-card {
@@ -2682,7 +2909,7 @@ body {
   height: 24px;
   transform: translateX(-50%);
   border-radius: 50%;
-  background: linear-gradient(160deg, var(--foreground), var(--primary) 62%, var(--primary));
+  background: var(--primary);
   box-shadow:
     0 0 0 2px color-mix(in oklab, var(--background) 50%, transparent),
     0 5px 10px color-mix(in oklab, var(--background) 35%, transparent);
@@ -2972,7 +3199,10 @@ body {
     }
 
   .mounted-chart-card {
+    flex-basis: 210px;
+    width: 210px;
     min-width: 210px;
+    max-width: 210px;
   }
 
   .chart-dock {

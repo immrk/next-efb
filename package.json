@@ -14,9 +14,10 @@
   "scripts": {
     "branding:generate": "node scripts/generate-branding.mjs",
     "watch": "nodemon",
+    "predev": "npm run build:lan",
     "dev": "node scripts/dev.js",
     "dev:main": "cross-env WINDOW_NAME=main vite",
-    "dev:setting": "cross-env WINDOW_NAME=setting vite",
+    "build:lan": "node scripts/rendererBuild.js --only=main",
     "build:renderer": "node scripts/rendererBuild.js",
     "tsup": "tsup",
     "build:main": "node scripts/main.js",

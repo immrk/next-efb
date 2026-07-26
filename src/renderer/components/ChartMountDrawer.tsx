@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type Dispatch, type SetStateAction } from 'react'
+import { ChevronDown, FileText, Pencil, Pin, Plus, SearchX, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import type { ChartRecord, ChartType } from '@shared/chart-types'
 import { Badge } from './ui/badge'
@@ -82,6 +83,8 @@ export function ChartMountDrawer({
   const { t } = useTranslation()
   const [search, setSearch] = useState('')
   const [showUrlImport, setShowUrlImport] = useState(false)
+  const [collapsedAirports, setCollapsedAirports] = useState<Set<string>>(() => new Set())
+  const [collapsedTypes, setCollapsedTypes] = useState<Set<string>>(() => new Set())
 
   const chartTypeLabel: Record<ChartType, string> = {
     airport: t('chartType.airport'),
@@ -108,6 +111,23 @@ export function ChartMountDrawer({
     () => groupChartsByAirportAndType(filteredCharts),
     [filteredCharts]
   )
+  const isSearching = search.trim().length > 0
+  const isLibraryEmpty = charts.length === 0
+
+  const toggleCollapsedKey = (
+    setter: Dispatch<SetStateAction<Set<string>>>,
+    key: string
+  ) => {
+    setter((current) => {
+      const next = new Set(current)
+      if (next.has(key)) {
+        next.delete(key)
+      } else {
+        next.add(key)
+      }
+      return next
+    })
+  }
 
   if (mode === 'overlay' && !isOpen) return null
 
@@ -119,6 +139,11 @@ export function ChartMountDrawer({
           placeholder={t('charts.searchPlaceholder')}
           value={search}
           onChange={(event) => setSearch(event.target.value)}
+          autoComplete="off"
+          autoCapitalize="off"
+          autoCorrect="off"
+          enterKeyHint="search"
+          spellCheck={false}
         />
         {onImportFromUrl ? (
           <Button
@@ -129,23 +154,19 @@ export function ChartMountDrawer({
             onClick={() => setShowUrlImport((value) => !value)}
             aria-label={t('charts.add')}
           >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 5V19M5 12H19" />
-            </svg>
+            <Plus className="size-4" />
           </Button>
         ) : null}
         {closable ? (
           <Button
             type="button"
-            variant="outline"
+            variant="ghost"
             size="icon"
             className="chart-picker-close"
             onClick={onClose}
             aria-label={t('charts.closePicker')}
           >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M6 6L18 18M18 6L6 18" />
-            </svg>
+            <X className="size-4" />
           </Button>
         ) : null}
       </header>
@@ -162,12 +183,7 @@ export function ChartMountDrawer({
               aria-label={t('charts.importAction')}
               title={t('charts.importAction')}
             >
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M14 3H8A2 2 0 0 0 6 5V19A2 2 0 0 0 8 21H16A2 2 0 0 0 18 19V7Z" />
-                <path d="M14 3V7H18" />
-                <path d="M9 12H15" />
-                <path d="M9 16H13" />
-              </svg>
+              <FileText className="size-4" />
             </Button>
           ) : null}
           <Input
@@ -194,100 +210,136 @@ export function ChartMountDrawer({
         </div>
       ) : null}
 
-      <div className="chart-picker-body">
+      <div
+        className={`chart-picker-body ${groupedCharts.length === 0 ? 'is-empty' : ''}`}
+        aria-live="polite"
+      >
         {groupedCharts.length > 0 ? (
-          groupedCharts.map((group) => (
-            <details key={group.airportCode} className="chart-airport-group" open>
-              <summary className="chart-airport-head">
-                <span className="collapse-chevron" aria-hidden="true">
-                  <svg viewBox="0 0 20 20">
-                    <path d="M6 8L10 12L14 8" />
-                  </svg>
-                </span>
-                <span className="chart-airport-code">{group.airportCode}</span>
-                <Badge variant="outline" className="chart-group-count">
-                  {group.types.reduce((acc, item) => acc + item.charts.length, 0)}
-                </Badge>
-              </summary>
+          <div className="chart-picker-list">
+            {groupedCharts.map((group) => {
+              const isAirportExpanded = isSearching || !collapsedAirports.has(group.airportCode)
 
-              {group.types.map((typeGroup) => (
-                <details key={`${group.airportCode}-${typeGroup.type}`} className="chart-type-group" open>
-                  <summary className="chart-type-head">
+              return (
+                <section
+                  key={group.airportCode}
+                  className={`chart-airport-group ${isAirportExpanded ? 'is-open' : ''}`}
+                >
+                  <button
+                    type="button"
+                    className="chart-airport-head"
+                    aria-expanded={isAirportExpanded}
+                    onClick={() => toggleCollapsedKey(setCollapsedAirports, group.airportCode)}
+                  >
                     <span className="collapse-chevron" aria-hidden="true">
-                      <svg viewBox="0 0 20 20">
-                        <path d="M6 8L10 12L14 8" />
-                      </svg>
+                      <ChevronDown />
                     </span>
-                    <span>{chartTypeLabel[typeGroup.type]}</span>
+                    <span className="chart-airport-code">{group.airportCode}</span>
                     <Badge variant="outline" className="chart-group-count">
-                      {typeGroup.charts.length}
+                      {group.types.reduce((acc, item) => acc + item.charts.length, 0)}
                     </Badge>
-                  </summary>
+                  </button>
 
-                  <div className="chart-candidate-list">
-                    {typeGroup.charts.map((chart) => {
-                      const isMounted = mountedChartIds.includes(chart.id)
-                      const isSelected = selectedChartId === chart.id
-                      return (
-                        <article
-                          key={chart.id}
-                          className={`chart-candidate-item ${isSelected ? 'selected' : ''}`}
-                        >
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            className="chart-candidate-main"
-                            onClick={() => onSelect?.(chart.id)}
+                  {isAirportExpanded
+                    ? group.types.map((typeGroup) => {
+                        const typeKey = `${group.airportCode}-${typeGroup.type}`
+                        const isTypeExpanded = isSearching || !collapsedTypes.has(typeKey)
+
+                        return (
+                          <section
+                            key={typeKey}
+                            className={`chart-type-group ${isTypeExpanded ? 'is-open' : ''}`}
                           >
-                            <strong>{chart.title}</strong>
-                            <span>
-                              {chart.isGeoreferenced
-                                ? t('charts.georeferenced')
-                                : t('charts.notGeoreferenced')}
-                            </span>
-                          </Button>
-                          <div className="chart-candidate-actions">
-                            {onEdit ? (
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="icon"
-                                className="chart-action-button"
-                                onClick={() => onEdit(chart.id)}
-                                aria-label={t('charts.editAria', { title: chart.title })}
-                              >
-                                <svg viewBox="0 0 24 24" aria-hidden="true">
-                                  <path d="M4 16.5V20H7.5L17.81 9.69L14.31 6.19L4 16.5Z" />
-                                  <path d="M13.5 7L17 10.5" />
-                                </svg>
-                              </Button>
+                            <button
+                              type="button"
+                              className="chart-type-head"
+                              aria-expanded={isTypeExpanded}
+                              onClick={() => toggleCollapsedKey(setCollapsedTypes, typeKey)}
+                            >
+                              <span className="collapse-chevron" aria-hidden="true">
+                                <ChevronDown />
+                              </span>
+                              <span>{chartTypeLabel[typeGroup.type]}</span>
+                              <Badge variant="outline" className="chart-group-count">
+                                {typeGroup.charts.length}
+                              </Badge>
+                            </button>
+
+                            {isTypeExpanded ? (
+                              <div className="chart-candidate-list">
+                                {typeGroup.charts.map((chart) => {
+                                  const isMounted = mountedChartIds.includes(chart.id)
+                                  const isSelected = selectedChartId === chart.id
+                                  const editLabel = t('charts.editAria', { title: chart.title })
+                                  const pinLabel = t('charts.pinAria', { title: chart.title })
+
+                                  return (
+                                    <article
+                                      key={chart.id}
+                                      className={`chart-candidate-item ${isSelected ? 'selected' : ''}`}
+                                    >
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        className="chart-candidate-main"
+                                        onClick={() => onSelect?.(chart.id)}
+                                      >
+                                        <strong>{chart.title}</strong>
+                                        <span>
+                                          {chart.isGeoreferenced
+                                            ? t('charts.georeferenced')
+                                            : t('charts.notGeoreferenced')}
+                                        </span>
+                                      </Button>
+                                      <div className="chart-candidate-actions">
+                                        {onEdit ? (
+                                          <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            className="chart-action-button"
+                                            onClick={() => onEdit(chart.id)}
+                                            aria-label={editLabel}
+                                            title={editLabel}
+                                          >
+                                            <Pencil className="size-4" />
+                                          </Button>
+                                        ) : null}
+                                        {showPinButton ? (
+                                          <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            className={`chart-pin-button ${isMounted ? 'mounted' : ''}`}
+                                            disabled={!chart.isGeoreferenced}
+                                            onClick={() => onPin?.(chart.id)}
+                                            aria-label={pinLabel}
+                                            title={pinLabel}
+                                          >
+                                            <Pin className="size-4" />
+                                          </Button>
+                                        ) : null}
+                                      </div>
+                                    </article>
+                                  )
+                                })}
+                              </div>
                             ) : null}
-                            {showPinButton ? (
-                              <Button
-                                type="button"
-                                variant={isMounted ? 'default' : 'outline'}
-                                size="icon"
-                                className={`chart-pin-button ${isMounted ? 'mounted' : ''}`}
-                                disabled={!chart.isGeoreferenced}
-                                onClick={() => onPin?.(chart.id)}
-                                aria-label={t('charts.pinAria', { title: chart.title })}
-                              >
-                                <svg viewBox="0 0 24 24" aria-hidden="true">
-                                  <path d="M14 4L20 10L17 11L14 8L11 11L13 18L11 20L8 14L4 18L3 17L7 13L1 10L3 8L10 10L13 7L10 4L11 3L14 4Z" />
-                                </svg>
-                              </Button>
-                            ) : null}
-                          </div>
-                        </article>
-                      )
-                    })}
-                  </div>
-                </details>
-              ))}
-            </details>
-          ))
+                          </section>
+                        )
+                      })
+                    : null}
+                </section>
+              )
+            })}
+          </div>
         ) : (
-          <div className="chart-picker-empty">{t('charts.searchEmpty')}</div>
+          <div className="chart-picker-empty" role="status">
+            {isLibraryEmpty ? <FileText aria-hidden="true" /> : <SearchX aria-hidden="true" />}
+            <strong>
+              {isLibraryEmpty ? t('charts.emptyTitle') : t('charts.searchEmpty')}
+            </strong>
+            {isLibraryEmpty ? <span>{t('charts.emptyDescription')}</span> : null}
+          </div>
         )}
       </div>
     </>

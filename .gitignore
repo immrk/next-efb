@@ -11,3 +11,4 @@ release/
 *.env.local
 artifacts/
 data/
+.diagnostics/

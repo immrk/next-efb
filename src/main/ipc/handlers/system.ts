@@ -6,11 +6,22 @@ import { windowManager } from '../../windowManager.js'
 import { setLanguage, SupportedLanguages } from '../../i18n/index.js'
 
 const store = new Store()
+type ThemeColor = 'light' | 'dark' | 'system'
+
+function normalizeTheme(value: unknown): ThemeColor {
+  return value === 'light' || value === 'system' ? value : 'dark'
+}
 
 /**
  * 系统相关的IPC处理器
  */
 export const setupSystemHandlers = (): void => {
+  const initialTheme = normalizeTheme(store.get('theme'))
+  if (!store.has('theme')) {
+    store.set('theme', initialTheme)
+  }
+  nativeTheme.themeSource = initialTheme
+
   // 打开外部链接
   ipcMain.handle('system:openExternal', async (event, url: string) => {
     return wrapAsyncOperation(async () => {
@@ -54,7 +65,7 @@ export const setupSystemHandlers = (): void => {
   ipcMain.handle('system:getTheme', async () => {
     return wrapAsyncOperation(async () => {
       // 获取store中的主题
-      const storeTheme = store.get('theme')
+      const storeTheme = normalizeTheme(store.get('theme'))
       const systemTheme = nativeTheme.shouldUseDarkColors ? 'dark' : 'light'
       return {
         storeTheme: storeTheme,
@@ -66,12 +77,14 @@ export const setupSystemHandlers = (): void => {
   // 主题切换
   ipcMain.handle('system:changeTheme', async (event, theme: string) => {
     return wrapAsyncOperation(async () => {
-      store.set('theme', theme)
+      const nextTheme = normalizeTheme(theme)
+      store.set('theme', nextTheme)
+      nativeTheme.themeSource = nextTheme
       
       // 向所有渲染进程发送主题变化事件
       BrowserWindow.getAllWindows().forEach(window => {
         if (!window.isDestroyed()) {
-          window.webContents.send('system:changeTheme', theme)
+          window.webContents.send('system:changeTheme', nextTheme)
         }
       })
       
@@ -136,4 +149,4 @@ export const setupSystemHandlers = (): void => {
       return undefined
     })
   })
-} 
+}

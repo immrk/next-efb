@@ -30,7 +30,6 @@ src/
 │  ├─ styles/              # 模板主题
 │  └─ window/
 │     ├─ main/             # 主窗口
-│     ├─ setting/          # 设置窗口
 │     └─ login/            # 模板登录窗口
 └─ shared/                 # 主进程、preload、renderer 共享类型
 ```
@@ -46,14 +45,16 @@ npm run rebuild-native
 
 开发方式与 Electron Modern Template 一致：
 
-1. 运行 `npm run dev`，启动 main、setting、login 三个 Vite 窗口。
+1. 运行 `npm run dev`，启动 main、login 两个 Vite 窗口。
 2. 在 VS Code 中启动 `Electron TS Development` 调试配置。
 3. 如需持续重编译主进程，可另开终端运行 `npm run watch`。
+
+`npm run dev` 会先生成供 LAN 服务使用的 main 静态资源；后续主进程重编译会保留这些资源。
 
 也可以只启动指定窗口：
 
 ```bash
-npm run dev -- --only=main,setting
+npm run dev -- --only=main
 ```
 
 ## 检查与构建
@@ -63,6 +64,8 @@ npm run typecheck
 npm run build
 npm run start
 ```
+
+仅需重新生成 LAN 页面时可运行 `npm run build:lan`。
 
 生成当前平台安装包：
 
@@ -77,4 +80,4 @@ npm run make
 - 主窗口保持模板的无边框 TitleBar、固定 64px 左侧导航栏、HashRouter 与主题布局。
 - 通用按钮、输入框、选择器、标签页、提示、滑块和开关均使用 shadcn/ui。
 - 自定义 CSS 只用于地图、Leaflet 图层、航图画布、地理配准和业务抽屉等专用布局，颜色与字体均来自模板主题 token。
-- 桌面端设置按钮打开独立设置窗口；LAN 网页端仍在主窗口内打开设置页。
+- 设置作为主窗口侧栏菜单展示，桌面端与 LAN 网页端均在主窗口内打开。
