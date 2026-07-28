@@ -21,6 +21,15 @@ import type {
   StorageSummary
 } from '../../../shared/chart-types.js'
 import type {
+  ChecklistAssetPayload,
+  ChecklistImportFromUrlInput,
+  ChecklistImportResult,
+  ChecklistRecord,
+  ChecklistUpdateInput,
+  FinalizeChecklistImportInput,
+  PickedChecklistFile
+} from '../../../shared/checklist-types.js'
+import type {
   BuildFlightPlanInput,
   BuildFlightPlanResult,
   NavAirportOption,
@@ -72,6 +81,26 @@ const api = {
     ipcRenderer.invoke(IPC_CHANNELS.chartFinalizeImport, input),
   deleteChart: async (chartId: string): Promise<boolean> =>
     ipcRenderer.invoke(IPC_CHANNELS.chartDelete, chartId),
+  getChecklist: async (checklistId: string): Promise<ChecklistRecord | null> =>
+    ipcRenderer.invoke(IPC_CHANNELS.checklistGet, checklistId),
+  getChecklistAsset: async (checklistId: string): Promise<ChecklistAssetPayload | null> =>
+    ipcRenderer.invoke(IPC_CHANNELS.checklistAsset, checklistId),
+  listChecklists: async (): Promise<ChecklistRecord[]> =>
+    ipcRenderer.invoke(IPC_CHANNELS.checklistsList),
+  pickChecklistFile: async (): Promise<PickedChecklistFile | null> =>
+    ipcRenderer.invoke(IPC_CHANNELS.checklistImport),
+  importChecklistFromUrl: async (
+    input: ChecklistImportFromUrlInput
+  ): Promise<PickedChecklistFile> =>
+    ipcRenderer.invoke(IPC_CHANNELS.checklistImportFromUrl, input),
+  finalizeChecklistImport: async (
+    input: FinalizeChecklistImportInput
+  ): Promise<ChecklistImportResult> =>
+    ipcRenderer.invoke(IPC_CHANNELS.checklistFinalizeImport, input),
+  deleteChecklist: async (checklistId: string): Promise<boolean> =>
+    ipcRenderer.invoke(IPC_CHANNELS.checklistDelete, checklistId),
+  updateChecklist: async (input: ChecklistUpdateInput): Promise<ChecklistRecord | null> =>
+    ipcRenderer.invoke(IPC_CHANNELS.checklistUpdate, input),
   saveChartReferencePoints: async (
     chartId: string,
     points: GeoReferencePoint[]
@@ -103,7 +132,8 @@ const api = {
     const wrapped = (_event: Electron.IpcRendererEvent, payload: ConnectionState) => listener(payload)
     ipcRenderer.on(IPC_CHANNELS.connectionUpdate, wrapped)
     return () => ipcRenderer.removeListener(IPC_CHANNELS.connectionUpdate, wrapped)
-  }
+  },
+  onChecklistsChanged: (_listener: () => void): (() => void) => () => void 0
 }
 
 export function exposeNextEfbAPI(): void {

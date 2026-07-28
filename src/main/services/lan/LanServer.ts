@@ -13,6 +13,14 @@ import type {
   GeoReferencePoint
 } from '@shared/chart-types'
 import type {
+  ChecklistAssetPayload,
+  ChecklistImportFromUrlInput,
+  ChecklistImportResult,
+  ChecklistRecord,
+  ChecklistUpdateInput,
+  FinalizeChecklistImportInput
+} from '@shared/checklist-types'
+import type {
   AircraftState,
   AppSettings,
   ConnectionState,
@@ -28,6 +36,7 @@ import { SettingsStore } from '../config/SettingsStore'
 import { SimConnectService } from '../simconnect/SimConnectService'
 import { FlightStateStore } from '../state/FlightStateStore'
 import { ChartRepository } from '../storage/ChartRepository'
+import { ChecklistRepository } from '../storage/ChecklistRepository'
 import { StorageService } from '../storage/StorageService'
 import { RemoteChartImportService } from '../storage/RemoteChartImportService'
 import { NavDataService } from '../navigation/NavDataService'
@@ -39,6 +48,7 @@ interface LanServerOptions {
   settingsStore: SettingsStore
   simConnectService: SimConnectService
   chartRepository: ChartRepository
+  checklistRepository: ChecklistRepository
   storageService: StorageService
   navDataService: NavDataService
 }
@@ -47,6 +57,7 @@ type ServerEvent =
   | { type: 'aircraft:update'; payload: AircraftState }
   | { type: 'connection:update'; payload: ConnectionState }
   | { type: 'chart:changed' }
+  | { type: 'checklist:changed' }
   | { type: 'settings:changed' }
 
 export class LanServer {
@@ -56,6 +67,7 @@ export class LanServer {
   private readonly settingsStore: SettingsStore
   private readonly simConnectService: SimConnectService
   private readonly chartRepository: ChartRepository
+  private readonly checklistRepository: ChecklistRepository
   private readonly storageService: StorageService
   private readonly remoteChartImportService: RemoteChartImportService
   private readonly navDataService: NavDataService
@@ -70,6 +82,7 @@ export class LanServer {
     this.settingsStore = options.settingsStore
     this.simConnectService = options.simConnectService
     this.chartRepository = options.chartRepository
+    this.checklistRepository = options.checklistRepository
     this.storageService = options.storageService
     this.remoteChartImportService = new RemoteChartImportService()
     this.navDataService = options.navDataService
@@ -180,6 +193,10 @@ export class LanServer {
     this.broadcast({ type: 'chart:changed' })
   }
 
+  broadcastChecklistChanged(): void {
+    this.broadcast({ type: 'checklist:changed' })
+  }
+
   broadcastSettingsChanged(): void {
     this.broadcast({ type: 'settings:changed' })
   }
@@ -196,7 +213,11 @@ export class LanServer {
         return
       }
 
-      if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/assets/charts/')) {
+      if (
+        url.pathname.startsWith('/api/') ||
+        url.pathname.startsWith('/assets/charts/') ||
+        url.pathname.startsWith('/assets/checklists/')
+      ) {
         if (!this.isAuthorized(request)) {
           this.sendJson(response, { error: 'UNAUTHORIZED' }, 401)
           return
@@ -354,6 +375,62 @@ export class LanServer {
         return
       }
 
+      if (url.pathname === '/api/checklists') {
+        if (request.method === 'POST') {
+          if (!this.ensureWriteEnabled(response)) {
+            return
+          }
+          const input = (await this.readJsonBody(request)) as FinalizeChecklistImportInput
+          this.sendJson(response, this.finalizeChecklistImport(input), 201)
+          return
+        }
+
+        this.sendJson(response, this.checklistRepository.listChecklists())
+        return
+      }
+
+      if (url.pathname === '/api/checklists/import-from-url' && request.method === 'POST') {
+        if (!this.ensureWriteEnabled(response)) {
+          return
+        }
+        const input = (await this.readJsonBody(request)) as ChecklistImportFromUrlInput
+        this.sendJson(response, await this.remoteChartImportService.download(input.url), 201)
+        return
+      }
+
+      const checklistMatch = url.pathname.match(/^\/api\/checklists\/([^/]+)$/)
+      if (checklistMatch) {
+        if (request.method === 'PATCH') {
+          if (!this.ensureWriteEnabled(response)) {
+            return
+          }
+          const input = (await this.readJsonBody(request)) as ChecklistUpdateInput
+          this.sendJson(
+            response,
+            this.updateChecklist({ ...input, id: checklistMatch[1] })
+          )
+          return
+        }
+
+        if (request.method === 'DELETE') {
+          if (!this.ensureWriteEnabled(response)) {
+            return
+          }
+          this.deleteChecklist(checklistMatch[1])
+          this.sendJson(response, { ok: true })
+          return
+        }
+
+        this.sendJson(response, this.checklistRepository.getChecklist(checklistMatch[1]))
+        return
+      }
+
+      const checklistAssetMatch = url.pathname.match(/^\/assets\/checklists\/([^/]+)\/source$/)
+      if (checklistAssetMatch) {
+        this.serveChecklistAsset(checklistAssetMatch[1], response)
+        return
+      }
+
       this.serveRendererAsset(url.pathname, response)
     } catch (error) {
       if (response.headersSent) {
@@ -415,6 +492,37 @@ export class LanServer {
       fileFormat: chart.fileFormat,
       mimeType: getMimeTypeByFormat(chart.fileFormat),
       filePath: displayPath
+    }
+  }
+
+  private serveChecklistAsset(checklistId: string, response: ServerResponse): void {
+    const asset = this.getChecklistAsset(checklistId)
+    if (!asset?.filePath || !existsSync(asset.filePath)) {
+      response.writeHead(404)
+      response.end('Checklist asset not found')
+      return
+    }
+
+    const stat = statSync(asset.filePath)
+    response.writeHead(200, {
+      'Content-Type': asset.mimeType,
+      'Content-Length': stat.size,
+      'Cache-Control': 'private, max-age=300'
+    })
+    createReadStream(asset.filePath).pipe(response)
+  }
+
+  private getChecklistAsset(checklistId: string): ChecklistAssetPayload | null {
+    const checklist = this.checklistRepository.getChecklist(checklistId)
+    if (!checklist) {
+      return null
+    }
+
+    return {
+      checklistId,
+      fileFormat: checklist.fileFormat,
+      mimeType: getMimeTypeByFormat(checklist.fileFormat),
+      filePath: checklist.sourceFilePath
     }
   }
 
@@ -497,6 +605,42 @@ export class LanServer {
     return { chart: created }
   }
 
+  private finalizeChecklistImport(input: FinalizeChecklistImportInput): ChecklistImportResult {
+    const aircraftModel = input.aircraftModel.trim().toUpperCase()
+    if (!aircraftModel) {
+      throw new Error('CHECKLIST_AIRCRAFT_MODEL_REQUIRED')
+    }
+
+    const checklistId = randomUUID()
+    const imported = input.sourcePath
+      ? this.storageService.importChecklistFile(input.sourcePath, checklistId)
+      : input.sourceFileBase64 && input.sourceFileFormat
+        ? this.storageService.writeChecklistSourceFile(
+            checklistId,
+            input.sourceFileFormat,
+            input.sourceFileBase64
+          )
+        : null
+
+    if (!imported) {
+      throw new Error('CHECKLIST_SOURCE_REQUIRED')
+    }
+
+    const now = Date.now()
+    const checklist: ChecklistRecord = {
+      id: checklistId,
+      title: input.title.trim() || 'Checklist',
+      aircraftModel,
+      sourceFilePath: imported.destinationPath,
+      fileFormat: getFileFormat(imported.destinationPath),
+      createdAt: now,
+      updatedAt: now
+    }
+    const created = this.checklistRepository.createChecklist(checklist)
+    this.broadcastChecklistChanged()
+    return { checklist: created }
+  }
+
   private updateChart(input: ChartUpdateInput): ChartRecord | null {
     const updated = this.chartRepository.updateChart(input)
     this.broadcastChartChanged()
@@ -513,6 +657,31 @@ export class LanServer {
     this.chartRepository.deleteChart(chartId)
     this.storageService.deleteChartFiles(chartId)
     this.broadcastChartChanged()
+  }
+
+  private deleteChecklist(checklistId: string): void {
+    this.checklistRepository.deleteChecklist(checklistId)
+    this.storageService.deleteChecklistFiles(checklistId)
+    this.broadcastChecklistChanged()
+  }
+
+  private updateChecklist(input: ChecklistUpdateInput): ChecklistRecord | null {
+    const title = input.title.trim()
+    const aircraftModel = input.aircraftModel.trim().toUpperCase()
+    if (!title) {
+      throw new Error('CHECKLIST_TITLE_REQUIRED')
+    }
+    if (!aircraftModel) {
+      throw new Error('CHECKLIST_AIRCRAFT_MODEL_REQUIRED')
+    }
+
+    const updated = this.checklistRepository.updateChecklist({
+      id: input.id,
+      title,
+      aircraftModel
+    })
+    this.broadcastChecklistChanged()
+    return updated
   }
 
   private applySettingsUpdate(partial: Partial<AppSettings>): AppSettings {

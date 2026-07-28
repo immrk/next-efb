@@ -1,7 +1,6 @@
 import { app, BrowserWindow, Menu, Tray, dialog, nativeImage, session, shell } from 'electron'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import electronSquirrelStartup from 'electron-squirrel-startup'
 import { APP_NAME } from '../shared/branding.js'
 import { IPC_CHANNELS } from '../shared/channels.js'
 import type { DesktopWindowState } from '../shared/types.js'
@@ -16,6 +15,7 @@ import { NavDataService } from './services/navigation/NavDataService.js'
 import { SimConnectService } from './services/simconnect/SimConnectService.js'
 import { FlightStateStore } from './services/state/FlightStateStore.js'
 import { ChartRepository } from './services/storage/ChartRepository.js'
+import { ChecklistRepository } from './services/storage/ChecklistRepository.js'
 import { StorageService } from './services/storage/StorageService.js'
 import { windowManager } from './windowManager.js'
 import '../utils/logger.js'
@@ -40,10 +40,6 @@ const APP_TILE_REFERER = 'https://nextefb.app/'
 let appTray: Tray | null = null
 let isQuitting = false
 let hasShownSingleInstanceNotice = false
-
-if (electronSquirrelStartup) {
-  app.quit()
-}
 
 const hasSingleInstanceLock = app.requestSingleInstanceLock()
 if (!hasSingleInstanceLock) {
@@ -99,6 +95,7 @@ async function createMainWindow(): Promise<void> {
   const storageService = new StorageService()
   const navDataService = new NavDataService()
   const chartRepository = new ChartRepository(storageService.getSummary())
+  const checklistRepository = new ChecklistRepository(storageService.getSummary().databasePath)
   const lanServer = new LanServer({
     settings: settingsStore.get(),
     rendererRoot: join(__dirname, '../renderer/window/main'),
@@ -106,6 +103,7 @@ async function createMainWindow(): Promise<void> {
     settingsStore,
     simConnectService,
     chartRepository,
+    checklistRepository,
     storageService,
     navDataService
   })
@@ -118,6 +116,7 @@ async function createMainWindow(): Promise<void> {
     settingsStore,
     simConnectService,
     chartRepository,
+    checklistRepository,
     storageService,
     lanServer,
     navDataService

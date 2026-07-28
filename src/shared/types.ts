@@ -1,5 +1,5 @@
 export type AppLanguage = 'zh-CN' | 'en-US'
-export type AppRoute = 'map' | 'charts' | 'chartDetail' | 'settings'
+export type AppRoute = 'map' | 'flight' | 'charts' | 'chartDetail' | 'checklists' | 'settings'
 
 export type AircraftSource = 'mock' | 'simconnect'
 export type MapTileProvider =

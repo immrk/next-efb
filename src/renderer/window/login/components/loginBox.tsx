@@ -47,7 +47,7 @@ export function LoginBox() {
           <h1 className="text-2xl font-semibold">{t("login.title")}</h1>
         </div>
 
-        <form className="space-y-5" onSubmit={(event) => void handleLogin(event)}>
+        <form className="space-y-5" noValidate onSubmit={(event) => void handleLogin(event)}>
           <div className="space-y-2">
             <Label htmlFor="email">{t("login.email")}</Label>
             <Input

@@ -1020,10 +1020,11 @@ body {
   padding: 0.6rem 0.85rem 0.6rem 2.35rem;
   border: 1px solid color-mix(in oklab, var(--foreground) 18%, var(--border));
   border-radius: 999px;
-  background: color-mix(in oklab, var(--card) 96%, transparent);
+  background: color-mix(in oklab, var(--card) 54%, transparent);
   color: var(--card-foreground);
   box-shadow: 0 4px 16px color-mix(in oklab, var(--foreground) 12%, transparent);
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(16px) saturate(120%);
+  -webkit-backdrop-filter: blur(16px) saturate(120%);
   font-size: 14px;
 }
 
@@ -1033,7 +1034,7 @@ body {
 
 .map-search-input:focus-visible {
   border-color: var(--primary);
-  background: var(--card);
+  background: color-mix(in oklab, var(--card) 66%, transparent);
   box-shadow:
     0 0 0 3px color-mix(in oklab, var(--primary) 22%, transparent),
     0 6px 20px color-mix(in oklab, var(--foreground) 14%, transparent);
@@ -1041,7 +1042,7 @@ body {
 
 .map-search-input:disabled {
   border-color: color-mix(in oklab, var(--foreground) 12%, var(--border));
-  background: color-mix(in oklab, var(--card) 90%, transparent);
+  background: color-mix(in oklab, var(--card) 46%, transparent);
   opacity: 0.78;
 }
 
@@ -1124,23 +1125,28 @@ body {
 .map-nav-layer-button {
   min-height: 40px;
   padding: 0 12px;
+  border: 1px solid color-mix(in oklab, var(--foreground) 18%, var(--border));
   border-radius: 999px;
-  border-color: var(--border);
-  background: var(--card);
+  background: color-mix(in oklab, var(--card) 54%, transparent);
   color: var(--card-foreground);
-  box-shadow: 0 4px 14px color-mix(in oklab, var(--foreground) 10%, transparent);
-  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 16px color-mix(in oklab, var(--foreground) 12%, transparent);
+  backdrop-filter: blur(16px) saturate(120%);
+  -webkit-backdrop-filter: blur(16px) saturate(120%);
 }
 
 .map-nav-layer-button[data-variant='default'] {
-  background: var(--primary);
-  border-color: var(--primary);
+  background: color-mix(in oklab, var(--primary) 72%, transparent);
+  border-color: color-mix(in oklab, var(--primary) 76%, var(--border));
   color: var(--primary-foreground);
 }
 
 .map-nav-layer-button[data-variant='outline']:hover {
-  background: var(--accent);
-  color: var(--accent-foreground);
+  background: color-mix(in oklab, var(--card) 66%, transparent);
+  color: var(--card-foreground);
+}
+
+.map-nav-layer-button[data-variant='default']:hover {
+  background: color-mix(in oklab, var(--primary) 82%, transparent);
 }
 
 .map-provider-chip {
@@ -1177,21 +1183,24 @@ body {
 }
 
 .map-provider-trigger-icon {
-  width: 46px;
-  min-width: 46px;
-  height: 46px;
-  min-height: 46px;
+  width: 40px;
+  min-width: 40px;
+  height: 40px;
+  min-height: 40px;
   padding: 0;
   justify-content: center;
-  border-color: var(--border);
-  background: var(--card);
+  border-color: color-mix(in oklab, var(--foreground) 18%, var(--border));
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--card) 54%, transparent);
   color: var(--card-foreground);
-  box-shadow: 0 4px 14px color-mix(in oklab, var(--foreground) 10%, transparent);
+  box-shadow: 0 4px 16px color-mix(in oklab, var(--foreground) 12%, transparent);
+  backdrop-filter: blur(16px) saturate(120%);
+  -webkit-backdrop-filter: blur(16px) saturate(120%);
 }
 
 .map-provider-trigger-icon:hover {
-  background: var(--accent);
-  color: var(--accent-foreground);
+  background: color-mix(in oklab, var(--card) 66%, transparent);
+  color: var(--card-foreground);
 }
 
 .map-provider-trigger-icon .map-provider-icon {
@@ -1590,8 +1599,7 @@ body {
 
 .chart-import-url-bar {
   flex: 0 0 auto;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  display: flex;
   gap: 10px;
   padding: 10px 14px;
   border-bottom: 1px solid var(--ui-border-soft);
@@ -1609,6 +1617,7 @@ body {
 }
 
 .chart-import-url-input {
+  flex: 1 1 220px;
   min-width: 0;
   min-height: 38px;
   padding: 0.55rem 0.75rem;
@@ -1879,6 +1888,7 @@ body {
   font-size: 12px;
 }
 
+.library-workspace,
 .charts-workspace {
   height: 100%;
   display: flex;
@@ -2384,6 +2394,234 @@ body {
   background: color-mix(in oklab, var(--background) 74%, transparent);
 }
 
+.library-sidebar-shell {
+  position: relative;
+  z-index: 12;
+  flex: 0 0 360px;
+  width: 360px;
+  min-width: 300px;
+  height: 100%;
+  transition:
+    width 180ms ease,
+    flex-basis 180ms ease,
+    min-width 180ms ease;
+}
+
+.library-sidebar-shell.is-collapsed {
+  flex-basis: 0;
+  width: 0;
+  min-width: 0;
+}
+
+.library-sidebar-content {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.library-sidebar-shell .chart-picker-drawer-docked {
+  width: 100%;
+  min-width: 0;
+}
+
+.library-sidebar-toggle {
+  position: absolute;
+  top: 50%;
+  left: 100%;
+  z-index: 14;
+  width: 30px;
+  height: 30px;
+  min-height: 30px;
+  border-radius: 8px;
+  transform: translate(-50%, -50%);
+  background: color-mix(in oklab, var(--background) 92%, transparent);
+  box-shadow: 0 4px 14px color-mix(in oklab, black 12%, transparent);
+}
+
+.library-sidebar-shell.is-collapsed .library-sidebar-toggle {
+  transform: translate(10px, -50%);
+}
+
+.checklist-document-preview {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.checklist-pdf-viewer {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-x pan-y;
+  background:
+    radial-gradient(
+      circle at top,
+      color-mix(in oklab, var(--primary) 7%, transparent),
+      transparent 34rem
+    ),
+    color-mix(in oklab, var(--muted) 55%, var(--background));
+}
+
+.checklist-pdf-viewer.is-pinching,
+.checklist-image-viewer.is-pinching {
+  cursor: zoom-in;
+  user-select: none;
+}
+
+.checklist-preview-toolbar {
+  position: relative;
+  z-index: 10;
+  flex: 0 0 auto;
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--ui-border);
+  background: color-mix(in oklab, var(--background) 91%, transparent);
+  backdrop-filter: blur(14px);
+}
+
+.checklist-preview-title {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.checklist-preview-title strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+}
+
+.checklist-preview-title span,
+.checklist-zoom-actions span {
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+
+.checklist-zoom-actions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.checklist-zoom-actions > span {
+  min-width: 46px;
+  text-align: center;
+}
+
+.checklist-pdf-pages {
+  min-width: min-content;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 24px;
+  transform-origin: top center;
+  will-change: zoom;
+}
+
+.checklist-pdf-page {
+  position: relative;
+  width: max-content;
+  max-width: none;
+  margin: 0;
+  border: 1px solid color-mix(in oklab, var(--foreground) 14%, transparent);
+  border-radius: 4px;
+  background: white;
+  box-shadow: 0 12px 32px color-mix(in oklab, black 22%, transparent);
+  overflow: hidden;
+}
+
+.checklist-pdf-page canvas {
+  display: block;
+  background: white;
+}
+
+.checklist-pdf-page > svg {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  z-index: 2;
+  color: #b91c1c;
+  transform: translate(-50%, -50%);
+}
+
+.checklist-pdf-page figcaption {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  min-width: 26px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: rgb(15 23 42 / 72%);
+  color: white;
+  text-align: center;
+  font-size: 11px;
+}
+
+.checklist-image-viewer {
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  place-items: start center;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 24px;
+  background: color-mix(in oklab, var(--muted) 55%, var(--background));
+  touch-action: pan-x pan-y;
+}
+
+.checklist-image-viewer img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+  box-shadow: 0 12px 32px color-mix(in oklab, black 22%, transparent);
+}
+
+.checklist-loading-icon {
+  animation: checklist-spin 1s linear infinite;
+}
+
+.checklist-meta-modal {
+  width: min(520px, calc(100% - 24px));
+}
+
+.checklist-meta-modal .chart-meta-modal-head {
+  align-items: flex-start;
+}
+
+.checklist-meta-modal .chart-meta-modal-head > div {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.checklist-meta-dialog-hint {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.checklist-meta-dialog-body {
+  display: grid;
+  gap: 18px;
+}
+
+@keyframes checklist-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .chart-meta-modal {
   position: relative;
   width: min(520px, calc(100% - 24px));
@@ -2714,9 +2952,131 @@ body {
   gap: 4px;
 }
 
+.flight-plan-command-group {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
 .flight-plan-head-command {
   min-width: 0;
   padding-inline: 9px;
+}
+
+.flight-plan-confirm-backdrop {
+  position: fixed;
+  padding: 10px;
+}
+
+.flight-plan-confirm-modal {
+  width: min(560px, 100%);
+}
+
+.flight-plan-confirm-head {
+  min-height: 50px;
+  padding: 6px 12px;
+}
+
+.flight-plan-confirm-title {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.flight-plan-confirm-title-icon {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: color-mix(in oklab, var(--primary) 12%, transparent);
+  color: var(--primary);
+}
+
+.flight-plan-confirm-title-icon.is-destructive {
+  background: color-mix(in oklab, var(--destructive) 12%, transparent);
+  color: var(--destructive);
+}
+
+.flight-plan-confirm-title h3 {
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+.flight-plan-confirm-body {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+}
+
+.flight-plan-confirm-description {
+  margin: 0;
+  color: var(--foreground);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.flight-plan-confirm-impact-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.flight-plan-confirm-impact {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 8px;
+  padding: 8px 9px;
+  border: 1px solid var(--ui-border);
+  border-radius: 10px;
+  background: color-mix(in oklab, var(--muted) 48%, transparent);
+  color: var(--muted-foreground);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.flight-plan-confirm-impact svg {
+  margin-top: 2px;
+  color: var(--foreground);
+}
+
+.flight-plan-confirm-note {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 7px;
+  padding: 7px 9px;
+  border-radius: 10px;
+  background: color-mix(in oklab, var(--primary) 9%, transparent);
+  color: color-mix(in oklab, var(--primary) 78%, var(--foreground));
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.flight-plan-confirm-note svg {
+  margin-top: 1px;
+}
+
+.flight-plan-confirm-note.is-destructive {
+  background: color-mix(in oklab, var(--destructive) 9%, transparent);
+  color: color-mix(in oklab, var(--destructive) 78%, var(--foreground));
+}
+
+.flight-plan-confirm-modal .chart-meta-modal-foot {
+  padding: 7px 12px 9px;
+}
+
+@media (max-width: 520px) {
+  .flight-plan-confirm-impact-list {
+    grid-template-columns: 1fr;
+  }
 }
 
 .flight-plan-body {
@@ -2871,6 +3231,340 @@ body {
 
 .flight-plan-summary-card {
   border-color: color-mix(in oklab, var(--primary) 24%, transparent);
+}
+
+.flight-page {
+  min-height: 0;
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  touch-action: pan-y;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklab, var(--muted-foreground) 45%, transparent) transparent;
+  background: var(--background);
+}
+
+.flight-page::-webkit-scrollbar {
+  display: block;
+  width: 7px;
+}
+
+.flight-page::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--muted-foreground) 45%, transparent);
+}
+
+.flight-page-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  min-height: 64px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  background: color-mix(in oklab, var(--background) 96%, var(--muted));
+}
+
+.flight-page-heading {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+.flight-page-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.flight-page-title-row h1 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 650;
+  line-height: 1.2;
+}
+
+.flight-source-badge {
+  border-color: color-mix(in oklab, var(--primary) 16%, transparent);
+}
+
+.flight-page-content {
+  width: 100%;
+  min-height: calc(100% - 64px);
+  padding: 18px 18px 28px;
+  display: grid;
+  align-content: start;
+  gap: 16px;
+}
+
+.flight-empty-card {
+  min-height: 280px;
+  padding: 32px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-align: center;
+  color: var(--muted-foreground);
+  border-style: dashed;
+  box-shadow: none;
+}
+
+.flight-empty-card > svg {
+  width: 40px;
+  height: 40px;
+  margin-bottom: 4px;
+  color: color-mix(in oklab, var(--primary) 72%, var(--muted-foreground));
+}
+
+.flight-empty-card strong {
+  color: var(--foreground);
+  font-size: 16px;
+}
+
+.flight-empty-card p {
+  max-width: 440px;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.flight-snapshot-card {
+  gap: 0;
+  padding-block: 0;
+  overflow: hidden;
+}
+
+.flight-snapshot-card-header {
+  min-height: 46px;
+  padding: 7px 16px;
+  border-bottom: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: minmax(32px, auto);
+  align-items: center;
+}
+
+.flight-snapshot-card-header [data-slot="card-title"] {
+  font-size: 15px;
+}
+
+.flight-snapshot-card-header [data-slot="card-action"] {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: center;
+}
+
+.flight-card-title {
+  min-width: 0;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  line-height: 1.4;
+}
+
+.flight-card-title > span {
+  flex: 0 0 auto;
+}
+
+.flight-load-sheet-units {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.flight-load-sheet-units::before {
+  content: "–";
+}
+
+.flight-weight-unit-switch {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: color-mix(in oklab, var(--muted) 72%, transparent);
+}
+
+.flight-weight-unit-button {
+  min-width: 30px;
+  height: 22px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--muted-foreground);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.flight-weight-unit-button:hover {
+  color: var(--foreground);
+}
+
+.flight-weight-unit-button[data-active="true"] {
+  background: var(--background);
+  color: var(--foreground);
+  box-shadow: 0 1px 3px color-mix(in oklab, black 18%, transparent);
+}
+
+.flight-weight-unit-button:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--primary) 72%, transparent);
+  outline-offset: 1px;
+}
+
+.flight-briefing-help {
+  color: color-mix(in oklab, var(--primary) 78%, #62bde8);
+  font-size: 12px;
+  font-weight: 400;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.flight-briefing-help:hover {
+  color: var(--primary);
+}
+
+.flight-card-toggle {
+  color: var(--muted-foreground);
+}
+
+.flight-snapshot-card-content {
+  padding: 10px 18px 12px;
+}
+
+.flight-metric-grid {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(110px, 1fr));
+  grid-auto-rows: minmax(72px, auto);
+  column-gap: 20px;
+  row-gap: 0;
+}
+
+.flight-metric {
+  min-width: 0;
+  padding: 10px 4px 12px;
+  border-bottom: 1px solid color-mix(in oklab, var(--border) 78%, transparent);
+  display: grid;
+  grid-template-rows: minmax(28px, auto) minmax(28px, auto);
+  align-content: center;
+  text-align: center;
+}
+
+.flight-metric:nth-last-child(-n + 6) {
+  border-bottom-color: transparent;
+}
+
+.flight-metric dt {
+  min-width: 0;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  line-height: 1.4;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  text-wrap: balance;
+}
+
+.flight-metric dd {
+  min-width: 0;
+  margin: 5px 0 0;
+  color: var(--foreground);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.45;
+  font-variant-numeric: tabular-nums;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+
+.flight-text-snapshot {
+  position: relative;
+  min-height: 50px;
+  padding: 13px 84px 13px 18px;
+  border-left: 5px solid color-mix(in oklab, var(--primary) 72%, var(--foreground));
+  background: var(--muted);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+}
+
+.flight-text-snapshot > svg {
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  color: var(--muted-foreground);
+}
+
+.flight-text-snapshot pre {
+  min-width: 0;
+  max-height: 220px;
+  margin: 0;
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklab, var(--muted-foreground) 50%, transparent) transparent;
+  color: var(--foreground);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.flight-text-snapshot pre::-webkit-scrollbar {
+  display: block;
+  width: 7px;
+  height: 7px;
+}
+
+.flight-text-snapshot pre::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--muted-foreground) 50%, transparent);
+}
+
+.flight-text-snapshot.is-briefing {
+  grid-template-columns: minmax(0, 1fr);
+  padding: 0;
+  border: 1px solid color-mix(in oklab, var(--border) 82%, transparent);
+  border-left-width: 5px;
+  border-radius: 6px;
+}
+
+.flight-text-snapshot.is-large pre {
+  width: 100%;
+  height: clamp(528px, 81.6vh, 912px);
+  max-height: none;
+  min-height: 0;
+  padding: 14px 8px 48px 18px;
+  overscroll-behavior: contain;
+  font-size: 14px;
+  line-height: 1.4;
+  white-space: pre;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+.flight-copy-button {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
 }
 
 .map-reference-pin {
@@ -3098,6 +3792,18 @@ body {
     border-right: 0;
     border-bottom: 1px solid var(--ui-border);
   }
+
+  .flight-metric-grid {
+    grid-template-columns: repeat(3, minmax(110px, 1fr));
+  }
+
+  .flight-metric:nth-last-child(-n + 6) {
+    border-bottom-color: color-mix(in oklab, var(--border) 78%, transparent);
+  }
+
+  .flight-metric:nth-last-child(-n + 3) {
+    border-bottom-color: transparent;
+  }
 }
 
 @media (max-width: 720px) {
@@ -3232,6 +3938,36 @@ body {
     bottom: 0;
   }
 
+  .flight-page-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .flight-page-toolbar .flight-plan-command-group {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .flight-page-content {
+    padding: 10px;
+  }
+
+  .flight-metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 12px;
+  }
+
+  .flight-metric:nth-last-child(-n + 3) {
+    border-bottom-color: color-mix(in oklab, var(--border) 78%, transparent);
+  }
+
+  .flight-metric:nth-last-child(-n + 2) {
+    border-bottom-color: transparent;
+  }
+
+  .library-workspace,
   .charts-workspace {
     height: 100%;
     flex-direction: column;
@@ -3246,12 +3982,35 @@ body {
   }
 
   .chart-import-url-bar {
-    grid-template-columns: 1fr;
+    flex-direction: column;
   }
 
   .chart-import-file-button {
     width: 100%;
     min-width: 0;
+  }
+
+  .library-sidebar-shell {
+    flex: 0 0 45vh;
+    width: 100%;
+    min-width: 0;
+    height: 45vh;
+  }
+
+  .library-sidebar-shell.is-collapsed {
+    flex-basis: 0;
+    width: 100%;
+    height: 0;
+  }
+
+  .library-sidebar-toggle {
+    top: 100%;
+    left: 14px;
+    transform: translateY(-50%);
+  }
+
+  .library-sidebar-shell.is-collapsed .library-sidebar-toggle {
+    transform: translateY(10px);
   }
 
   .chart-import-url-submit {

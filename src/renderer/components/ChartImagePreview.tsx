@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -11,7 +12,7 @@ import { useTranslation } from 'react-i18next'
 import type { ChartAssetPayload, GeoReferencePoint } from '@shared/chart-types'
 import type { AircraftState } from '@shared/types'
 import { useChartRasterAsset } from '../hooks/useChartRasterAsset'
-import { getChartRotationDeg, projectAircraftToChart } from '../utils/chartMath'
+import { getChartFitView, getChartRotationDeg, projectAircraftToChart } from '../utils/chartMath'
 import { ChartAircraftArrow } from './AircraftArrow'
 import { Button } from './ui/button'
 
@@ -43,6 +44,7 @@ export function ChartImagePreview({
   const { t } = useTranslation()
   const [zoom, setZoom] = useState(1)
   const [pan, setPan] = useState({ x: 0, y: 0 })
+  const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 })
   const [isDragging, setIsDragging] = useState(false)
   const imageRef = useRef<HTMLImageElement | null>(null)
   const viewportRef = useRef<HTMLDivElement | null>(null)
@@ -83,6 +85,7 @@ export function ChartImagePreview({
     index: -1
   })
   const suppressClickRef = useRef(false)
+  const fittedRasterUrlRef = useRef<string | null>(null)
   const [draggingPinIndex, setDraggingPinIndex] = useState<number | null>(null)
   const { rasterUrl, width: rasterWidth, height: rasterHeight, error: rasterError } =
     useChartRasterAsset(asset)
@@ -90,14 +93,26 @@ export function ChartImagePreview({
   const chartRotationDeg = useMemo(() => getChartRotationDeg(points), [points])
   const naturalWidth = rasterWidth ?? 0
   const naturalHeight = rasterHeight ?? 0
+  const fitView = useMemo(
+    () =>
+      getChartFitView(
+        naturalWidth,
+        naturalHeight,
+        viewportSize.width,
+        viewportSize.height
+      ),
+    [naturalHeight, naturalWidth, viewportSize.height, viewportSize.width]
+  )
+  const fitScale = fitView?.scale ?? 1
+  const renderScale = fitScale * zoom
 
   const projectedScreenPoint = useMemo(() => {
     if (!projected) return null
     return {
-      left: pan.x + projected.x * zoom,
-      top: pan.y + projected.y * zoom
+      left: pan.x + projected.x * renderScale,
+      top: pan.y + projected.y * renderScale
     }
-  }, [pan.x, pan.y, projected, zoom])
+  }, [pan.x, pan.y, projected, renderScale])
 
   const chartPins = useMemo(
     () =>
@@ -105,10 +120,10 @@ export function ChartImagePreview({
         index,
         key: `${point.x}-${point.y}`,
         label: String(index + 1),
-        left: pan.x + point.x * zoom,
-        top: pan.y + point.y * zoom
+        left: pan.x + point.x * renderScale,
+        top: pan.y + point.y * renderScale
       })),
-    [draftChartPoints, pan.x, pan.y, zoom]
+    [draftChartPoints, pan.x, pan.y, renderScale]
   )
   const canDragPins = draftChartPoints.length === 2 && Boolean(onDraftChartPointMove)
 
@@ -117,8 +132,8 @@ export function ChartImagePreview({
     const viewportRect = viewportRef.current.getBoundingClientRect()
     const pointerX = clientX - viewportRect.left
     const pointerY = clientY - viewportRect.top
-    const x = (pointerX - pan.x) / zoom
-    const y = (pointerY - pan.y) / zoom
+    const x = (pointerX - pan.x) / renderScale
+    const y = (pointerY - pan.y) / renderScale
     return {
       x: Math.max(0, Math.min(naturalWidth, x)),
       y: Math.max(0, Math.min(naturalHeight, y))
@@ -127,22 +142,41 @@ export function ChartImagePreview({
 
   const updateZoom = (nextZoom: number, clientX?: number, clientY?: number) => {
     const clamped = clampZoomValue(nextZoom)
-    if (!viewportRef.current || clientX === undefined || clientY === undefined) {
+    if (!viewportRef.current) {
       setZoom(clamped)
       return
     }
 
     const rect = viewportRef.current.getBoundingClientRect()
-    const pointerX = clientX - rect.left
-    const pointerY = clientY - rect.top
+    const pointerX = clientX === undefined ? rect.width / 2 : clientX - rect.left
+    const pointerY = clientY === undefined ? rect.height / 2 : clientY - rect.top
 
-    const worldX = (pointerX - pan.x) / zoom
-    const worldY = (pointerY - pan.y) / zoom
+    const worldX = (pointerX - pan.x) / renderScale
+    const worldY = (pointerY - pan.y) / renderScale
+    const nextRenderScale = fitScale * clamped
 
     setZoom(clamped)
     setPan({
-      x: pointerX - worldX * clamped,
-      y: pointerY - worldY * clamped
+      x: pointerX - worldX * nextRenderScale,
+      y: pointerY - worldY * nextRenderScale
+    })
+  }
+
+  const resetToFit = () => {
+    const viewportRect = viewportRef.current?.getBoundingClientRect()
+    const nextFitView = viewportRect
+      ? getChartFitView(
+          naturalWidth,
+          naturalHeight,
+          viewportRect.width,
+          viewportRect.height
+        )
+      : fitView
+
+    setZoom(1)
+    setPan({
+      x: nextFitView?.panX ?? 0,
+      y: nextFitView?.panY ?? 0
     })
   }
 
@@ -174,8 +208,8 @@ export function ChartImagePreview({
         active: distance > 0,
         startDistance: distance,
         startZoom: zoom,
-        worldX: (pointerX - pan.x) / zoom,
-        worldY: (pointerY - pan.y) / zoom
+        worldX: (pointerX - pan.x) / renderScale,
+        worldY: (pointerY - pan.y) / renderScale
       }
       dragRef.current.active = false
       dragRef.current.moved = false
@@ -220,10 +254,11 @@ export function ChartImagePreview({
       const nextZoom = clampZoomValue(
         pinchRef.current.startZoom * (distance / pinchRef.current.startDistance)
       )
+      const nextRenderScale = fitScale * nextZoom
       setZoom(nextZoom)
       setPan({
-        x: pointerX - pinchRef.current.worldX * nextZoom,
-        y: pointerY - pinchRef.current.worldY * nextZoom
+        x: pointerX - pinchRef.current.worldX * nextRenderScale,
+        y: pointerY - pinchRef.current.worldY * nextRenderScale
       })
       return
     }
@@ -280,6 +315,43 @@ export function ChartImagePreview({
     onChartClick(point)
   }
 
+  useLayoutEffect(() => {
+    const viewport = viewportRef.current
+    if (!viewport || !rasterUrl) return
+
+    const measureViewport = () => {
+      const rect = viewport.getBoundingClientRect()
+      setViewportSize((current) =>
+        current.width === rect.width && current.height === rect.height
+          ? current
+          : { width: rect.width, height: rect.height }
+      )
+    }
+
+    measureViewport()
+    const observer = new ResizeObserver(measureViewport)
+    observer.observe(viewport)
+
+    return () => {
+      observer.disconnect()
+    }
+  }, [rasterUrl])
+
+  useLayoutEffect(() => {
+    if (!rasterUrl || !fitView) return
+
+    if (fittedRasterUrlRef.current !== rasterUrl) {
+      fittedRasterUrlRef.current = rasterUrl
+      setZoom(1)
+      setPan({ x: fitView.panX, y: fitView.panY })
+      return
+    }
+
+    if (zoom === 1) {
+      setPan({ x: fitView.panX, y: fitView.panY })
+    }
+  }, [fitView, rasterUrl, zoom])
+
   useEffect(() => {
     if (autoFocusKey <= 0) return
     if (draftChartPoints.length !== 2) return
@@ -300,16 +372,19 @@ export function ChartImagePreview({
     const padding = 72
     const availableWidth = Math.max(1, viewportRect.width - padding * 2)
     const availableHeight = Math.max(1, viewportRect.height - padding * 2)
-    const targetZoom = clampZoomValue(Math.min(availableWidth / boxWidth, availableHeight / boxHeight))
+    const targetZoom = clampZoomValue(
+      Math.min(availableWidth / boxWidth, availableHeight / boxHeight) / fitScale
+    )
+    const targetRenderScale = fitScale * targetZoom
     const centerX = (minX + maxX) / 2
     const centerY = (minY + maxY) / 2
 
     setZoom(targetZoom)
     setPan({
-      x: viewportRect.width / 2 - centerX * targetZoom,
-      y: viewportRect.height / 2 - centerY * targetZoom
+      x: viewportRect.width / 2 - centerX * targetRenderScale,
+      y: viewportRect.height / 2 - centerY * targetRenderScale
     })
-  }, [autoFocusKey, draftChartPoints, naturalHeight, naturalWidth])
+  }, [autoFocusKey, draftChartPoints, fitScale, naturalHeight, naturalWidth])
 
   useEffect(() => {
     if (!canDragPins || !onDraftChartPointMove) return
@@ -337,7 +412,15 @@ export function ChartImagePreview({
       window.removeEventListener('pointerup', handlePointerUp)
       window.removeEventListener('pointercancel', handlePointerUp)
     }
-  }, [canDragPins, onDraftChartPointMove, pan.x, pan.y, zoom, naturalWidth, naturalHeight])
+  }, [
+    canDragPins,
+    naturalHeight,
+    naturalWidth,
+    onDraftChartPointMove,
+    pan.x,
+    pan.y,
+    renderScale
+  ])
 
   if (!asset) {
     return (
@@ -383,10 +466,7 @@ export function ChartImagePreview({
           type="button"
           variant="secondary"
           className="chart-zoom-button"
-          onClick={() => {
-            setZoom(1)
-            setPan({ x: 0, y: 0 })
-          }}
+          onClick={resetToFit}
         >
           {t('chartPreview.resetZoom')}
         </Button>
@@ -407,7 +487,7 @@ export function ChartImagePreview({
           style={{
             width: naturalWidth,
             height: naturalHeight,
-            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`
+            transform: `translate(${pan.x}px, ${pan.y}px) scale(${renderScale})`
           }}
           onDragStart={(event) => event.preventDefault()}
         >

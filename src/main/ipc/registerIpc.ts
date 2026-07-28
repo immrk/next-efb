@@ -27,10 +27,20 @@ import type {
   ChartUpdateInput,
   GeoReferencePoint
 } from '@shared/chart-types'
+import type {
+  ChecklistAssetPayload,
+  ChecklistImportFromUrlInput,
+  ChecklistImportResult,
+  ChecklistRecord,
+  ChecklistUpdateInput,
+  FinalizeChecklistImportInput,
+  PickedChecklistFile
+} from '@shared/checklist-types'
 import { FlightStateStore } from '../services/state/FlightStateStore'
 import { SettingsStore } from '../services/config/SettingsStore'
 import { SimConnectService } from '../services/simconnect/SimConnectService'
 import { ChartRepository } from '../services/storage/ChartRepository'
+import { ChecklistRepository } from '../services/storage/ChecklistRepository'
 import { StorageService } from '../services/storage/StorageService'
 import { RemoteChartImportService } from '../services/storage/RemoteChartImportService'
 import { LanServer } from '../services/lan/LanServer'
@@ -42,6 +52,7 @@ interface RegisterIpcOptions {
   settingsStore: SettingsStore
   simConnectService: SimConnectService
   chartRepository: ChartRepository
+  checklistRepository: ChecklistRepository
   storageService: StorageService
   lanServer: LanServer
   navDataService: NavDataService
@@ -54,6 +65,7 @@ export function registerIpc(options: RegisterIpcOptions): void {
     settingsStore,
     simConnectService,
     chartRepository,
+    checklistRepository,
     storageService,
     lanServer,
     navDataService
@@ -267,6 +279,104 @@ export function registerIpc(options: RegisterIpcOptions): void {
     return true
   })
 
+  ipcMain.handle(IPC_CHANNELS.checklistsList, () => checklistRepository.listChecklists())
+  ipcMain.handle(IPC_CHANNELS.checklistGet, (_event, checklistId: string) =>
+    checklistRepository.getChecklist(checklistId)
+  )
+  ipcMain.handle(
+    IPC_CHANNELS.checklistAsset,
+    (_event, checklistId: string): ChecklistAssetPayload | null => {
+      const checklist = checklistRepository.getChecklist(checklistId)
+      if (!checklist) return null
+
+      return {
+        checklistId,
+        fileFormat: checklist.fileFormat,
+        mimeType: getMimeTypeByFormat(checklist.fileFormat),
+        base64: storageService.readFileBase64(checklist.sourceFilePath),
+        filePath: checklist.sourceFilePath
+      }
+    }
+  )
+  ipcMain.handle(IPC_CHANNELS.checklistImport, async (): Promise<PickedChecklistFile | null> => {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openFile'],
+      filters: [
+        { name: 'Checklists', extensions: ['pdf', 'png', 'jpg', 'jpeg'] }
+      ]
+    })
+
+    if (result.canceled || result.filePaths.length === 0) {
+      return null
+    }
+
+    const sourcePath = result.filePaths[0]
+    const fileFormat = getFileFormat(sourcePath)
+
+    return {
+      sourcePath,
+      fileName: sourcePath.split(/[/\\]/).pop() ?? 'checklist',
+      fileFormat,
+      mimeType: getMimeTypeByFormat(fileFormat),
+      base64: storageService.readFileBase64(sourcePath)
+    }
+  })
+  ipcMain.handle(
+    IPC_CHANNELS.checklistImportFromUrl,
+    async (_event, input: ChecklistImportFromUrlInput): Promise<PickedChecklistFile> =>
+      remoteChartImportService.download(input.url)
+  )
+  ipcMain.handle(
+    IPC_CHANNELS.checklistFinalizeImport,
+    (_event, input: FinalizeChecklistImportInput): ChecklistImportResult => {
+      const aircraftModel = input.aircraftModel.trim().toUpperCase()
+      if (!aircraftModel) {
+        throw new Error('CHECKLIST_AIRCRAFT_MODEL_REQUIRED')
+      }
+
+      const checklistId = randomUUID()
+      const imported = input.sourcePath
+        ? storageService.importChecklistFile(input.sourcePath, checklistId)
+        : input.sourceFileBase64 && input.sourceFileFormat
+          ? storageService.writeChecklistSourceFile(
+              checklistId,
+              input.sourceFileFormat,
+              input.sourceFileBase64
+            )
+          : null
+
+      if (!imported) {
+        throw new Error('CHECKLIST_SOURCE_REQUIRED')
+      }
+
+      const now = Date.now()
+      const checklist: ChecklistRecord = {
+        id: checklistId,
+        title: input.title.trim() || 'Checklist',
+        aircraftModel,
+        sourceFilePath: imported.destinationPath,
+        fileFormat: getFileFormat(imported.destinationPath),
+        createdAt: now,
+        updatedAt: now
+      }
+      const created = checklistRepository.createChecklist(checklist)
+      lanServer.broadcastChecklistChanged()
+      return { checklist: created }
+    }
+  )
+  ipcMain.handle(IPC_CHANNELS.checklistDelete, (_event, checklistId: string) => {
+    checklistRepository.deleteChecklist(checklistId)
+    storageService.deleteChecklistFiles(checklistId)
+    lanServer.broadcastChecklistChanged()
+    return true
+  })
+  ipcMain.handle(IPC_CHANNELS.checklistUpdate, (_event, input: ChecklistUpdateInput) => {
+    const normalizedInput = normalizeChecklistUpdateInput(input)
+    const updated = checklistRepository.updateChecklist(normalizedInput)
+    lanServer.broadcastChecklistChanged()
+    return updated
+  })
+
   ipcMain.handle(IPC_CHANNELS.settingsUpdate, async (_event, partial: Partial<AppSettings>) => {
     const nextSettings = applySettingsUpdate({
       partial,
@@ -301,6 +411,22 @@ function applySettingsUpdate(options: {
 
   const normalizedPartial = normalizeSettingsPartial(partial, nextChartsRoot, storageSummary.defaultChartsRoot)
   return settingsStore.update(normalizedPartial)
+}
+
+function normalizeChecklistUpdateInput(input: ChecklistUpdateInput): ChecklistUpdateInput {
+  const title = input.title.trim()
+  const aircraftModel = input.aircraftModel.trim().toUpperCase()
+  if (!title) {
+    throw new Error('CHECKLIST_TITLE_REQUIRED')
+  }
+  if (!aircraftModel) {
+    throw new Error('CHECKLIST_AIRCRAFT_MODEL_REQUIRED')
+  }
+  return {
+    id: input.id,
+    title,
+    aircraftModel
+  }
 }
 
 function getWindowState(window: BrowserWindow): DesktopWindowState {

@@ -8,6 +8,7 @@ import { useChartDetailData } from '../hooks/useChartDetailData'
 import { useChartLibraryData } from '../hooks/useChartLibraryData'
 import { toast } from '../components/ui/use-toast'
 import { Card } from '../components/ui/card'
+import { LibraryWorkspace } from '../components/LibraryWorkspace'
 
 interface ChartsPageProps {
   selectedChartId: string | null
@@ -73,8 +74,9 @@ export function ChartsPage({
   }
 
   return (
-    <section className="charts-workspace">
-      <ChartMountDrawer
+    <LibraryWorkspace
+      className="charts-workspace"
+      library={<ChartMountDrawer
         mode="docked"
         charts={charts}
         selectedChartId={selectedChartId}
@@ -87,9 +89,8 @@ export function ChartsPage({
         importUrlPending={importingUrl}
         onImportUrlValueChange={setImportUrl}
         onImportFromUrl={runtime.canWrite ? handleImportChartFromUrl : undefined}
-      />
-
-      <section className="chart-preview-pane">
+      />}
+      preview={
         <Card className="charts-panel chart-preview-panel">
           {chart ? (
             <ChartImagePreview
@@ -105,8 +106,8 @@ export function ChartsPage({
             </div>
           )}
         </Card>
-      </section>
-    </section>
+      }
+    />
   )
 }
 

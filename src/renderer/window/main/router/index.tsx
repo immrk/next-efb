@@ -1,37 +1,34 @@
 import { useEffect, useState } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
-import type { BuildFlightPlanInput } from "@shared/flight-plan-types"
 import { SafeAreaTopInset } from "@/components/SafeAreaTopInset"
+import { useFlightPlanData } from "@/hooks/useFlightPlanData"
 import { ChartDetailPage } from "@/pages/ChartDetailPage"
 import { ChartsPage } from "@/pages/ChartsPage"
+import { ChecklistsPage } from "@/pages/ChecklistsPage"
+import { FlightPage } from "@/pages/FlightPage"
 import { MapPage } from "@/pages/MapPage"
 import { SettingsPage } from "@/pages/SettingsPage"
-import {
-  persistStoredFlightPlanDraft,
-  readStoredFlightPlanDraft,
-} from "@/utils/flightPlanPersistence"
 
 export function MainRouter() {
   const location = useLocation()
   const navigate = useNavigate()
   const [selectedChartId, setSelectedChartId] = useState<string | null>(null)
-  const [flightPlanDraft, setFlightPlanDraft] = useState<BuildFlightPlanInput>(() =>
-    readStoredFlightPlanDraft(),
-  )
+  const [selectedChecklistId, setSelectedChecklistId] = useState<string | null>(null)
+  const flightPlan = useFlightPlanData()
   const detailMatch = location.pathname.match(/^\/charts\/([^/]+)\/edit$/)
   const detailChartId = detailMatch ? decodeURIComponent(detailMatch[1]) : null
   const route = detailChartId
     ? "chartDetail"
     : location.pathname.startsWith("/charts")
       ? "charts"
-      : location.pathname === "/settings"
-        ? "settings"
-        : "map"
+      : location.pathname === "/flight"
+        ? "flight"
+        : location.pathname.startsWith("/checklists")
+          ? "checklists"
+          : location.pathname === "/settings"
+            ? "settings"
+            : "map"
   const backRoute = (location.state as { back?: string } | null)?.back ?? "/charts"
-
-  useEffect(() => {
-    persistStoredFlightPlanDraft(flightPlanDraft)
-  }, [flightPlanDraft])
 
   useEffect(() => {
     if (location.pathname === "/") {
@@ -43,7 +40,11 @@ export function MainRouter() {
     <div className="h-full overflow-hidden">
       <section className={`route-view pt-7 ${route === "map" ? "active" : ""}`}>
         <MapPage
-          flightPlanDraft={flightPlanDraft}
+          flightPlanDraft={flightPlan.draft}
+          flightPlanPoints={flightPlan.route?.points ?? []}
+          flightPlanSegments={flightPlan.route?.segments ?? []}
+          isImportingFlightPlan={flightPlan.isImporting}
+          navDataReady={flightPlan.navDataReady}
           onOpenChartLibrary={(chartId) => {
             setSelectedChartId(chartId ?? null)
             navigate("/charts")
@@ -53,7 +54,24 @@ export function MainRouter() {
             navigate(`/charts/${encodeURIComponent(chartId)}/edit`, { state: { back: "/map" } })
           }}
           onOpenSettings={() => navigate("/settings")}
-          onFlightPlanDraftChange={setFlightPlanDraft}
+          onFlightPlanDraftChange={flightPlan.setDraft}
+          onImportFlightPlan={flightPlan.importFromSimBrief}
+          onClearFlightPlan={flightPlan.clear}
+        />
+      </section>
+
+      <section
+        className={`route-view route-view-with-safe-area route-view-page-surface pt-7 ${
+          route === "flight" ? "active" : ""
+        }`}
+      >
+        <SafeAreaTopInset className="route-safe-area-top" />
+        <FlightPage
+          simBriefPlan={flightPlan.simBriefPlan}
+          isImporting={flightPlan.isImporting}
+          navDataReady={flightPlan.navDataReady}
+          onImport={flightPlan.importFromSimBrief}
+          onClear={flightPlan.clear}
         />
       </section>
 
@@ -80,6 +98,18 @@ export function MainRouter() {
       >
         <SafeAreaTopInset className="route-safe-area-top" />
         <SettingsPage />
+      </section>
+
+      <section
+        className={`route-view route-view-with-safe-area route-view-page-surface pt-7 ${
+          route === "checklists" ? "active" : ""
+        }`}
+      >
+        <SafeAreaTopInset className="route-safe-area-top" />
+        <ChecklistsPage
+          selectedChecklistId={selectedChecklistId}
+          onSelectChecklist={setSelectedChecklistId}
+        />
       </section>
 
       {detailChartId ? (

@@ -1,10 +1,10 @@
 import { useMemo, useState, type Dispatch, type SetStateAction } from 'react'
-import { ChevronDown, FileText, Pencil, Pin, Plus, SearchX, X } from 'lucide-react'
+import { ChevronDown, FileText, Pencil, Pin, SearchX } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import type { ChartRecord, ChartType } from '@shared/chart-types'
 import { Badge } from './ui/badge'
 import { Button } from './ui/button'
-import { Input } from './ui/input'
+import { LibraryImportToolbar } from './LibraryImportToolbar'
 
 const CHART_TYPE_ORDER: ChartType[] = ['airport', 'sid', 'star', 'approach', 'general']
 
@@ -133,82 +133,20 @@ export function ChartMountDrawer({
 
   const drawerContent = (
     <>
-      <header className="chart-picker-head">
-        <Input
-          className="chart-picker-search"
-          placeholder={t('charts.searchPlaceholder')}
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          autoComplete="off"
-          autoCapitalize="off"
-          autoCorrect="off"
-          enterKeyHint="search"
-          spellCheck={false}
-        />
-        {onImportFromUrl ? (
-          <Button
-            type="button"
-            variant={showUrlImport ? 'default' : 'outline'}
-            size="icon"
-            className="chart-picker-link-toggle"
-            onClick={() => setShowUrlImport((value) => !value)}
-            aria-label={t('charts.add')}
-          >
-            <Plus className="size-4" />
-          </Button>
-        ) : null}
-        {closable ? (
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="chart-picker-close"
-            onClick={onClose}
-            aria-label={t('charts.closePicker')}
-          >
-            <X className="size-4" />
-          </Button>
-        ) : null}
-      </header>
-
-      {showUrlImport && onImportFromUrl ? (
-        <div className="chart-import-url-bar">
-          {onImport ? (
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              className="chart-import-file-button"
-              onClick={onImport}
-              aria-label={t('charts.importAction')}
-              title={t('charts.importAction')}
-            >
-              <FileText className="size-4" />
-            </Button>
-          ) : null}
-          <Input
-            className="chart-import-url-input"
-            placeholder={t('charts.importUrlPlaceholder')}
-            value={importUrlValue}
-            onChange={(event) => onImportUrlValueChange?.(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter' && !importUrlPending) {
-                event.preventDefault()
-                onImportFromUrl()
-              }
-            }}
-          />
-          <Button
-            type="button"
-            variant="default"
-            className="chart-import-url-submit"
-            disabled={importUrlPending || !importUrlValue.trim()}
-            onClick={onImportFromUrl}
-          >
-            {importUrlPending ? t('charts.importUrlPending') : t('charts.importUrlAction')}
-          </Button>
-        </div>
-      ) : null}
+      <LibraryImportToolbar
+        namespace="charts"
+        searchValue={search}
+        onSearchValueChange={setSearch}
+        showImportPanel={showUrlImport}
+        onShowImportPanelChange={setShowUrlImport}
+        closable={closable}
+        onClose={onClose}
+        onImportFile={onImport}
+        importUrlValue={importUrlValue}
+        importUrlPending={importUrlPending}
+        onImportUrlValueChange={onImportUrlValueChange}
+        onImportFromUrl={onImportFromUrl}
+      />
 
       <div
         className={`chart-picker-body ${groupedCharts.length === 0 ? 'is-empty' : ''}`}

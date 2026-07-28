@@ -13,6 +13,8 @@ export function runwayMatches(optionRunway: string | null, selectedRunway: strin
 
 export function parseApproachProcedureId(value: string): number | null {
   if (!value.startsWith('approach:')) return null
-  const parsed = Number(value.slice('approach:'.length))
+  const rawId = value.slice('approach:'.length).trim()
+  if (!rawId) return null
+  const parsed = Number(rawId)
   return Number.isFinite(parsed) ? parsed : null
 }

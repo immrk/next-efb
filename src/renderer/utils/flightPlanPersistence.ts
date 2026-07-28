@@ -1,8 +1,15 @@
-import type { BuildFlightPlanInput, BuildFlightPlanResult, FlightPlanPoint, FlightPlanSegment } from '@shared/flight-plan-types'
+import type {
+  BuildFlightPlanInput,
+  BuildFlightPlanResult,
+  FlightPlanPoint,
+  FlightPlanSegment,
+  SimBriefFlightDetails,
+  SimBriefImportResult
+} from '@shared/flight-plan-types'
 
 const FLIGHT_PLAN_STORAGE_KEY = 'nextefb.flight-plan.snapshot.v1'
 
-interface StoredFlightPlanResult {
+export interface StoredFlightPlanResult {
   points: FlightPlanPoint[]
   segments: FlightPlanSegment[]
 }
@@ -16,6 +23,7 @@ export interface StoredChartDockState {
 interface StoredFlightPlanSnapshot {
   draft: BuildFlightPlanInput
   result: StoredFlightPlanResult | null
+  simBrief: SimBriefImportResult | null
   dock: StoredChartDockState
 }
 
@@ -32,6 +40,7 @@ const EMPTY_SNAPSHOT: StoredFlightPlanSnapshot = {
     arrivalTransitionId: null
   },
   result: null,
+  simBrief: null,
   dock: {
     mountedChartIds: [],
     activeChartId: null,
@@ -45,6 +54,10 @@ export function readStoredFlightPlanDraft(): BuildFlightPlanInput {
 
 export function readStoredFlightPlanResult(): StoredFlightPlanResult | null {
   return readStoredFlightPlanSnapshot().result
+}
+
+export function readStoredSimBriefPlan(): SimBriefImportResult | null {
+  return readStoredFlightPlanSnapshot().simBrief
 }
 
 export function readStoredChartDockState(): StoredChartDockState {
@@ -70,6 +83,13 @@ export function persistStoredFlightPlanResult(result: BuildFlightPlanResult | nu
   })
 }
 
+export function persistStoredSimBriefPlan(simBrief: SimBriefImportResult | null): void {
+  persistStoredFlightPlanSnapshot({
+    ...readStoredFlightPlanSnapshot(),
+    simBrief
+  })
+}
+
 export function persistStoredChartDockState(dock: StoredChartDockState): void {
   persistStoredFlightPlanSnapshot({
     ...readStoredFlightPlanSnapshot(),
@@ -90,6 +110,7 @@ function readStoredFlightPlanSnapshot(): StoredFlightPlanSnapshot {
     return {
       draft: normalizeDraft(parsed.draft),
       result: normalizeResult(parsed.result),
+      simBrief: normalizeSimBriefPlan(parsed.simBrief),
       dock: normalizeDockState(parsed.dock)
     }
   } catch {
@@ -127,6 +148,91 @@ function normalizeResult(result: unknown): StoredFlightPlanResult | null {
     points: Array.isArray(value.points) ? (value.points as FlightPlanPoint[]) : [],
     segments: Array.isArray(value.segments) ? (value.segments as FlightPlanSegment[]) : []
   }
+}
+
+function normalizeSimBriefPlan(value: unknown): SimBriefImportResult | null {
+  if (!value || typeof value !== 'object') return null
+
+  const plan = value as Partial<SimBriefImportResult>
+  if (
+    plan.source !== 'simbrief' ||
+    typeof plan.departureAirport !== 'string' ||
+    typeof plan.destinationAirport !== 'string' ||
+    typeof plan.routeText !== 'string'
+  ) {
+    return null
+  }
+
+  return {
+    departureAirport: plan.departureAirport,
+    destinationAirport: plan.destinationAirport,
+    alternateAirport: normalizeOptionalString(plan.alternateAirport),
+    routeText: plan.routeText,
+    departureRunway: normalizeOptionalString(plan.departureRunway),
+    arrivalRunway: normalizeOptionalString(plan.arrivalRunway),
+    departureProcedureName: normalizeOptionalString(plan.departureProcedureName),
+    arrivalProcedureName: normalizeOptionalString(plan.arrivalProcedureName),
+    approachProcedureName: normalizeOptionalString(plan.approachProcedureName),
+    arrivalTransitionName: normalizeOptionalString(plan.arrivalTransitionName),
+    source: 'simbrief',
+    details: normalizeSimBriefDetails(plan.details)
+  }
+}
+
+function normalizeSimBriefDetails(value: unknown): SimBriefFlightDetails {
+  const details =
+    value && typeof value === 'object'
+      ? (value as Partial<SimBriefFlightDetails>)
+      : {}
+
+  return {
+    flightNumber: normalizeOptionalString(details.flightNumber),
+    callsign: normalizeOptionalString(details.callsign),
+    departureIata: normalizeOptionalString(details.departureIata),
+    destinationIata: normalizeOptionalString(details.destinationIata),
+    alternateIata: normalizeOptionalString(details.alternateIata),
+    aircraftType: normalizeOptionalString(details.aircraftType),
+    aircraftName: normalizeOptionalString(details.aircraftName),
+    registration: normalizeOptionalString(details.registration),
+    scheduledOut: normalizeOptionalString(details.scheduledOut),
+    scheduledOff: normalizeOptionalString(details.scheduledOff),
+    scheduledOn: normalizeOptionalString(details.scheduledOn),
+    scheduledIn: normalizeOptionalString(details.scheduledIn),
+    airTimeSeconds: normalizeOptionalString(details.airTimeSeconds),
+    blockTimeSeconds: normalizeOptionalString(details.blockTimeSeconds),
+    initialAltitude: normalizeOptionalString(details.initialAltitude),
+    cruiseProfile: normalizeOptionalString(details.cruiseProfile),
+    costIndex: normalizeOptionalString(details.costIndex),
+    routeDistance: normalizeOptionalString(details.routeDistance),
+    averageWindDirection: normalizeOptionalString(details.averageWindDirection),
+    averageWindSpeed: normalizeOptionalString(details.averageWindSpeed),
+    windComponent: normalizeOptionalString(details.windComponent),
+    isaDeviation: normalizeOptionalString(details.isaDeviation),
+    releaseNumber: normalizeOptionalString(details.releaseNumber),
+    airacCycle: normalizeOptionalString(details.airacCycle),
+    ofpLayout: normalizeOptionalString(details.ofpLayout),
+    units: normalizeOptionalString(details.units),
+    navlog: normalizeOptionalString(details.navlog),
+    etops: normalizeOptionalString(details.etops),
+    enrouteBurn: normalizeOptionalString(details.enrouteBurn),
+    passengerCount: normalizeOptionalString(details.passengerCount),
+    emptyWeight: normalizeOptionalString(details.emptyWeight),
+    estimatedZfw: normalizeOptionalString(details.estimatedZfw),
+    estimatedTow: normalizeOptionalString(details.estimatedTow),
+    estimatedLandingWeight: normalizeOptionalString(details.estimatedLandingWeight),
+    blockFuel: normalizeOptionalString(details.blockFuel),
+    baggageWeight: normalizeOptionalString(details.baggageWeight),
+    payloadWeight: normalizeOptionalString(details.payloadWeight),
+    maxZfw: normalizeOptionalString(details.maxZfw),
+    maxTow: normalizeOptionalString(details.maxTow),
+    maxLandingWeight: normalizeOptionalString(details.maxLandingWeight),
+    atcFlightPlan: normalizeOptionalString(details.atcFlightPlan),
+    briefingText: normalizeOptionalString(details.briefingText)
+  }
+}
+
+function normalizeOptionalString(value: unknown): string | null {
+  return typeof value === 'string' ? value : null
 }
 
 function normalizeDockState(dock: unknown): StoredChartDockState {

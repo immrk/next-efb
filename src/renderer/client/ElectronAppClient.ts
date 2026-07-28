@@ -94,6 +94,38 @@ export class ElectronAppClient implements AppClient {
     return window.msfsApi.deleteChart(chartId)
   }
 
+  getChecklist(checklistId: string) {
+    return window.msfsApi.getChecklist(checklistId)
+  }
+
+  getChecklistAsset(checklistId: string) {
+    return window.msfsApi.getChecklistAsset(checklistId)
+  }
+
+  listChecklists() {
+    return window.msfsApi.listChecklists()
+  }
+
+  pickChecklistFile() {
+    return window.msfsApi.pickChecklistFile()
+  }
+
+  importChecklistFromUrl(input: Parameters<typeof window.msfsApi.importChecklistFromUrl>[0]) {
+    return window.msfsApi.importChecklistFromUrl(input)
+  }
+
+  finalizeChecklistImport(input: Parameters<typeof window.msfsApi.finalizeChecklistImport>[0]) {
+    return window.msfsApi.finalizeChecklistImport(input)
+  }
+
+  deleteChecklist(checklistId: string) {
+    return window.msfsApi.deleteChecklist(checklistId)
+  }
+
+  updateChecklist(input: Parameters<typeof window.msfsApi.updateChecklist>[0]) {
+    return window.msfsApi.updateChecklist(input)
+  }
+
   saveChartReferencePoints(
     chartId: string,
     points: Parameters<typeof window.msfsApi.saveChartReferencePoints>[1]
@@ -139,6 +171,10 @@ export class ElectronAppClient implements AppClient {
 
   onChartsChanged() {
     return () => void 0
+  }
+
+  onChecklistsChanged(listener: Parameters<typeof window.msfsApi.onChecklistsChanged>[0]) {
+    return window.msfsApi.onChecklistsChanged(listener)
   }
 
   onSettingsChanged() {

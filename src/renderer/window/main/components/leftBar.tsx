@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react"
-import { Library, Map, Settings } from "lucide-react"
+import { ClipboardCheck, Library, Map, PlaneTakeoff, Settings } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { useLocation, useNavigate } from "react-router-dom"
 
@@ -17,7 +17,9 @@ interface NavigationItem {
 
 const navigationItems: NavigationItem[] = [
   { path: "/map", labelKey: "nav.map", icon: Map },
+  { path: "/flight", labelKey: "nav.flight", icon: PlaneTakeoff },
   { path: "/charts", labelKey: "nav.charts", icon: Library },
+  { path: "/checklists", labelKey: "nav.checklists", icon: ClipboardCheck },
 ]
 
 export function LeftBar() {

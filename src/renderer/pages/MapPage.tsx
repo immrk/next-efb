@@ -2,7 +2,12 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { ExternalLink, Plus, Route, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import type { ChartRecord } from '@shared/chart-types'
-import type { BuildFlightPlanInput, BuildFlightPlanResult, FlightPlanPoint, FlightPlanSegment, FlightPlanSelection } from '@shared/flight-plan-types'
+import type {
+  BuildFlightPlanInput,
+  FlightPlanPoint,
+  FlightPlanSegment,
+  FlightPlanSelection
+} from '@shared/flight-plan-types'
 import { getAppClient } from '../client'
 import { ChartMountDrawer } from '../components/ChartMountDrawer'
 import { FlightPlanDrawer } from '../components/FlightPlanDrawer'
@@ -18,9 +23,7 @@ import {
 } from '../utils/chartMountCards'
 import {
   persistStoredChartDockState,
-  persistStoredFlightPlanResult,
-  readStoredChartDockState,
-  readStoredFlightPlanResult
+  readStoredChartDockState
 } from '../utils/flightPlanPersistence'
 import type { NavAirportProcedures } from '@shared/flight-plan-types'
 
@@ -29,7 +32,13 @@ interface MapPageProps {
   onEditChart: (chartId: string) => void
   onOpenSettings: () => void
   flightPlanDraft: BuildFlightPlanInput
+  flightPlanPoints: FlightPlanPoint[]
+  flightPlanSegments: FlightPlanSegment[]
+  isImportingFlightPlan: boolean
+  navDataReady: boolean
   onFlightPlanDraftChange: (draft: BuildFlightPlanInput) => void
+  onImportFlightPlan: () => Promise<void> | void
+  onClearFlightPlan: () => void
 }
 
 const EMPTY_PROCEDURES: NavAirportProcedures = {
@@ -46,7 +55,13 @@ export function MapPage({
   onEditChart,
   onOpenSettings,
   flightPlanDraft,
-  onFlightPlanDraftChange
+  flightPlanPoints,
+  flightPlanSegments,
+  isImportingFlightPlan,
+  navDataReady,
+  onFlightPlanDraftChange,
+  onImportFlightPlan,
+  onClearFlightPlan
 }: MapPageProps) {
   const appClient = getAppClient()
   const runtime = appClient.getRuntime()
@@ -57,12 +72,6 @@ export function MapPage({
   const [activeChartId, setActiveChartId] = useState<string | null>(storedDockState.activeChartId)
   const [isChartDrawerOpen, setIsChartDrawerOpen] = useState(false)
   const [isFlightPlanDrawerOpen, setIsFlightPlanDrawerOpen] = useState(false)
-  const [flightPlanPoints, setFlightPlanPoints] = useState<FlightPlanPoint[]>(() =>
-    readStoredFlightPlanResult()?.points ?? []
-  )
-  const [flightPlanSegments, setFlightPlanSegments] = useState<FlightPlanSegment[]>(() =>
-    readStoredFlightPlanResult()?.segments ?? []
-  )
   const [departureProcedures, setDepartureProcedures] = useState<NavAirportProcedures>(EMPTY_PROCEDURES)
   const [destinationProcedures, setDestinationProcedures] = useState<NavAirportProcedures>(EMPTY_PROCEDURES)
   const [pendingDisabledCard, setPendingDisabledCard] = useState<ProcedureMountCard | null>(null)
@@ -84,12 +93,6 @@ export function MapPage({
   )
   const selectionKey = useMemo(() => buildSelectionKey(flightPlanSelection), [flightPlanSelection])
   const previousSelectionKeyRef = useRef(selectionKey)
-  const buildSignature = useMemo(
-    () => buildDraftSignature(flightPlanDraft),
-    [flightPlanDraft]
-  )
-  const lastBuiltSignatureRef = useRef('')
-
   const autoCards = useMemo(
     () =>
       buildProcedureMountCards(charts, flightPlanSelection, {
@@ -230,57 +233,6 @@ export function MapPage({
     }
   }, [appClient, flightPlanSelection, selectionKey])
 
-  useEffect(() => {
-    const departureAirport = flightPlanDraft.departureAirport.trim().toUpperCase()
-    const destinationAirport = flightPlanDraft.destinationAirport.trim().toUpperCase()
-
-    if (!departureAirport || !destinationAirport) {
-      lastBuiltSignatureRef.current = buildSignature
-      setFlightPlanPoints([])
-      setFlightPlanSegments([])
-      persistStoredFlightPlanResult(null)
-      return
-    }
-
-    if (lastBuiltSignatureRef.current === buildSignature) {
-      return
-    }
-
-    let active = true
-    const timer = window.setTimeout(() => {
-      void appClient
-        .buildFlightPlan({
-          departureAirport,
-          destinationAirport,
-          enrouteText: flightPlanDraft.enrouteText,
-          departureRunway: flightPlanDraft.departureRunway,
-          departureProcedureId: flightPlanDraft.departureProcedureId,
-          arrivalRunway: flightPlanDraft.arrivalRunway,
-          arrivalProcedureId: flightPlanDraft.arrivalProcedureId,
-          approachProcedureId: flightPlanDraft.approachProcedureId,
-          arrivalTransitionId: flightPlanDraft.arrivalTransitionId
-        })
-        .then((result) => {
-          if (!active) return
-          lastBuiltSignatureRef.current = buildSignature
-          setFlightPlanPoints(result.points)
-          setFlightPlanSegments(result.segments)
-          persistStoredFlightPlanResult(result)
-        })
-        .catch(() => {
-          if (!active) return
-          setFlightPlanPoints([])
-          setFlightPlanSegments([])
-          persistStoredFlightPlanResult(null)
-        })
-    }, 350)
-
-    return () => {
-      active = false
-      window.clearTimeout(timer)
-    }
-  }, [appClient, buildSignature, flightPlanDraft])
-
   const mountChart = (chartId: string) => {
     const chart = charts.find((item) => item.id === chartId)
     if (!chart?.isGeoreferenced) return
@@ -385,6 +337,10 @@ export function MapPage({
           onClose={() => setIsFlightPlanDrawerOpen(false)}
           onOpenSettings={onOpenSettings}
           onDraftChange={onFlightPlanDraftChange}
+          onImport={onImportFlightPlan}
+          onClear={onClearFlightPlan}
+          isImporting={isImportingFlightPlan}
+          navDataReady={navDataReady}
         />
 
         {pendingDisabledCard ? (
@@ -538,20 +494,6 @@ export function MapPage({
       </section>
     </section>
   )
-}
-
-function buildDraftSignature(draft: BuildFlightPlanInput): string {
-  return [
-    draft.departureAirport.trim().toUpperCase(),
-    draft.destinationAirport.trim().toUpperCase(),
-    draft.enrouteText.trim().toUpperCase(),
-    draft.departureRunway ?? '',
-    draft.departureProcedureId ?? '',
-    draft.arrivalRunway ?? '',
-    draft.arrivalProcedureId ?? '',
-    draft.approachProcedureId ?? '',
-    draft.arrivalTransitionId ?? ''
-  ].join('|')
 }
 
 function buildSelectionKey(selection: FlightPlanSelection | null): string {

@@ -198,7 +198,10 @@ export class NavDataService {
     if (!db) return []
 
     const term = query.trim().toUpperCase()
-    if (!term) return []
+    if (!term) {
+      db.close()
+      return []
+    }
 
     const rows = db
       .prepare(
@@ -768,7 +771,7 @@ export class NavDataService {
     }
 
     const query = new URLSearchParams()
-    query.set('json', '1')
+    query.set('json', 'v2')
     if (username) query.set('username', username)
     if (userId) query.set('userid', userId)
 
@@ -866,7 +869,174 @@ export class NavDataService {
       arrivalProcedureName,
       approachProcedureName,
       arrivalTransitionName,
-      source: 'simbrief'
+      source: 'simbrief',
+      details: {
+        flightNumber: readFirstStringPath(payload, [
+          ['general', 'flight_number'],
+          ['params', 'fltnum'],
+          ['params', 'flight_number']
+        ]),
+        callsign: readFirstStringPath(payload, [
+          ['general', 'callsign'],
+          ['params', 'callsign']
+        ]),
+        departureIata: readFirstStringPath(payload, [
+          ['origin', 'iata_code'],
+          ['origin', 'iata']
+        ]),
+        destinationIata: readFirstStringPath(payload, [
+          ['destination', 'iata_code'],
+          ['destination', 'iata']
+        ]),
+        alternateIata: readFirstStringPath(payload, [
+          ['alternate', 'iata_code'],
+          ['alternate', 'iata']
+        ]),
+        aircraftType: readFirstStringPath(payload, [
+          ['aircraft', 'icaocode'],
+          ['aircraft', 'icao_code'],
+          ['params', 'type']
+        ]),
+        aircraftName: readFirstStringPath(payload, [
+          ['aircraft', 'name'],
+          ['aircraft', 'base_type'],
+          ['params', 'aircraft']
+        ]),
+        registration: readFirstStringPath(payload, [
+          ['aircraft', 'reg'],
+          ['params', 'reg'],
+          ['params', 'registration']
+        ]),
+        scheduledOut: readFirstStringPath(payload, [
+          ['times', 'sched_out'],
+          ['times', 'est_out']
+        ]),
+        scheduledOff: readFirstStringPath(payload, [
+          ['times', 'sched_off'],
+          ['times', 'est_off']
+        ]),
+        scheduledOn: readFirstStringPath(payload, [
+          ['times', 'sched_on'],
+          ['times', 'est_on']
+        ]),
+        scheduledIn: readFirstStringPath(payload, [
+          ['times', 'sched_in'],
+          ['times', 'est_in']
+        ]),
+        airTimeSeconds: readFirstStringPath(payload, [
+          ['times', 'est_time_enroute'],
+          ['times', 'sched_time_enroute']
+        ]),
+        blockTimeSeconds: readFirstStringPath(payload, [
+          ['times', 'sched_block'],
+          ['times', 'est_block']
+        ]),
+        initialAltitude: readFirstStringPath(payload, [
+          ['general', 'initial_altitude'],
+          ['params', 'crzlevel']
+        ]),
+        cruiseProfile: readFirstStringPath(payload, [
+          ['general', 'cruise_profile'],
+          ['params', 'crzprofile']
+        ]),
+        costIndex: readFirstStringPath(payload, [
+          ['general', 'costindex'],
+          ['params', 'ci']
+        ]),
+        routeDistance: readFirstStringPath(payload, [
+          ['general', 'route_distance'],
+          ['general', 'gc_distance']
+        ]),
+        averageWindDirection: readFirstStringPath(payload, [
+          ['general', 'avg_wind_dir']
+        ]),
+        averageWindSpeed: readFirstStringPath(payload, [
+          ['general', 'avg_wind_spd']
+        ]),
+        windComponent: readFirstStringPath(payload, [
+          ['general', 'avg_wind_comp']
+        ]),
+        isaDeviation: readFirstStringPath(payload, [
+          ['general', 'avg_temp_dev'],
+          ['general', 'avg_isa_dev']
+        ]),
+        releaseNumber: readFirstStringPath(payload, [
+          ['general', 'release'],
+          ['params', 'release']
+        ]),
+        airacCycle: readFirstStringPath(payload, [
+          ['params', 'airac'],
+          ['general', 'airac']
+        ]),
+        ofpLayout: readFirstStringPath(payload, [
+          ['params', 'planformat'],
+          ['params', 'ofp_layout'],
+          ['general', 'planformat']
+        ]),
+        units: readFirstStringPath(payload, [
+          ['params', 'units'],
+          ['general', 'units']
+        ]),
+        navlog: readFirstStringPath(payload, [
+          ['params', 'navlog'],
+          ['general', 'navlog']
+        ]),
+        etops: readFirstStringPath(payload, [
+          ['params', 'etops'],
+          ['general', 'is_etops']
+        ]),
+        enrouteBurn: readFirstStringPath(payload, [
+          ['fuel', 'enroute_burn'],
+          ['fuel', 'trip']
+        ]),
+        passengerCount: readFirstStringPath(payload, [
+          ['weights', 'pax_count'],
+          ['general', 'passengers'],
+          ['params', 'pax']
+        ]),
+        emptyWeight: readFirstStringPath(payload, [
+          ['weights', 'oew'],
+          ['weights', 'dow']
+        ]),
+        estimatedZfw: readFirstStringPath(payload, [
+          ['weights', 'est_zfw']
+        ]),
+        estimatedTow: readFirstStringPath(payload, [
+          ['weights', 'est_tow']
+        ]),
+        estimatedLandingWeight: readFirstStringPath(payload, [
+          ['weights', 'est_ldw'],
+          ['weights', 'est_lw']
+        ]),
+        blockFuel: readFirstStringPath(payload, [
+          ['fuel', 'plan_ramp'],
+          ['fuel', 'block']
+        ]),
+        baggageWeight: readFirstStringPath(payload, [
+          ['weights', 'bag_weight'],
+          ['weights', 'baggage']
+        ]),
+        payloadWeight: readFirstStringPath(payload, [
+          ['weights', 'payload']
+        ]),
+        maxZfw: readFirstStringPath(payload, [
+          ['weights', 'max_zfw']
+        ]),
+        maxTow: readFirstStringPath(payload, [
+          ['weights', 'max_tow']
+        ]),
+        maxLandingWeight: readFirstStringPath(payload, [
+          ['weights', 'max_ldw'],
+          ['weights', 'max_lw']
+        ]),
+        atcFlightPlan: readFirstStringPath(payload, [
+          ['atc', 'flightplan_text'],
+          ['atc', 'flightplan'],
+          ['text', 'atc'],
+          ['general', 'icao_fpl']
+        ]),
+        briefingText: readSimBriefBriefingText(payload)
+      }
     }
   }
 
@@ -1629,7 +1799,10 @@ function readStringPath(
     current = (current as Record<string, unknown>)[key]
   }
 
-  return typeof current === 'string' ? current : null
+  if (typeof current === 'string') return current
+  if (typeof current === 'number' && Number.isFinite(current)) return String(current)
+  if (typeof current === 'boolean') return current ? '1' : '0'
+  return null
 }
 
 function readFirstStringPath(data: Record<string, unknown>, paths: string[][]): string | null {
@@ -1641,6 +1814,62 @@ function readFirstStringPath(data: Record<string, unknown>, paths: string[][]): 
   }
 
   return null
+}
+
+function readSimBriefBriefingText(payload: Record<string, unknown>): string | null {
+  const planHtml = readStringPath(payload, ['text', 'plan_html'])
+  if (planHtml?.trim()) {
+    return simBriefHtmlToPlainText(planHtml)
+  }
+
+  return readFirstStringPath(payload, [
+    ['text', 'plan_text'],
+    ['text', 'plan'],
+    ['general', 'briefing']
+  ])
+}
+
+function simBriefHtmlToPlainText(html: string): string {
+  const withLineBreaks = html
+    .replace(/\r\n?/gu, '\n')
+    .replace(/<\s*(?:script|style)\b[^>]*>[\s\S]*?<\s*\/\s*(?:script|style)\s*>/giu, '')
+    .replace(/<\s*br\s*\/?\s*>/giu, '\n')
+    .replace(/<\s*li(?:\s[^>]*)?>/giu, '- ')
+    .replace(/<\s*\/\s*(?:div|p|li|tr|table|h[1-6]|pre)\s*>/giu, '\n')
+    .replace(/<[^>]+>/gu, '')
+
+  const decoded = withLineBreaks
+    .replace(/&#x([0-9a-f]+);/giu, (_, code: string) =>
+      safeCodePoint(Number.parseInt(code, 16))
+    )
+    .replace(/&#([0-9]+);/gu, (_, code: string) =>
+      safeCodePoint(Number.parseInt(code, 10))
+    )
+    .replace(/&nbsp;/giu, ' ')
+    .replace(/&ensp;/giu, ' ')
+    .replace(/&emsp;/giu, '  ')
+    .replace(/&amp;/giu, '&')
+    .replace(/&lt;/giu, '<')
+    .replace(/&gt;/giu, '>')
+    .replace(/&quot;/giu, '"')
+    .replace(/&deg;/giu, '°')
+    .replace(/&minus;/giu, '−')
+    .replace(/&#0?39;|&apos;/giu, "'")
+
+  return decoded
+    .split('\n')
+    .map((line) => line.replace(/[ \t]+$/gu, ''))
+    .join('\n')
+    .replace(/^(?:[ \t]*\n)+/u, '')
+    .replace(/(?:\n[ \t]*)+$/u, '')
+}
+
+function safeCodePoint(value: number): string {
+  if (!Number.isFinite(value) || value < 0 || value > 0x10ffff) {
+    return ''
+  }
+
+  return String.fromCodePoint(value)
 }
 
 type TransitionRow = {

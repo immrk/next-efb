@@ -19,6 +19,15 @@ import type {
   StorageSummary
 } from '@shared/chart-types'
 import type {
+  ChecklistAssetPayload,
+  ChecklistImportFromUrlInput,
+  ChecklistImportResult,
+  ChecklistRecord,
+  ChecklistUpdateInput,
+  FinalizeChecklistImportInput,
+  PickedChecklistFile
+} from '@shared/checklist-types'
+import type {
   BuildFlightPlanInput,
   BuildFlightPlanResult,
   NavAirportOption,
@@ -57,6 +66,18 @@ declare global {
       getStorageSummary: () => Promise<StorageSummary>
       finalizeChartImport: (input: FinalizeChartImportInput) => Promise<ChartImportResult>
       deleteChart: (chartId: string) => Promise<boolean>
+      getChecklist: (checklistId: string) => Promise<ChecklistRecord | null>
+      getChecklistAsset: (checklistId: string) => Promise<ChecklistAssetPayload | null>
+      listChecklists: () => Promise<ChecklistRecord[]>
+      pickChecklistFile: () => Promise<PickedChecklistFile | null>
+      importChecklistFromUrl: (
+        input: ChecklistImportFromUrlInput
+      ) => Promise<PickedChecklistFile>
+      finalizeChecklistImport: (
+        input: FinalizeChecklistImportInput
+      ) => Promise<ChecklistImportResult>
+      deleteChecklist: (checklistId: string) => Promise<boolean>
+      updateChecklist: (input: ChecklistUpdateInput) => Promise<ChecklistRecord | null>
       saveChartReferencePoints: (chartId: string, points: GeoReferencePoint[]) => Promise<GeoReferencePoint[]>
       updateChart: (input: ChartUpdateInput) => Promise<ChartRecord | null>
       updateSettings: (partial: Partial<AppSettings>) => Promise<AppSettings>
@@ -68,6 +89,7 @@ declare global {
       performDevAction: (action: DesktopDevAction) => Promise<boolean>
       onAircraftUpdate: (listener: (state: AircraftState) => void) => () => void
       onConnectionUpdate: (listener: (state: ConnectionState) => void) => () => void
+      onChecklistsChanged: (listener: () => void) => () => void
     }
   }
 }

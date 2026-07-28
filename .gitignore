@@ -12,3 +12,4 @@ release/
 artifacts/
 data/
 .diagnostics/
+coverage/
