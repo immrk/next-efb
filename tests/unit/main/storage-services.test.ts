@@ -73,6 +73,7 @@ describe('settings and local storage services', () => {
     expect(store.get()).toMatchObject({
       language: 'zh-CN',
       providerMode: 'simconnect',
+      mapTileProvider: 'cartoLight',
       lanAccess: { enabled: true, allowWrite: true }
     })
 

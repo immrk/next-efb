@@ -1,7 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { CircleMarker, Polyline, Tooltip, useMap, useMapEvents } from 'react-leaflet'
+import { Marker, Polyline, Tooltip, useMap, useMapEvents } from 'react-leaflet'
 import type { NavMapFeatureCollection, NavMapLayerVisibility, NavMapQueryInput } from '@shared/nav-map-types'
 import { getAppClient } from '../client'
+import {
+  createMapSymbolLeafletIcon,
+  formatMapCoordinates,
+  getAirportMapSymbolKind,
+  getVorMapSymbolKind,
+  getWaypointMapSymbolKind
+} from '../utils/mapVisuals'
 
 interface MapViewportState {
   north: number
@@ -12,9 +19,13 @@ interface MapViewportState {
 }
 
 export function NavDataOverlay({
-  layerVisibility
+  layerVisibility,
+  selectedFeatureKey = null,
+  onSelectFeature
 }: {
   layerVisibility: NavMapLayerVisibility
+  selectedFeatureKey?: string | null
+  onSelectFeature?: (key: string) => void
 }) {
   const map = useMap()
   const appClient = getAppClient()
@@ -66,90 +77,234 @@ export function NavDataOverlay({
             [airway.toLat, airway.toLon]
           ]}
           pathOptions={{
-            color: 'var(--primary)',
-            weight: 1.5,
-            opacity: 0.55
+            color: '#6383a3',
+            weight: 1.25,
+            opacity: 0.48,
+            lineCap: 'round',
+            className: 'map-airway-line'
           }}
         >
-          <Tooltip sticky>{`${airway.name} ${airway.airwayType}`}</Tooltip>
+          <Tooltip sticky className="map-airway-tooltip">
+            {`${airway.name} · ${airway.airwayType}`}
+          </Tooltip>
         </Polyline>
       ))}
 
-      {features.airports.map((airport) => (
-        <CircleMarker
-          key={`airport:${airport.id}`}
-          center={[airport.lat, airport.lon]}
-          radius={5}
-          pathOptions={{
-            color: 'var(--background)',
-            weight: 1,
-            fillColor: 'var(--primary)',
-            fillOpacity: 0.92
-          }}
-        >
-          <Tooltip direction="top" offset={[0, -4]}>
-            {airport.ident}
-            {airport.name ? ` · ${airport.name}` : ''}
-          </Tooltip>
-        </CircleMarker>
-      ))}
+      {features.airports.map((airport) => {
+        const featureKey = `airport:${airport.id}`
+        const isSelected = selectedFeatureKey === featureKey
+        const kind = getAirportMapSymbolKind(airport)
+        const isMajor = kind === 'airport'
+        const size = isMajor ? 24 : 19
+        const isLabelVisible = isSelected || viewport.zoom >= (isMajor ? 7 : 9)
 
-      {features.vors.map((vor) => (
-        <CircleMarker
-          key={`vor:${vor.id}`}
-          center={[vor.lat, vor.lon]}
-          radius={4}
-          pathOptions={{
-            color: 'var(--background)',
-            weight: 1,
-            fillColor: 'var(--primary)',
-            fillOpacity: 0.88
-          }}
-        >
-          <Tooltip direction="top" offset={[0, -4]}>
-            {vor.ident ?? 'VOR'}
-            {vor.frequency ? ` · ${formatNavFrequency(vor.frequency)}` : ''}
-          </Tooltip>
-        </CircleMarker>
-      ))}
+        return (
+          <Marker
+            key={featureKey}
+            position={[airport.lat, airport.lon]}
+            icon={createMapSymbolLeafletIcon(
+              kind,
+              isSelected ? 'selected' : 'default',
+              size
+            )}
+            title={airport.name ? `${airport.ident} · ${airport.name}` : airport.ident}
+            riseOnHover
+            zIndexOffset={isSelected ? 900 : 420}
+            eventHandlers={{
+              click: () => onSelectFeature?.(featureKey)
+            }}
+          >
+            <Tooltip
+              permanent={isLabelVisible}
+              direction="right"
+              opacity={1}
+              className={`map-nav-tooltip map-nav-tooltip--airport ${isSelected ? 'is-selected' : ''}`}
+            >
+              <div className="map-info-card map-info-card--nav">
+                <strong>{airport.ident}</strong>
+                {isSelected ? (
+                  <>
+                    <span className="map-info-card-kicker">
+                      {isMajor ? 'MAJOR AIRPORT' : 'REGIONAL AIRPORT'}
+                    </span>
+                    {airport.name ? (
+                      <span className="map-info-card-description">{airport.name}</span>
+                    ) : null}
+                    <dl className="map-info-card-grid">
+                      <div className="map-info-card-grid-wide">
+                        <dt>POSITION</dt>
+                        <dd>{formatMapCoordinates(airport.lat, airport.lon)}</dd>
+                      </div>
+                      {airport.longestRunwayLengthFt ? (
+                        <div>
+                          <dt>LONGEST RWY</dt>
+                          <dd>{`${Math.round(airport.longestRunwayLengthFt)} FT`}</dd>
+                        </div>
+                      ) : null}
+                      {airport.numApproach !== null ? (
+                        <div>
+                          <dt>APPROACHES</dt>
+                          <dd>{airport.numApproach}</dd>
+                        </div>
+                      ) : null}
+                    </dl>
+                  </>
+                ) : null}
+              </div>
+            </Tooltip>
+          </Marker>
+        )
+      })}
 
-      {features.ndbs.map((ndb) => (
-        <CircleMarker
-          key={`ndb:${ndb.id}`}
-          center={[ndb.lat, ndb.lon]}
-          radius={3.5}
-          pathOptions={{
-            color: 'var(--background)',
-            weight: 1,
-            fillColor: 'var(--primary)',
-            fillOpacity: 0.88
-          }}
-        >
-          <Tooltip direction="top" offset={[0, -4]}>
-            {ndb.ident ?? 'NDB'}
-            {ndb.frequency ? ` · ${ndb.frequency}` : ''}
-          </Tooltip>
-        </CircleMarker>
-      ))}
+      {features.vors.map((vor) => {
+        const featureKey = `vor:${vor.id}`
+        const isSelected = selectedFeatureKey === featureKey
+        const kind = getVorMapSymbolKind(vor)
+        const ident = vor.ident ?? (kind === 'dme' ? 'DME' : 'VOR')
+        const frequency = vor.frequency ? formatNavFrequency(vor.frequency) : null
 
-      {features.waypoints.map((waypoint) => (
-        <CircleMarker
-          key={`waypoint:${waypoint.id}`}
-          center={[waypoint.lat, waypoint.lon]}
-          radius={3}
-          pathOptions={{
-            color: 'var(--background)',
-            weight: 1,
-            fillColor: 'var(--primary)',
-            fillOpacity: 0.82
-          }}
-        >
-          <Tooltip direction="top" offset={[0, -4]}>
-            {waypoint.ident}
-            {waypoint.type ? ` · ${waypoint.type}` : ''}
-          </Tooltip>
-        </CircleMarker>
-      ))}
+        return (
+          <Marker
+            key={featureKey}
+            position={[vor.lat, vor.lon]}
+            icon={createMapSymbolLeafletIcon(kind, isSelected ? 'selected' : 'default', 20)}
+            title={frequency ? `${ident} · ${frequency}` : ident}
+            riseOnHover
+            zIndexOffset={isSelected ? 900 : 320}
+            eventHandlers={{
+              click: () => onSelectFeature?.(featureKey)
+            }}
+          >
+            <Tooltip
+              permanent={isSelected || viewport.zoom >= 9}
+              direction="right"
+              opacity={1}
+              className={`map-nav-tooltip map-nav-tooltip--navaid ${isSelected ? 'is-selected' : ''}`}
+            >
+              <div className="map-info-card map-info-card--nav">
+                <strong>{ident}</strong>
+                {isSelected ? (
+                  <>
+                    <span className="map-info-card-kicker">
+                      {kind.replace('-', ' ').toUpperCase()}
+                    </span>
+                    <dl className="map-info-card-grid">
+                      {frequency ? (
+                        <div>
+                          <dt>FREQUENCY</dt>
+                          <dd>{frequency}</dd>
+                        </div>
+                      ) : null}
+                      <div className="map-info-card-grid-wide">
+                        <dt>POSITION</dt>
+                        <dd>{formatMapCoordinates(vor.lat, vor.lon)}</dd>
+                      </div>
+                    </dl>
+                  </>
+                ) : null}
+              </div>
+            </Tooltip>
+          </Marker>
+        )
+      })}
+
+      {features.ndbs.map((ndb) => {
+        const featureKey = `ndb:${ndb.id}`
+        const isSelected = selectedFeatureKey === featureKey
+        const ident = ndb.ident ?? 'NDB'
+
+        return (
+          <Marker
+            key={featureKey}
+            position={[ndb.lat, ndb.lon]}
+            icon={createMapSymbolLeafletIcon('ndb', isSelected ? 'selected' : 'default', 19)}
+            title={ndb.frequency ? `${ident} · ${ndb.frequency}` : ident}
+            riseOnHover
+            zIndexOffset={isSelected ? 900 : 300}
+            eventHandlers={{
+              click: () => onSelectFeature?.(featureKey)
+            }}
+          >
+            <Tooltip
+              permanent={isSelected || viewport.zoom >= 9}
+              direction="right"
+              opacity={1}
+              className={`map-nav-tooltip map-nav-tooltip--navaid ${isSelected ? 'is-selected' : ''}`}
+            >
+              <div className="map-info-card map-info-card--nav">
+                <strong>{ident}</strong>
+                {isSelected ? (
+                  <>
+                    <span className="map-info-card-kicker">NDB</span>
+                    <dl className="map-info-card-grid">
+                      {ndb.frequency ? (
+                        <div>
+                          <dt>FREQUENCY</dt>
+                          <dd>{ndb.frequency}</dd>
+                        </div>
+                      ) : null}
+                      <div className="map-info-card-grid-wide">
+                        <dt>POSITION</dt>
+                        <dd>{formatMapCoordinates(ndb.lat, ndb.lon)}</dd>
+                      </div>
+                    </dl>
+                  </>
+                ) : null}
+              </div>
+            </Tooltip>
+          </Marker>
+        )
+      })}
+
+      {features.waypoints.map((waypoint) => {
+        const featureKey = `waypoint:${waypoint.id}`
+        const isSelected = selectedFeatureKey === featureKey
+        const kind = getWaypointMapSymbolKind(waypoint)
+
+        return (
+          <Marker
+            key={featureKey}
+            position={[waypoint.lat, waypoint.lon]}
+            icon={createMapSymbolLeafletIcon(kind, isSelected ? 'selected' : 'default', 18)}
+            title={waypoint.type ? `${waypoint.ident} · ${waypoint.type}` : waypoint.ident}
+            riseOnHover
+            zIndexOffset={isSelected ? 900 : 260}
+            eventHandlers={{
+              click: () => onSelectFeature?.(featureKey)
+            }}
+          >
+            <Tooltip
+              permanent={isSelected}
+              direction="right"
+              opacity={1}
+              className={`map-nav-tooltip map-nav-tooltip--waypoint ${isSelected ? 'is-selected' : ''}`}
+            >
+              <div className="map-info-card map-info-card--nav">
+                <strong>{waypoint.ident}</strong>
+                {isSelected ? (
+                  <>
+                    <span className="map-info-card-kicker">
+                      {(waypoint.type ?? (kind === 'rnav' ? 'RNAV WAYPOINT' : 'ENROUTE FIX')).toUpperCase()}
+                    </span>
+                    <dl className="map-info-card-grid">
+                      {waypoint.airportIdent ? (
+                        <div>
+                          <dt>AIRPORT</dt>
+                          <dd>{waypoint.airportIdent}</dd>
+                        </div>
+                      ) : null}
+                      <div className="map-info-card-grid-wide">
+                        <dt>POSITION</dt>
+                        <dd>{formatMapCoordinates(waypoint.lat, waypoint.lon)}</dd>
+                      </div>
+                    </dl>
+                  </>
+                ) : null}
+              </div>
+            </Tooltip>
+          </Marker>
+        )
+      })}
     </>
   )
 }

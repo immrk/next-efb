@@ -12,7 +12,7 @@ export function createSettings(overrides: Partial<AppSettings> = {}): AppSetting
     followAircraft: true,
     refreshIntervalMs: 500,
     providerMode: 'mock',
-    mapTileProvider: 'osm',
+    mapTileProvider: 'cartoLight',
     chartOpacity: 100,
     storage: { chartLibraryPath: null },
     navData: { sqlitePath: null, autoDetect: false },

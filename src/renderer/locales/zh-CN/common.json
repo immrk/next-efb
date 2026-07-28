@@ -48,7 +48,7 @@
   "settings.mapTileProviderOsmHot": "OpenStreetMap HOT",
   "settings.mapTileProviderOsmFr": "OpenStreetMap France",
   "settings.mapTileProviderOsm": "OpenStreetMap 标准",
-  "settings.mapTileProviderHint": "默认使用 Esri World Street，因为它更容易保持英文标注。如果某个底图源在你的网络下不稳定，可以在这里切换。",
+  "settings.mapTileProviderHint": "默认使用 CARTO Positron。如果某个底图源在你的网络下不稳定，可以在这里切换。",
   "settings.chartOpacity": "航图不透明度",
   "settings.chartOpacityHint": "控制地图上挂载航图的显示强度。",
   "settings.remoteAccess": "局域网远程访问",

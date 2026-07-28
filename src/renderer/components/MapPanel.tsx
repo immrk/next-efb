@@ -1,7 +1,7 @@
 import { DomUtil } from 'leaflet'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { LocateFixed, Maximize2 } from 'lucide-react'
-import { CircleMarker, MapContainer, Marker, Polyline, TileLayer, Tooltip, useMap } from 'react-leaflet'
+import { MapContainer, Marker, Polyline, TileLayer, Tooltip, useMap } from 'react-leaflet'
 import { useTranslation } from 'react-i18next'
 import type { GeoReferencePoint } from '@shared/chart-types'
 import type { FlightPlanPoint, FlightPlanSegment } from '@shared/flight-plan-types'
@@ -14,6 +14,16 @@ import { useAppStore } from '../store/useAppStore'
 import { usePersistentMapDisplaySettings } from '../hooks/usePersistentMapDisplaySettings'
 import { useMapOverlayChart } from '../hooks/useMapOverlayChart'
 import { getMapTileConfig } from '../utils/mapTileProviders'
+import {
+  ROUTE_VISUAL_COLORS,
+  buildRouteLegs,
+  createMapSymbolLeafletIcon,
+  findNearestRouteLegIndex,
+  formatMapCoordinates,
+  getFlightPlanPointSymbolKind,
+  getRouteLegGeometry,
+  getRouteVisualTheme
+} from '../utils/mapVisuals'
 import { Button } from './ui/button'
 
 const MAP_VIEW_STORAGE_KEY = 'nextefb.map-view.v1'
@@ -28,6 +38,12 @@ interface StoredMapView {
   lon: number
   zoom: number
 }
+
+type MapSelection =
+  | { type: 'nav-feature'; key: string }
+  | { type: 'route-point'; index: number }
+  | { type: 'route-leg'; index: number }
+  | null
 
 function isAircraftPositionUsable(aircraft: {
   connected: boolean
@@ -303,12 +319,34 @@ export function MapPanel({
   const heading = aircraftPositionUsable ? (aircraft?.headingDeg ?? 0) : 0
   const [isFollowActive, setIsFollowActive] = useState(false)
   const [routeViewTrigger, setRouteViewTrigger] = useState(0)
+  const [mapSelection, setMapSelection] = useState<MapSelection>(null)
   const [searchTarget, setSearchTarget] = useState<{ lat: number; lon: number; key: number } | null>(null)
   const tileConfig = getMapTileConfig(settings?.mapTileProvider)
+  const routeLegs = useMemo(
+    () => buildRouteLegs(routeSegments, routePoints),
+    [routePoints, routeSegments]
+  )
+  const activeRouteLegIndex = useMemo(
+    () =>
+      aircraftPositionUsable
+        ? findNearestRouteLegIndex(routeLegs, lat, lon)
+        : null,
+    [aircraftPositionUsable, lat, lon, routeLegs]
+  )
   const routeViewPoints = useMemo(() => {
     const points = routeSegments.length > 0 ? routeSegments.flatMap((segment) => segment.points) : routePoints
     return dedupeRoutePoints(points)
   }, [routePoints, routeSegments])
+  const selectedNavFeatureKey =
+    mapSelection?.type === 'nav-feature' ? mapSelection.key : null
+  const selectedRoutePointIndex =
+    mapSelection?.type === 'route-point' && mapSelection.index < routePoints.length
+      ? mapSelection.index
+      : null
+  const selectedRouteLegIndex =
+    mapSelection?.type === 'route-leg' && mapSelection.index < routeLegs.length
+      ? mapSelection.index
+      : null
 
   return (
     <section className="panel map-panel map-workspace-panel">
@@ -334,47 +372,198 @@ export function MapPanel({
               title={t('map.aircraftMarker')}
             />
           ) : null}
-          <NavDataOverlay layerVisibility={navLayerVisibility} />
+          <NavDataOverlay
+            layerVisibility={navLayerVisibility}
+            selectedFeatureKey={selectedNavFeatureKey}
+            onSelectFeature={(key) =>
+              setMapSelection((current) =>
+                current?.type === 'nav-feature' && current.key === key
+                  ? null
+                  : { type: 'nav-feature', key }
+              )
+            }
+          />
           <ActiveChartOverlay chartId={activeChartId} />
-          {routeSegments.length > 0
-            ? routeSegments.map((segment, index) =>
-                segment.points.length > 1 ? (
+          {routeLegs.map((leg, index) => {
+            const isAircraftActive = activeRouteLegIndex === index
+            const isSelected = selectedRouteLegIndex === index
+            const geometry = getRouteLegGeometry(leg)
+            const theme = getRouteVisualTheme(leg.phase)
+            const dashed = Boolean(leg.dashed || leg.phase === 'missed')
+            const positions: [[number, number], [number, number]] = [
+              [leg.from.lat, leg.from.lon],
+              [leg.to.lat, leg.to.lon]
+            ]
+            const selectLeg = () =>
+              setMapSelection((current) =>
+                current?.type === 'route-leg' && current.index === index
+                  ? null
+                  : { type: 'route-leg', index }
+              )
+
+            return (
+              <Fragment key={`route-leg:${index}:${leg.from.ident}:${leg.to.ident}`}>
+                <Polyline
+                  positions={positions}
+                  interactive={false}
+                  pathOptions={{
+                    color: ROUTE_VISUAL_COLORS[theme],
+                    weight: 5.5,
+                    opacity: dashed ? 0.84 : 0.96,
+                    dashArray: dashed ? '9 10' : undefined,
+                    lineCap: 'round',
+                    lineJoin: 'round',
+                    className: `map-route-line map-route-line--${theme}`
+                  }}
+                />
+                {isSelected ? (
                   <Polyline
-                    key={`segment:${index}`}
-                    positions={segment.points.map((point) => [point.lat, point.lon])}
+                    positions={positions}
+                    interactive={false}
                     pathOptions={{
-                      color: segment.color ?? 'var(--primary)',
-                      weight: 3,
-                      opacity: segment.dashed ? 0.75 : 0.92,
-                      dashArray: segment.dashed ? '10 10' : undefined,
+                      color: ROUTE_VISUAL_COLORS.active,
+                      weight: 14,
+                      opacity: 0.2,
+                      dashArray: dashed ? '9 10' : undefined,
                       lineCap: 'round',
-                      lineJoin: 'round'
+                      lineJoin: 'round',
+                      className: 'map-route-selection-glow'
                     }}
                   />
-                ) : null
-              )
-            : routePoints.length > 1 ? (
+                ) : null}
+                {isAircraftActive || isSelected ? (
+                  <Polyline
+                    positions={positions}
+                    interactive={false}
+                    pathOptions={{
+                      color: ROUTE_VISUAL_COLORS.active,
+                      weight: isSelected ? 7 : 6,
+                      opacity: 1,
+                      dashArray: dashed ? '9 10' : undefined,
+                      lineCap: 'round',
+                      lineJoin: 'round',
+                      className: `map-route-line map-route-line--active ${isSelected ? 'map-route-line--selected' : ''}`
+                    }}
+                  />
+                ) : null}
                 <Polyline
-                  positions={routePoints.map((point) => [point.lat, point.lon])}
-                  pathOptions={{ color: 'var(--primary)', weight: 3, opacity: 0.9 }}
-                />
-              )
-            : null}
-          {routePoints.map((point, index) => (
-            <CircleMarker
-              key={`${point.ident}:${index}`}
-              center={[point.lat, point.lon]}
-              radius={index === 0 || index === routePoints.length - 1 ? 6 : 4}
-              pathOptions={{
-                color: 'var(--background)',
-                weight: 1,
-                fillColor: 'var(--primary)',
-                fillOpacity: 0.95
-              }}
-            >
-              <Tooltip direction="top" offset={[0, -4]}>{`${index + 1}. ${point.ident}`}</Tooltip>
-            </CircleMarker>
-          ))}
+                  positions={positions}
+                  pathOptions={{
+                    color: '#000000',
+                    weight: 20,
+                    opacity: 0,
+                    lineCap: 'round',
+                    lineJoin: 'round',
+                    className: 'map-route-hit-area'
+                  }}
+                  eventHandlers={{
+                    click: selectLeg
+                  }}
+                >
+                  {isSelected ? (
+                    <Tooltip
+                      permanent
+                      direction="top"
+                      offset={[0, -8]}
+                      opacity={1}
+                      className="map-route-leg-tooltip is-selected"
+                    >
+                      <div className="map-info-card map-info-card--route-leg">
+                        <strong>{`${leg.from.ident} → ${leg.to.ident}`}</strong>
+                        <span className="map-info-card-kicker">
+                          {(leg.phase ?? 'enroute').toUpperCase()}
+                        </span>
+                        <dl className="map-info-card-grid">
+                          <div>
+                            <dt>COURSE</dt>
+                            <dd>{`${String(Math.round(geometry.bearingDeg)).padStart(3, '0')}°M`}</dd>
+                          </div>
+                          <div>
+                            <dt>DISTANCE</dt>
+                            <dd>
+                              {`${geometry.distanceNm < 100 ? geometry.distanceNm.toFixed(1) : geometry.distanceNm.toFixed(0)} NM`}
+                            </dd>
+                          </div>
+                        </dl>
+                      </div>
+                    </Tooltip>
+                  ) : null}
+                </Polyline>
+              </Fragment>
+            )
+          })}
+          {routePoints.map((point, index) => {
+            const isSelected = selectedRoutePointIndex === index
+            const isEndpoint = index === 0 || index === routePoints.length - 1
+            const symbolKind = getFlightPlanPointSymbolKind(
+              point,
+              index,
+              routePoints.length
+            )
+            const labelDirection =
+              index === 0
+                ? 'right'
+                : index === routePoints.length - 1
+                  ? 'left'
+                  : index % 2 === 0
+                    ? 'top'
+                    : 'bottom'
+
+            return (
+              <Marker
+                key={`${point.ident}:${index}`}
+                position={[point.lat, point.lon]}
+                icon={createMapSymbolLeafletIcon(
+                  symbolKind,
+                  isSelected ? 'selected' : 'route',
+                  isEndpoint ? 26 : 20
+                )}
+                title={`${index + 1}. ${point.ident}`}
+                riseOnHover
+                zIndexOffset={isSelected ? 1100 : isEndpoint ? 760 : 680}
+                eventHandlers={{
+                  click: () =>
+                    setMapSelection((current) =>
+                      current?.type === 'route-point' && current.index === index
+                        ? null
+                        : { type: 'route-point', index }
+                    )
+                }}
+              >
+                <Tooltip
+                  permanent={isSelected}
+                  direction={labelDirection}
+                  opacity={1}
+                  className={`map-route-point-tooltip ${isSelected ? 'is-selected' : ''}`}
+                >
+                  <div className="map-info-card map-info-card--route-point">
+                    <strong>{point.ident}</strong>
+                    {isSelected ? (
+                      <>
+                        <span className="map-info-card-kicker">
+                          {symbolKind.replace('-', ' ').toUpperCase()}
+                        </span>
+                        <dl className="map-info-card-grid">
+                          <div>
+                            <dt>SEQUENCE</dt>
+                            <dd>{`${index + 1} / ${routePoints.length}`}</dd>
+                          </div>
+                          <div>
+                            <dt>SOURCE</dt>
+                            <dd>{point.source.toUpperCase()}</dd>
+                          </div>
+                          <div className="map-info-card-grid-wide">
+                            <dt>POSITION</dt>
+                            <dd>{formatMapCoordinates(point.lat, point.lon)}</dd>
+                          </div>
+                        </dl>
+                      </>
+                    ) : null}
+                  </div>
+                </Tooltip>
+              </Marker>
+            )
+          })}
           <FitRouteView points={routeViewPoints} trigger={routeViewTrigger} />
           <FlyToSearchTarget target={searchTarget} />
           <FollowAircraft lat={lat} lon={lon} enabled={aircraftPositionUsable && isFollowActive} />

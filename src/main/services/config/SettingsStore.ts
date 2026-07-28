@@ -9,7 +9,7 @@ const DEFAULT_SETTINGS_BASE: AppSettings = {
   followAircraft: true,
   refreshIntervalMs: 500,
   providerMode: 'simconnect',
-  mapTileProvider: 'osm',
+  mapTileProvider: 'cartoLight',
   chartOpacity: 100,
   storage: {
     chartLibraryPath: null

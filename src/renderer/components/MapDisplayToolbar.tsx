@@ -162,7 +162,7 @@ export function MapDisplayToolbar({
         <ToolbarLayerButton label="WPT" active={navLayerVisibility.waypoints} onClick={() => onToggleLayer('waypoints')} />
       </div>
       <Select
-        value={settings?.mapTileProvider ?? 'osm'}
+        value={settings?.mapTileProvider ?? 'cartoLight'}
         onValueChange={(value) => {
           void updateMapTileProvider(value as MapTileProvider)
         }}

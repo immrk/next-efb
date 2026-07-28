@@ -60,7 +60,7 @@
   "settings.mapTileProviderOsmHot": "OpenStreetMap HOT",
   "settings.mapTileProviderOsmFr": "OpenStreetMap France",
   "settings.mapTileProviderOsm": "OpenStreetMap Standard",
-  "settings.mapTileProviderHint": "Esri World Street is the default because it keeps labels in English more consistently. If one provider is unstable on your network, switch to another raster source here.",
+  "settings.mapTileProviderHint": "CARTO Positron is the default map. If one provider is unstable on your network, switch to another raster source here.",
   "settings.chartOpacity": "Chart opacity",
   "settings.chartOpacityHint": "Controls how strongly mounted charts appear on the map.",
   "settings.remoteAccess": "LAN Remote Access",

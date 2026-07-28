@@ -39,8 +39,8 @@ describe('navigation and UI utilities', () => {
       subdomains: undefined
     })
     expect(getMapTileConfig('osmHot').subdomains).toEqual(['a', 'b', 'c'])
-    expect(getMapTileConfig('missing' as never).name).toBe('OpenStreetMap Standard')
-    expect(getMapTileConfig(undefined).url).toBe(MAP_TILE_CONFIGS.osm.url)
+    expect(getMapTileConfig('missing' as never).name).toBe('Carto Positron')
+    expect(getMapTileConfig(undefined).url).toBe(MAP_TILE_CONFIGS.cartoLight.url)
   })
 
   it('merges conditional and conflicting Tailwind classes', () => {
