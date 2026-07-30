@@ -5,6 +5,10 @@
   "productName": "NextEFB",
   "description": "NextEFB desktop companion for map, chart, and flight-deck workflows.",
   "author": "NextFlight",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/immrk/next-efb.git"
+  },
   "main": "./dist/main/main.js",
   "type": "module",
   "license": "UNLICENSED",
@@ -15,11 +19,21 @@
     "directories": {
       "output": "out"
     },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "immrk",
+        "repo": "next-efb",
+        "releaseType": "release"
+      }
+    ],
     "files": [
       "dist/**/*",
+      "assets/branding/**/*",
       "package.json"
     ],
     "asar": true,
+    "electronUpdaterCompatibility": ">=2.16",
     "asarUnpack": [
       "node_modules/better-sqlite3/**/*",
       "node_modules/node-simconnect/**/*"
@@ -74,9 +88,12 @@
     "test:watch": "cross-env ELECTRON_RUN_AS_NODE=1 electron ./node_modules/vitest/vitest.mjs",
     "test:coverage": "cross-env ELECTRON_RUN_AS_NODE=1 electron ./node_modules/vitest/vitest.mjs run --coverage",
     "test:all": "npm run typecheck && npm run test:coverage && npm run build",
+    "changeset": "changeset",
+    "version:packages": "changeset version",
+    "release:notes": "node scripts/extract-release-notes.mjs",
     "start": "electron ./dist/main/main.js",
-    "package": "rimraf out && npm run rebuild-native && npm run build && electron-builder --dir --win --x64",
-    "make": "rimraf dist && rimraf out && npm run rebuild-native && npm run build && electron-builder --win nsis --x64",
+    "package": "rimraf out && npm run rebuild-native && npm run build && electron-builder --dir --win --x64 --config.npmRebuild=false",
+    "make": "rimraf dist && rimraf out && npm run rebuild-native && npm run build && electron-builder --win nsis --x64 --config.npmRebuild=false",
     "rebuild-native": "electron-rebuild -f -w better-sqlite3"
   },
   "dependencies": {
@@ -96,6 +113,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "electron-store": "^10.1.0",
+    "electron-updater": "^6.8.9",
     "i18next": "^25.3.1",
     "i18next-fs-backend": "^2.6.0",
     "leaflet": "^1.9.4",
@@ -114,6 +132,8 @@
     "zustand": "^5.0.0"
   },
   "devDependencies": {
+    "@changesets/changelog-github": "^0.5.2",
+    "@changesets/cli": "^2.31.1",
     "@electron/rebuild": "^4.0.3",
     "@tailwindcss/vite": "^4.3.2",
     "@testing-library/jest-dom": "^7.0.0",

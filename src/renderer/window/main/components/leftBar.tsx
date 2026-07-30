@@ -8,6 +8,7 @@ import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/h
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { APP_NAME } from "@shared/branding"
 import { BRAND_ICON_URL } from "@/branding"
+import { SidebarUpdateButton } from "@/components/SidebarUpdateButton"
 
 interface NavigationItem {
   path: string
@@ -67,6 +68,8 @@ export function LeftBar() {
           </Tooltip>
         ))}
       </nav>
+
+      <SidebarUpdateButton />
 
       <Tooltip>
         <TooltipTrigger asChild>

@@ -17,6 +17,7 @@ import { FlightStateStore } from './services/state/FlightStateStore.js'
 import { ChartRepository } from './services/storage/ChartRepository.js'
 import { ChecklistRepository } from './services/storage/ChecklistRepository.js'
 import { StorageService } from './services/storage/StorageService.js'
+import { AppUpdateService } from './services/updates/AppUpdateService.js'
 import { windowManager } from './windowManager.js'
 import '../utils/logger.js'
 
@@ -40,6 +41,11 @@ const APP_TILE_REFERER = 'https://nextefb.app/'
 let appTray: Tray | null = null
 let isQuitting = false
 let hasShownSingleInstanceNotice = false
+const appUpdateService = new AppUpdateService({
+  beforeInstall: () => {
+    isQuitting = true
+  }
+})
 
 const hasSingleInstanceLock = app.requestSingleInstanceLock()
 if (!hasSingleInstanceLock) {
@@ -109,6 +115,7 @@ async function createMainWindow(): Promise<void> {
   })
 
   attachWindowGuards(mainWindow)
+  appUpdateService.attachWindow(mainWindow)
   ensureTray()
   registerIpc({
     mainWindow,
@@ -119,12 +126,14 @@ async function createMainWindow(): Promise<void> {
     checklistRepository,
     storageService,
     lanServer,
-    navDataService
+    navDataService,
+    appUpdateService
   })
 
   simConnectService.start()
   await lanServer.start()
   sendWindowState(mainWindow)
+  appUpdateService.scheduleInitialCheck()
 }
 
 function attachWindowGuards(mainWindow: BrowserWindow): void {

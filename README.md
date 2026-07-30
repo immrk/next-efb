@@ -1,5 +1,8 @@
 # NextEFB
 
+Release versioning, GitHub packaging, and desktop automatic updates are
+documented in [docs/RELEASE.md](docs/RELEASE.md).
+
 NextEFB 是基于 Electron Modern Template 迁移的桌面 EFB。项目保留了原有的 MSFS SimConnect、航路规划、导航数据、航图管理、地理配准、地图叠加与局域网访问能力，并统一使用 Electron Forge、Vite、tsup、React、Tailwind CSS v4 和 shadcn/ui。
 
 ## 技术栈

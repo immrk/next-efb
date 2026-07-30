@@ -44,6 +44,7 @@ import type {
   NavMapSearchInput,
   NavMapSearchResult
 } from '../../../shared/nav-map-types.js'
+import type { AppUpdateState } from '../../../shared/update-types.js'
 
 const api = {
   getSnapshot: async (): Promise<{ aircraft: AircraftState; connection: ConnectionState }> =>
@@ -112,6 +113,20 @@ const api = {
     ipcRenderer.invoke(IPC_CHANNELS.settingsUpdate, partial),
   getRemoteAccessStatus: async (): Promise<RemoteAccessStatus> =>
     ipcRenderer.invoke(IPC_CHANNELS.remoteAccessStatus),
+  getAppUpdateState: async (): Promise<AppUpdateState> =>
+    ipcRenderer.invoke(IPC_CHANNELS.appUpdateStateGet),
+  checkForAppUpdate: async (): Promise<AppUpdateState> =>
+    ipcRenderer.invoke(IPC_CHANNELS.appUpdateCheck),
+  downloadAndInstallAppUpdate: async (): Promise<AppUpdateState> =>
+    ipcRenderer.invoke(IPC_CHANNELS.appUpdateDownloadAndInstall),
+  onAppUpdateStateChange: (
+    listener: (state: AppUpdateState) => void
+  ): (() => void) => {
+    const wrapped = (_event: Electron.IpcRendererEvent, payload: AppUpdateState) =>
+      listener(payload)
+    ipcRenderer.on(IPC_CHANNELS.appUpdateStateChanged, wrapped)
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.appUpdateStateChanged, wrapped)
+  },
   openExternal: async (url: string): Promise<boolean> => ipcRenderer.invoke(IPC_CHANNELS.openExternal, url),
   performWindowAction: async (action: DesktopWindowAction): Promise<DesktopWindowState> =>
     ipcRenderer.invoke(IPC_CHANNELS.windowAction, action),

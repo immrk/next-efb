@@ -13,3 +13,4 @@ artifacts/
 data/
 .diagnostics/
 coverage/
+release-notes.md

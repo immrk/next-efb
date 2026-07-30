@@ -19,6 +19,7 @@ export default defineConfig({
   sourcemap: false,
   external: [
     'electron',
+    'electron-updater',
     'better-sqlite3',
     'node-simconnect',
   ],

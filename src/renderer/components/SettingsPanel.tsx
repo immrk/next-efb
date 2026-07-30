@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue
 } from './ui/select'
+import { AppUpdatePanel } from './AppUpdatePanel'
 
 export function SettingsPanel() {
   const appClient = getAppClient()
@@ -205,6 +206,8 @@ export function SettingsPanel() {
 
   return (
     <Card className="settings-panel settings-panel-compact" aria-label={t('settings.title')}>
+      <AppUpdatePanel />
+
       <div className="settings-field">
         <label htmlFor="theme-select">{t('settings.theme')}</label>
         <Select

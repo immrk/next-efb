@@ -36,6 +36,10 @@ export const IPC_CHANNELS = {
   navMapSearch: 'nav-data:map:search',
   simbriefImport: 'simbrief:import',
   remoteAccessStatus: 'remote-access:status',
+  appUpdateStateGet: 'app-update:state:get',
+  appUpdateCheck: 'app-update:check',
+  appUpdateDownloadAndInstall: 'app-update:download-and-install',
+  appUpdateStateChanged: 'app-update:state:changed',
   openExternal: 'system:open-external',
   devAction: 'dev:action'
 } as const

@@ -45,6 +45,7 @@ import { StorageService } from '../services/storage/StorageService'
 import { RemoteChartImportService } from '../services/storage/RemoteChartImportService'
 import { LanServer } from '../services/lan/LanServer'
 import { NavDataService } from '../services/navigation/NavDataService'
+import { AppUpdateService } from '../services/updates/AppUpdateService'
 
 interface RegisterIpcOptions {
   mainWindow: BrowserWindow
@@ -56,6 +57,7 @@ interface RegisterIpcOptions {
   storageService: StorageService
   lanServer: LanServer
   navDataService: NavDataService
+  appUpdateService: AppUpdateService
 }
 
 export function registerIpc(options: RegisterIpcOptions): void {
@@ -68,7 +70,8 @@ export function registerIpc(options: RegisterIpcOptions): void {
     checklistRepository,
     storageService,
     lanServer,
-    navDataService
+    navDataService,
+    appUpdateService
   } = options
   const remoteChartImportService = new RemoteChartImportService()
 
@@ -144,6 +147,12 @@ export function registerIpc(options: RegisterIpcOptions): void {
       })
   )
   ipcMain.handle(IPC_CHANNELS.remoteAccessStatus, () => lanServer.getStatus())
+  ipcMain.handle(IPC_CHANNELS.appUpdateStateGet, () => appUpdateService.getState())
+  ipcMain.handle(IPC_CHANNELS.appUpdateCheck, () => appUpdateService.checkForUpdates())
+  ipcMain.handle(
+    IPC_CHANNELS.appUpdateDownloadAndInstall,
+    () => appUpdateService.downloadAndInstall()
+  )
   ipcMain.handle(IPC_CHANNELS.openExternal, async (_event, url: string) => {
     await shell.openExternal(url)
     return true

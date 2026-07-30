@@ -1,0 +1,126 @@
+name: Version and Release
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+concurrency:
+  group: release-master
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  version-or-release:
+    if: github.ref == 'refs/heads/master'
+    runs-on: windows-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create or update version pull request
+        id: changesets
+        uses: changesets/action@v1
+        with:
+          version: npm run version:packages
+          commit: "chore: release new version"
+          title: "chore: release new version"
+          createGithubReleases: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Resolve release target
+        id: release
+        if: steps.changesets.outputs.hasChangesets == 'false'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $version = node -p "require('./package.json').version"
+          $tag = "v$version"
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          "tag=$tag" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+
+          gh release view $tag --repo $env:GITHUB_REPOSITORY *> $null
+          if ($LASTEXITCODE -eq 0) {
+            "should_release=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          } else {
+            "should_release=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          }
+
+      - name: Type check
+        if: steps.release.outputs.should_release == 'true'
+        run: npm run typecheck
+
+      - name: Run unit tests
+        if: steps.release.outputs.should_release == 'true'
+        run: npm run test:unit
+
+      - name: Build Windows installer
+        if: steps.release.outputs.should_release == 'true'
+        run: npm run make
+        env:
+          CSC_LINK: ${{ secrets.WINDOWS_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.WINDOWS_CSC_KEY_PASSWORD }}
+
+      - name: Generate release notes
+        if: steps.release.outputs.should_release == 'true'
+        run: npm run release:notes
+
+      - name: Verify update artifacts
+        if: steps.release.outputs.should_release == 'true'
+        shell: pwsh
+        run: |
+          $installer = Get-ChildItem -Path out -Filter "NextEFB-*-Setup.exe" -File
+          $metadata = Get-Item -Path "out/latest.yml"
+          if (-not $installer -or -not $metadata) {
+            throw "The installer or latest.yml update metadata is missing."
+          }
+
+      - name: Upload workflow artifact
+        if: steps.release.outputs.should_release == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: NextEFB-${{ steps.release.outputs.version }}-windows
+          path: |
+            out/NextEFB-*-Setup.exe
+            out/NextEFB-*-Setup.exe.blockmap
+            out/latest.yml
+          if-no-files-found: error
+
+      - name: Create GitHub Release
+        if: steps.release.outputs.should_release == 'true'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+          RELEASE_VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          $assets = @(
+            Get-ChildItem -Path out -Filter "NextEFB-*-Setup.exe" -File
+            Get-ChildItem -Path out -Filter "NextEFB-*-Setup.exe.blockmap" -File
+            Get-Item -Path "out/latest.yml"
+          ) | ForEach-Object { $_.FullName }
+
+          gh release create $env:RELEASE_TAG @assets `
+            --repo $env:GITHUB_REPOSITORY `
+            --target $env:GITHUB_SHA `
+            --title "NextEFB v$env:RELEASE_VERSION" `
+            --notes-file "release-notes.md"

@@ -37,12 +37,30 @@ describe('application clients', () => {
 
   it('forwards Electron calls and subscriptions to the preload API', async () => {
     const off = vi.fn()
+    const updateState = {
+      supported: true,
+      phase: 'available' as const,
+      currentVersion: '0.1.0',
+      availableVersion: '0.2.0',
+      releaseName: 'NextEFB v0.2.0',
+      releaseNotes: 'New release',
+      releaseDate: '2026-07-30T00:00:00.000Z',
+      progressPercent: null,
+      transferredBytes: null,
+      totalBytes: null,
+      bytesPerSecond: null,
+      errorMessage: null
+    }
     const preload = {
       getSnapshot: vi.fn().mockResolvedValue({ aircraft: null, connection: null }),
       getSettings: vi.fn().mockResolvedValue(createSettings()),
       getChart: vi.fn().mockResolvedValue(createChart()),
       listCharts: vi.fn().mockResolvedValue([createChart()]),
       updateSettings: vi.fn().mockResolvedValue(createSettings({ language: 'zh-CN' })),
+      getAppUpdateState: vi.fn().mockResolvedValue(updateState),
+      checkForAppUpdate: vi.fn().mockResolvedValue(updateState),
+      downloadAndInstallAppUpdate: vi.fn().mockResolvedValue(updateState),
+      onAppUpdateStateChange: vi.fn(() => off),
       performWindowAction: vi.fn().mockResolvedValue({ isMaximized: true }),
       onAircraftUpdate: vi.fn(() => off)
     }
@@ -61,13 +79,22 @@ describe('application clients', () => {
     await expect(client.getChart('chart-1')).resolves.toMatchObject({ id: 'chart-1' })
     await expect(client.listCharts()).resolves.toHaveLength(1)
     await client.updateSettings({ language: 'zh-CN' })
+    await expect(client.getAppUpdateState()).resolves.toMatchObject({
+      availableVersion: '0.2.0'
+    })
+    await client.checkForAppUpdate()
+    await client.downloadAndInstallAppUpdate()
     await client.performWindowAction('toggle-maximize')
     const listener = vi.fn()
     expect(client.onAircraftUpdate(listener)).toBe(off)
+    expect(client.onAppUpdateStateChange(listener)).toBe(off)
 
     expect(preload.getChart).toHaveBeenCalledWith('chart-1')
     expect(preload.updateSettings).toHaveBeenCalledWith({ language: 'zh-CN' })
     expect(preload.performWindowAction).toHaveBeenCalledWith('toggle-maximize')
+    expect(preload.checkForAppUpdate).toHaveBeenCalledOnce()
+    expect(preload.downloadAndInstallAppUpdate).toHaveBeenCalledOnce()
+    expect(preload.onAppUpdateStateChange).toHaveBeenCalledWith(listener)
     expect(preload.onAircraftUpdate).toHaveBeenCalledWith(listener)
     expect(client.onChartsChanged(vi.fn())).toEqual(expect.any(Function))
     expect(client.onSettingsChanged(vi.fn())).toEqual(expect.any(Function))
@@ -156,6 +183,17 @@ describe('application clients', () => {
     expect(await client.performDevAction()).toBe(false)
     expect(await client.pickNavSqliteFile()).toBeNull()
     expect(await client.pickChartsDirectory()).toBeNull()
+    await expect(client.getAppUpdateState()).resolves.toMatchObject({
+      supported: false,
+      phase: 'unsupported'
+    })
+    await expect(client.checkForAppUpdate()).resolves.toMatchObject({
+      supported: false
+    })
+    await expect(client.downloadAndInstallAppUpdate()).resolves.toMatchObject({
+      supported: false
+    })
+    expect(client.onAppUpdateStateChange(vi.fn())).toEqual(expect.any(Function))
 
     fetchMock.mockResolvedValueOnce(new Response('', { status: 503 }))
     await expect(client.getSettings()).rejects.toThrow('LAN request failed: 503')

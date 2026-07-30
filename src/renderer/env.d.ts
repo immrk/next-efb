@@ -42,6 +42,7 @@ import type {
   NavMapSearchInput,
   NavMapSearchResult
 } from '@shared/nav-map-types'
+import type { AppUpdateState } from '@shared/update-types'
 
 declare global {
   interface Window {
@@ -82,6 +83,10 @@ declare global {
       updateChart: (input: ChartUpdateInput) => Promise<ChartRecord | null>
       updateSettings: (partial: Partial<AppSettings>) => Promise<AppSettings>
       getRemoteAccessStatus: () => Promise<RemoteAccessStatus>
+      getAppUpdateState: () => Promise<AppUpdateState>
+      checkForAppUpdate: () => Promise<AppUpdateState>
+      downloadAndInstallAppUpdate: () => Promise<AppUpdateState>
+      onAppUpdateStateChange: (listener: (state: AppUpdateState) => void) => () => void
       openExternal: (url: string) => Promise<boolean>
       performWindowAction: (action: DesktopWindowAction) => Promise<DesktopWindowState>
       getWindowState: () => Promise<DesktopWindowState>

@@ -41,6 +41,7 @@ import type {
 } from '@shared/nav-map-types'
 import type { AppClient } from './AppClient'
 import type { SnapshotPayload } from './AppClient'
+import type { AppUpdateState } from '@shared/update-types'
 
 type ServerEvent =
   | { type: 'aircraft:update'; payload: AircraftState }
@@ -198,6 +199,18 @@ export class WebLanAppClient implements AppClient {
     }
   }
 
+  async getAppUpdateState(): Promise<AppUpdateState> {
+    return createUnsupportedUpdateState()
+  }
+
+  async checkForAppUpdate(): Promise<AppUpdateState> {
+    return createUnsupportedUpdateState()
+  }
+
+  async downloadAndInstallAppUpdate(): Promise<AppUpdateState> {
+    return createUnsupportedUpdateState()
+  }
+
   async pickChartsDirectory(): Promise<string | null> {
     return null
   }
@@ -347,6 +360,10 @@ export class WebLanAppClient implements AppClient {
     this.settingsListeners.add(listener)
     this.connectSocket()
     return () => this.settingsListeners.delete(listener)
+  }
+
+  onAppUpdateStateChange() {
+    return () => void 0
   }
 
   private async fetchJson<T>(path: string, init: RequestInit = {}): Promise<T> {
@@ -503,5 +520,22 @@ function getMimeTypeByFormat(fileFormat: ChartRecord['fileFormat']): string {
     case 'png':
     default:
       return 'image/png'
+  }
+}
+
+function createUnsupportedUpdateState(): AppUpdateState {
+  return {
+    supported: false,
+    phase: 'unsupported',
+    currentVersion: '',
+    availableVersion: null,
+    releaseName: null,
+    releaseNotes: null,
+    releaseDate: null,
+    progressPercent: null,
+    transferredBytes: null,
+    totalBytes: null,
+    bytesPerSecond: null,
+    errorMessage: null
   }
 }

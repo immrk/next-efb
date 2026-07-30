@@ -42,6 +42,7 @@ import type {
   NavMapSearchInput,
   NavMapSearchResult
 } from '@shared/nav-map-types'
+import type { AppUpdateState } from '@shared/update-types'
 
 export interface AppClientRuntime {
   host: 'electron' | 'web'
@@ -68,6 +69,9 @@ export interface AppClient {
   searchNavMapPoints(input: NavMapSearchInput): Promise<NavMapSearchResult[]>
   importSimBrief(input: SimBriefImportInput): Promise<SimBriefImportResult>
   getRemoteAccessStatus(): Promise<RemoteAccessStatus>
+  getAppUpdateState(): Promise<AppUpdateState>
+  checkForAppUpdate(): Promise<AppUpdateState>
+  downloadAndInstallAppUpdate(): Promise<AppUpdateState>
   getChart(chartId: string): Promise<ChartRecord | null>
   getChartAsset(chartId: string): Promise<ChartAssetPayload | null>
   getChartReferencePoints(chartId: string): Promise<GeoReferencePoint[]>
@@ -99,4 +103,5 @@ export interface AppClient {
   onChartsChanged(listener: () => void): () => void
   onChecklistsChanged(listener: () => void): () => void
   onSettingsChanged(listener: () => void): () => void
+  onAppUpdateStateChange(listener: (state: AppUpdateState) => void): () => void
 }

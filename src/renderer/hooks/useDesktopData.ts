@@ -8,6 +8,7 @@ export function useDesktopData(): void {
   const setAircraft = useAppStore((state) => state.setAircraft)
   const setConnection = useAppStore((state) => state.setConnection)
   const setSettings = useAppStore((state) => state.setSettings)
+  const setAppUpdate = useAppStore((state) => state.setAppUpdate)
 
   useEffect(() => {
     const refreshSettings = () => {
@@ -23,15 +24,18 @@ export function useDesktopData(): void {
     })
 
     refreshSettings()
+    void appClient.getAppUpdateState().then(setAppUpdate)
 
     const offAircraft = appClient.onAircraftUpdate(setAircraft)
     const offConnection = appClient.onConnectionUpdate(setConnection)
     const offSettings = appClient.onSettingsChanged(refreshSettings)
+    const offAppUpdate = appClient.onAppUpdateStateChange(setAppUpdate)
 
     return () => {
       offAircraft()
       offConnection()
       offSettings()
+      offAppUpdate()
     }
-  }, [appClient, setAircraft, setConnection, setSettings])
+  }, [appClient, setAircraft, setAppUpdate, setConnection, setSettings])
 }

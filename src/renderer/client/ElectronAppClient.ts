@@ -54,6 +54,18 @@ export class ElectronAppClient implements AppClient {
     return window.msfsApi.getRemoteAccessStatus()
   }
 
+  getAppUpdateState() {
+    return window.msfsApi.getAppUpdateState()
+  }
+
+  checkForAppUpdate() {
+    return window.msfsApi.checkForAppUpdate()
+  }
+
+  downloadAndInstallAppUpdate() {
+    return window.msfsApi.downloadAndInstallAppUpdate()
+  }
+
   getChart(chartId: string) {
     return window.msfsApi.getChart(chartId)
   }
@@ -179,5 +191,9 @@ export class ElectronAppClient implements AppClient {
 
   onSettingsChanged() {
     return () => void 0
+  }
+
+  onAppUpdateStateChange(listener: Parameters<typeof window.msfsApi.onAppUpdateStateChange>[0]) {
+    return window.msfsApi.onAppUpdateStateChange(listener)
   }
 }
