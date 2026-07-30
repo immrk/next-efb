@@ -93,7 +93,7 @@
     "release:notes": "node scripts/extract-release-notes.mjs",
     "start": "electron ./dist/main/main.js",
     "package": "rimraf out && npm run rebuild-native && npm run build && electron-builder --dir --win --x64 --config.npmRebuild=false",
-    "make": "rimraf dist && rimraf out && npm run rebuild-native && npm run build && electron-builder --win nsis --x64 --config.npmRebuild=false",
+    "make": "rimraf dist && rimraf out && npm run rebuild-native && npm run build && electron-builder --win nsis --x64 --config.npmRebuild=false --publish never",
     "rebuild-native": "electron-rebuild -f -w better-sqlite3"
   },
   "dependencies": {
