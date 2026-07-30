@@ -1,0 +1,45 @@
+{
+  "menu": {
+    "file": "File",
+    "edit": "Edit",
+    "view": "View",
+    "window": "Window",
+    "help": "Help",
+    "newMainWindow": "New Main Window",
+    "openSettingWindow": "Open Setting Window",
+    "about": "About",
+    "developerTools": "Developer Tools",
+    "copy": "Copy",
+    "paste": "Paste",
+    "undo": "Undo",
+    "redo": "Redo",
+    "cut": "Cut",
+    "delete": "Delete",
+    "selectAll": "Select All",
+    "pasteAndMatchStyle": "Paste and Match Style",
+    "reload": "Reload",
+    "forceReload": "Force Reload",
+    "toggleDevTools": "Toggle Developer Tools",
+    "resetZoom": "Reset Zoom",
+    "zoomIn": "Zoom In",
+    "zoomOut": "Zoom Out",
+    "toggleFullscreen": "Toggle Full Screen",
+    "minimize": "Minimize",
+    "close": "Close",
+    "front": "Bring All to Front",
+    "quit": "Quit",
+    "hide": "Hide",
+    "hideOthers": "Hide Others",
+    "unhide": "Show All",
+    "services": "Services",
+    "windowMenu": "Window"
+  },
+  "window": {
+    "main": {
+      "index": "Home",
+      "counter": "Counter",
+      "info": "System Info",
+      "windows": "Window Management"
+    }
+  }
+} 

@@ -1,0 +1,45 @@
+{
+  "menu": {
+    "file": "文件",
+    "edit": "编辑",
+    "view": "视图",
+    "window": "窗口",
+    "help": "帮助",
+    "newMainWindow": "新建主窗口",
+    "openSettingWindow": "打开设置窗口",
+    "about": "关于",
+    "developerTools": "开发者工具",
+    "copy": "复制",
+    "paste": "粘贴",
+    "undo": "撤销",
+    "redo": "重做",
+    "cut": "剪切",
+    "delete": "删除",
+    "selectAll": "全选",
+    "pasteAndMatchStyle": "粘贴并匹配样式",
+    "reload": "重新加载",
+    "forceReload": "强制重新加载",
+    "toggleDevTools": "切换开发者工具",
+    "resetZoom": "重置缩放",
+    "zoomIn": "放大",
+    "zoomOut": "缩小",
+    "toggleFullscreen": "切换全屏",
+    "minimize": "最小化",
+    "close": "关闭",
+    "front": "前置",
+    "quit": "退出",
+    "hide": "隐藏",
+    "hideOthers": "隐藏其他",
+    "unhide": "显示",
+    "services": "服务",
+    "windowMenu": "窗口"
+  },
+  "window": {
+    "main": {
+      "index": "首页",
+      "counter": "计数器",
+      "info": "系统信息",
+      "windows": "窗口管理"
+    }
+  }
+} 

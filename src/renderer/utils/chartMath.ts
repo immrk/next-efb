@@ -6,6 +6,40 @@ interface LocalPoint {
   y: number
 }
 
+export interface ChartFitView {
+  scale: number
+  panX: number
+  panY: number
+}
+
+export function getChartFitView(
+  chartWidth: number,
+  chartHeight: number,
+  viewportWidth: number,
+  viewportHeight: number
+): ChartFitView | null {
+  if (
+    !Number.isFinite(chartWidth) ||
+    !Number.isFinite(chartHeight) ||
+    !Number.isFinite(viewportWidth) ||
+    !Number.isFinite(viewportHeight) ||
+    chartWidth <= 0 ||
+    chartHeight <= 0 ||
+    viewportWidth <= 0 ||
+    viewportHeight <= 0
+  ) {
+    return null
+  }
+
+  const scale = Math.min(viewportWidth / chartWidth, viewportHeight / chartHeight)
+
+  return {
+    scale,
+    panX: (viewportWidth - chartWidth * scale) / 2,
+    panY: (viewportHeight - chartHeight * scale) / 2
+  }
+}
+
 function mapToLocal(lat: number, lon: number, refLat: number): LocalPoint {
   const cosLat = Math.cos((refLat * Math.PI) / 180)
   return {

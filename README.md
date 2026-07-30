@@ -1,78 +1,86 @@
 # NextEFB
 
-NextEFB 是面向 Microsoft Flight Simulator 的 Electron 桌面电子飞行包，提供地图、航路规划、航图管理、地理配准、SimConnect 遥测与局域网访问。
+Release versioning, GitHub packaging, and desktop automatic updates are
+documented in [docs/RELEASE.md](docs/RELEASE.md).
+
+NextEFB 是基于 Electron Modern Template 迁移的桌面 EFB。项目保留了原有的 MSFS SimConnect、航路规划、导航数据、航图管理、地理配准、地图叠加与局域网访问能力，并统一使用 Electron Forge、Vite、tsup、React、Tailwind CSS v4 和 shadcn/ui。
 
 ## 技术栈
 
-- Electron Forge + Vite 多窗口 + tsup + TypeScript
-- Vue 3 + Vue Router
-- Element Plus
-- Leaflet
-- better-sqlite3
-- node-simconnect
-- Vitest + Vue Test Utils
-
-渲染层完全采用 `Electron-Modern-Template` 的 Vue、Element Plus、标题栏、侧边栏与 Tab 路由结构。业务界面使用 Element Plus 默认主题和语义色，不维护自定义颜色或字号体系。
-
-## 页面
-
-- 地图：实时飞机状态、导航数据图层、信息点搜索、底图切换、航路绘制、SimBrief 导入和航图挂载。
-- 航图：本地导入、网络链接导入、搜索、元数据编辑、程序绑定、地图/航图双点地理配准和删除。
-- 设置：语言、数据来源、底图、航图透明度、导航数据库、航图库路径、SimBrief 与局域网访问。
-- 登录：保留模板 Mock 登录，当前不接入真实认证服务。
+- Electron 36 + Electron Forge
+- React 19 + TypeScript
+- Vite 6 + tsup
+- Tailwind CSS v4 + shadcn/ui + Lucide
+- React Router（HashRouter）
+- Zustand + i18next
+- Leaflet + React Leaflet
+- better-sqlite3 + node-simconnect
 
 ## 项目结构
 
 ```text
 src/
-  config/
-    windowConfig.ts
-  main/
-    main.ts
-    preload/
-    ipc/
-    services/
-  renderer/
-    client/
-    composables/
-    i18n/
-    locales/
-    utils/
-    window/
-      main/
-        components/
-        router/
-        views/
-  shared/
-tests/
+├─ config/                 # 模板窗口、菜单与 i18n 配置
+├─ main/
+│  ├─ ipc/                 # 模板 IPC 与 NextEFB IPC
+│  ├─ preload/             # 多窗口 preload API
+│  ├─ services/            # SimConnect、导航、存储、LAN 服务
+│  ├─ main.ts              # 主进程入口
+│  └─ windowManager.ts     # 模板窗口管理器
+├─ renderer/
+│  ├─ components/ui/       # shadcn/ui 组件
+│  ├─ pages/               # 地图、航图、设置与航图编辑页面
+│  ├─ styles/              # 模板主题
+│  └─ window/
+│     ├─ main/             # 主窗口
+│     └─ login/            # 模板登录窗口
+└─ shared/                 # 主进程、preload、renderer 共享类型
+```
+
+## 安装
+
+```bash
+npm install
+npm run rebuild-native
 ```
 
 ## 开发
 
+开发方式与 Electron Modern Template 一致：
+
+1. 运行 `npm run dev`，启动 main、login 两个 Vite 窗口。
+2. 在 VS Code 中启动 `Electron TS Development` 调试配置。
+3. 如需持续重编译主进程，可另开终端运行 `npm run watch`。
+
+`npm run dev` 会先生成供 LAN 服务使用的 main 静态资源；后续主进程重编译会保留这些资源。
+
+也可以只启动指定窗口：
+
 ```bash
-npm install
-npm run dev
+npm run dev -- --only=main
 ```
 
-`npm run dev` 与模板一致：读取 `src/config/windowConfig.ts`，为 `main`、`setting`、`login` 分别启动 Vite 服务。另开终端执行 `npm run watch`，由 nodemon 监听主进程并通过 tsup 持续重建。
-
-在 VS Code 中先执行 `renderer-dev` 任务，再启动 `Electron TS Development` 调试配置即可进入模板同款调试流程。单独调试窗口可使用 `npm run dev:main`、`npm run dev:setting` 或 `npm run dev:login`。
-
-## 验证
+## 检查与构建
 
 ```bash
 npm run typecheck
-npm test
 npm run build
+npm run start
 ```
 
-`npm run uat` 会启动带本地 Mock API 的浏览器验收环境，用于在没有 Electron、MSFS、SimConnect 或导航数据库时检查所有页面和交互。
+仅需重新生成 LAN 页面时可运行 `npm run build:lan`。
 
-## 打包
+生成当前平台安装包：
 
 ```bash
-npm run package
 npm run make
 ```
 
-项目使用与模板一致的 Electron Forge 打包链路：`package` 生成未安装应用，`make` 生成当前平台安装产物。原生依赖更新后可执行 `npm run rebuild-native`。
+构建输出位于 `dist/`，Electron Forge 输出位于 `out/`。
+
+## 页面与交互
+
+- 主窗口保持模板的无边框 TitleBar、固定 64px 左侧导航栏、HashRouter 与主题布局。
+- 通用按钮、输入框、选择器、标签页、提示、滑块和开关均使用 shadcn/ui。
+- 自定义 CSS 只用于地图、Leaflet 图层、航图画布、地理配准和业务抽屉等专用布局，颜色与字体均来自模板主题 token。
+- 设置作为主窗口侧栏菜单展示，桌面端与 LAN 网页端均在主窗口内打开。

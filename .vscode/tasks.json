@@ -17,14 +17,6 @@
       "label": "build-all",
       "type": "shell",
       "dependsOn": ["build-main", "build-renderer"],
-      "dependsOrder": "sequence",
-      "problemMatcher": []
-    },
-    {
-      "label": "renderer-dev",
-      "type": "shell",
-      "command": "npm run dev",
-      "isBackground": true,
       "problemMatcher": []
     }
   ]

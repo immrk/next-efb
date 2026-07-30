@@ -10,6 +10,15 @@ import type {
   StorageSummary
 } from '@shared/chart-types'
 import type {
+  ChecklistAssetPayload,
+  ChecklistImportFromUrlInput,
+  ChecklistImportResult,
+  ChecklistRecord,
+  ChecklistUpdateInput,
+  FinalizeChecklistImportInput,
+  PickedChecklistFile
+} from '@shared/checklist-types'
+import type {
   AircraftState,
   AppSettings,
   ConnectionState,
@@ -33,6 +42,7 @@ import type {
   NavMapSearchInput,
   NavMapSearchResult
 } from '@shared/nav-map-types'
+import type { AppUpdateState } from '@shared/update-types'
 
 export interface AppClientRuntime {
   host: 'electron' | 'web'
@@ -59,6 +69,9 @@ export interface AppClient {
   searchNavMapPoints(input: NavMapSearchInput): Promise<NavMapSearchResult[]>
   importSimBrief(input: SimBriefImportInput): Promise<SimBriefImportResult>
   getRemoteAccessStatus(): Promise<RemoteAccessStatus>
+  getAppUpdateState(): Promise<AppUpdateState>
+  checkForAppUpdate(): Promise<AppUpdateState>
+  downloadAndInstallAppUpdate(): Promise<AppUpdateState>
   getChart(chartId: string): Promise<ChartRecord | null>
   getChartAsset(chartId: string): Promise<ChartAssetPayload | null>
   getChartReferencePoints(chartId: string): Promise<GeoReferencePoint[]>
@@ -69,6 +82,14 @@ export interface AppClient {
   importChartFromUrl(input: ChartImportFromUrlInput): Promise<PickedChartFile>
   finalizeChartImport(input: FinalizeChartImportInput): Promise<ChartImportResult>
   deleteChart(chartId: string): Promise<boolean>
+  getChecklist(checklistId: string): Promise<ChecklistRecord | null>
+  getChecklistAsset(checklistId: string): Promise<ChecklistAssetPayload | null>
+  listChecklists(): Promise<ChecklistRecord[]>
+  pickChecklistFile(): Promise<PickedChecklistFile | null>
+  importChecklistFromUrl(input: ChecklistImportFromUrlInput): Promise<PickedChecklistFile>
+  finalizeChecklistImport(input: FinalizeChecklistImportInput): Promise<ChecklistImportResult>
+  deleteChecklist(checklistId: string): Promise<boolean>
+  updateChecklist(input: ChecklistUpdateInput): Promise<ChecklistRecord | null>
   saveChartReferencePoints(chartId: string, points: GeoReferencePoint[]): Promise<GeoReferencePoint[]>
   updateChart(input: ChartUpdateInput): Promise<ChartRecord | null>
   updateSettings(partial: Partial<AppSettings>): Promise<AppSettings>
@@ -80,5 +101,7 @@ export interface AppClient {
   onAircraftUpdate(listener: (state: AircraftState) => void): () => void
   onConnectionUpdate(listener: (state: ConnectionState) => void): () => void
   onChartsChanged(listener: () => void): () => void
+  onChecklistsChanged(listener: () => void): () => void
   onSettingsChanged(listener: () => void): () => void
+  onAppUpdateStateChange(listener: (state: AppUpdateState) => void): () => void
 }

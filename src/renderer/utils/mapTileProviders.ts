@@ -52,8 +52,8 @@ export const MAP_TILE_CONFIGS: Record<MapTileProvider, MapTileConfig> = {
 
 export function getMapTileConfig(provider: MapTileProvider | undefined): MapTileConfig {
   const config = provider
-    ? (MAP_TILE_CONFIGS[provider] ?? MAP_TILE_CONFIGS.osm)
-    : MAP_TILE_CONFIGS.osm
+    ? (MAP_TILE_CONFIGS[provider] ?? MAP_TILE_CONFIGS.cartoLight)
+    : MAP_TILE_CONFIGS.cartoLight
   const usesSubdomains = config.url.includes('{s}')
 
   if (!usesSubdomains) {

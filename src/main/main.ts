@@ -1,34 +1,27 @@
-import {
-  BrowserWindow,
-  Menu,
-  Tray,
-  app,
-  dialog,
-  nativeImage,
-  session
-} from 'electron'
+import { app, BrowserWindow, Menu, Tray, dialog, nativeImage, session, shell } from 'electron'
 import { join } from 'node:path'
-import { WINDOW_NAMES } from '../config/windowConfig'
-import { APP_NAME } from '@shared/branding'
-import { IPC_CHANNELS } from '@shared/channels'
-import type { DesktopWindowState } from '@shared/types'
-import { registerIpc } from './ipc/registerIpc'
-import { registerTemplateIpc } from './ipc/registerTemplateIpc'
-import { windowManager } from './windowManager'
-import { FlightStateStore } from './services/state/FlightStateStore'
-import { SettingsStore } from './services/config/SettingsStore'
-import { SimConnectService } from './services/simconnect/SimConnectService'
-import { ChartRepository } from './services/storage/ChartRepository'
-import { StorageService } from './services/storage/StorageService'
-import { LanServer } from './services/lan/LanServer'
-import { NavDataService } from './services/navigation/NavDataService'
+import { fileURLToPath } from 'node:url'
+import { APP_NAME } from '../shared/branding.js'
+import { IPC_CHANNELS } from '../shared/channels.js'
+import type { DesktopWindowState } from '../shared/types.js'
+import { WINDOW_NAMES } from '../config/windowConfig.js'
+import { createMenu } from './menu.js'
+import { setupIpcHandlers } from './ipc/index.js'
+import { registerIpc } from './ipc/registerIpc.js'
+import { initMainI18n } from './i18n/index.js'
+import { SettingsStore } from './services/config/SettingsStore.js'
+import { LanServer } from './services/lan/LanServer.js'
+import { NavDataService } from './services/navigation/NavDataService.js'
+import { SimConnectService } from './services/simconnect/SimConnectService.js'
+import { FlightStateStore } from './services/state/FlightStateStore.js'
+import { ChartRepository } from './services/storage/ChartRepository.js'
+import { ChecklistRepository } from './services/storage/ChecklistRepository.js'
+import { StorageService } from './services/storage/StorageService.js'
+import { AppUpdateService } from './services/updates/AppUpdateService.js'
+import { windowManager } from './windowManager.js'
+import '../utils/logger.js'
 
-let appTray: Tray | null = null
-let isQuitting = false
-let hasShownSingleInstanceNotice = false
-let simConnectService: SimConnectService | null = null
-let lanServer: LanServer | null = null
-
+const __dirname = fileURLToPath(new URL('.', import.meta.url))
 const TILE_REQUEST_URLS = [
   'https://server.arcgisonline.com/*',
   'https://tile.openstreetmap.org/*',
@@ -43,79 +36,125 @@ const TILE_REQUEST_URLS = [
   'https://c.basemaps.cartocdn.com/*',
   'https://d.basemaps.cartocdn.com/*'
 ]
+const APP_TILE_REFERER = 'https://nextefb.app/'
+
+let appTray: Tray | null = null
+let isQuitting = false
+let hasShownSingleInstanceNotice = false
+const appUpdateService = new AppUpdateService({
+  beforeInstall: () => {
+    isQuitting = true
+  }
+})
 
 const hasSingleInstanceLock = app.requestSingleInstanceLock()
-
 if (!hasSingleInstanceLock) {
   app.quit()
-} else {
-  app.whenReady().then(initializeApplication)
 }
 
-async function initializeApplication(): Promise<void> {
+app.whenReady().then(async () => {
+  await initMainI18n()
   configureTileRequestHeaders()
-  registerTemplateIpc()
+  setupIpcHandlers()
+  createMenu(windowManager)
+  await createMainWindow()
 
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) {
+      void createMainWindow()
+    } else {
+      showMainWindow()
+    }
+  })
+})
+
+app.on('before-quit', () => {
+  isQuitting = true
+})
+
+app.on('second-instance', () => {
+  showMainWindow()
+  notifyAlreadyRunning()
+})
+
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') {
+    app.quit()
+  }
+})
+
+async function createMainWindow(): Promise<void> {
   const instance = windowManager.createWindow(WINDOW_NAMES.main, {
+    title: APP_NAME,
+    minWidth: 1100,
+    minHeight: 720,
     icon: getBrandingAssetPath('app-icon-256.png')
   })
-  if (!instance) throw new Error('MAIN_WINDOW_CREATE_FAILED')
-  const mainWindow = instance.window
+  const mainWindow = instance?.window
+  if (!mainWindow) {
+    throw new Error('Unable to create the main window.')
+  }
 
   const settingsStore = new SettingsStore(resolveSystemLanguage(app.getLocale()))
   const flightStateStore = new FlightStateStore()
-  simConnectService = new SimConnectService(settingsStore.get())
+  const simConnectService = new SimConnectService(settingsStore.get())
   const storageService = new StorageService()
   const navDataService = new NavDataService()
   const chartRepository = new ChartRepository(storageService.getSummary())
-  lanServer = new LanServer({
+  const checklistRepository = new ChecklistRepository(storageService.getSummary().databasePath)
+  const lanServer = new LanServer({
     settings: settingsStore.get(),
-    rendererRoot: join(import.meta.dirname, '../renderer/window/main'),
+    rendererRoot: join(__dirname, '../renderer/window/main'),
     flightStateStore,
     settingsStore,
     simConnectService,
     chartRepository,
+    checklistRepository,
     storageService,
     navDataService
   })
 
+  attachWindowGuards(mainWindow)
+  appUpdateService.attachWindow(mainWindow)
+  ensureTray()
   registerIpc({
     mainWindow,
     flightStateStore,
     settingsStore,
     simConnectService,
     chartRepository,
+    checklistRepository,
     storageService,
     lanServer,
-    navDataService
+    navDataService,
+    appUpdateService
   })
 
-  installMainWindowBehavior(mainWindow)
-  ensureTray()
   simConnectService.start()
   await lanServer.start()
   sendWindowState(mainWindow)
-
-  app.on('activate', () => windowManager.showWindow(WINDOW_NAMES.main))
+  appUpdateService.scheduleInitialCheck()
 }
 
-app.on('before-quit', () => {
-  isQuitting = true
-  simConnectService?.stop()
-  void lanServer?.stop()
-})
+function attachWindowGuards(mainWindow: BrowserWindow): void {
+  const appUrl = process.env.NODE_ENV === 'development'
+    ? 'http://localhost:11069'
+    : `file://${join(__dirname, '../renderer/window/main/index.html').replace(/\\/g, '/')}`
 
-app.on('second-instance', () => {
-  windowManager.showWindow(WINDOW_NAMES.main)
-  const mainWindow = windowManager.getWindow(WINDOW_NAMES.main)?.window
-  if (mainWindow) notifyAlreadyRunning(mainWindow)
-})
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (isExternalUrl(url, appUrl)) {
+      void shell.openExternal(url)
+    }
+    return { action: 'deny' }
+  })
 
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit()
-})
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    if (isExternalUrl(url, appUrl)) {
+      event.preventDefault()
+      void shell.openExternal(url)
+    }
+  })
 
-function installMainWindowBehavior(mainWindow: BrowserWindow): void {
   mainWindow.on('close', (event) => {
     if (isQuitting) return
     event.preventDefault()
@@ -128,41 +167,59 @@ function installMainWindowBehavior(mainWindow: BrowserWindow): void {
 function configureTileRequestHeaders(): void {
   const userAgent = `${APP_NAME}/${app.getVersion()} (Electron ${process.versions.electron})`
   app.userAgentFallback = userAgent
-  session.defaultSession.webRequest.onBeforeSendHeaders(
-    { urls: TILE_REQUEST_URLS },
-    (details, callback) => {
-      callback({
-        requestHeaders: {
-          ...details.requestHeaders,
-          'User-Agent': userAgent,
-          Referer: 'https://nextefb.app/'
-        }
-      })
-    }
-  )
+  session.defaultSession.webRequest.onBeforeSendHeaders({ urls: TILE_REQUEST_URLS }, (details, callback) => {
+    callback({
+      requestHeaders: {
+        ...details.requestHeaders,
+        'User-Agent': userAgent,
+        Referer: APP_TILE_REFERER
+      }
+    })
+  })
 }
 
 function ensureTray(): void {
   if (appTray) return
   appTray = new Tray(nativeImage.createFromPath(getBrandingAssetPath('tray-icon-32.png')))
   appTray.setToolTip(APP_NAME)
-  appTray.setContextMenu(
-    Menu.buildFromTemplate([
-      {
-        label: `Show ${APP_NAME}`,
-        click: () => windowManager.showWindow(WINDOW_NAMES.main)
-      },
-      {
-        label: 'Exit',
-        click: () => {
-          isQuitting = true
-          app.quit()
-        }
+  appTray.setContextMenu(Menu.buildFromTemplate([
+    { label: `Show ${APP_NAME}`, click: showMainWindow },
+    {
+      label: 'Exit',
+      click: () => {
+        isQuitting = true
+        app.quit()
       }
-    ])
-  )
-  appTray.on('click', () => windowManager.showWindow(WINDOW_NAMES.main))
-  appTray.on('double-click', () => windowManager.showWindow(WINDOW_NAMES.main))
+    }
+  ]))
+  appTray.on('click', showMainWindow)
+  appTray.on('double-click', showMainWindow)
+}
+
+function showMainWindow(): void {
+  const mainWindow = windowManager.getWindow(WINDOW_NAMES.main)?.window
+  if (!mainWindow || mainWindow.isDestroyed()) return
+  if (mainWindow.isMinimized()) mainWindow.restore()
+  mainWindow.show()
+  mainWindow.focus()
+  sendWindowState(mainWindow)
+}
+
+function notifyAlreadyRunning(): void {
+  const mainWindow = windowManager.getWindow(WINDOW_NAMES.main)?.window
+  if (!mainWindow || mainWindow.isDestroyed() || hasShownSingleInstanceNotice) return
+  hasShownSingleInstanceNotice = true
+  void dialog.showMessageBox(mainWindow, {
+    type: 'info',
+    buttons: ['OK'],
+    defaultId: 0,
+    noLink: true,
+    title: APP_NAME,
+    message: `${APP_NAME} is already running.`,
+    detail: 'The existing window has been brought to the front.'
+  }).finally(() => {
+    hasShownSingleInstanceNotice = false
+  })
 }
 
 function sendWindowState(window: BrowserWindow): void {
@@ -171,30 +228,31 @@ function sendWindowState(window: BrowserWindow): void {
   window.webContents.send(IPC_CHANNELS.windowStateChanged, payload)
 }
 
-function notifyAlreadyRunning(mainWindow: BrowserWindow): void {
-  if (hasShownSingleInstanceNotice) return
-  hasShownSingleInstanceNotice = true
-  void dialog
-    .showMessageBox(mainWindow, {
-      type: 'info',
-      buttons: ['OK'],
-      defaultId: 0,
-      noLink: true,
-      title: APP_NAME,
-      message: `${APP_NAME} is already running.`,
-      detail: 'The existing window has been brought to the front.'
-    })
-    .finally(() => {
-      hasShownSingleInstanceNotice = false
-    })
+function getBrandingAssetPath(fileName: string): string {
+  return join(app.getAppPath(), 'assets', 'branding', fileName)
 }
 
 function resolveSystemLanguage(locale: string): 'zh-CN' | 'en-US' {
   return locale.trim().toLowerCase().startsWith('zh') ? 'zh-CN' : 'en-US'
 }
 
-function getBrandingAssetPath(fileName: string): string {
-  return app.isPackaged
-    ? join(process.resourcesPath, 'branding', fileName)
-    : join(app.getAppPath(), 'assets', 'branding', fileName)
+function isExternalUrl(targetUrl: string, appUrl: string): boolean {
+  if (!isSupportedExternalUrl(targetUrl)) return false
+  try {
+    const target = new URL(targetUrl)
+    const appLocation = new URL(appUrl)
+    return appLocation.protocol === 'file:'
+      ? target.protocol !== 'file:'
+      : target.origin !== appLocation.origin
+  } catch {
+    return false
+  }
+}
+
+function isSupportedExternalUrl(url: string): boolean {
+  try {
+    return ['http:', 'https:', 'mailto:', 'tel:'].includes(new URL(url).protocol)
+  } catch {
+    return false
+  }
 }

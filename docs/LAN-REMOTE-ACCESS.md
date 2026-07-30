@@ -2,7 +2,7 @@
 
 ## 1. 目标
 
-为当前 `Electron + Vue 3 + TypeScript` 项目的渲染层提供局域网远程访问能力，使同一局域网内的平板、笔记本、第二屏设备可以访问地图、航图和状态页面，同时继续保留 Electron 本机作为：
+为当前 `Electron + React + TypeScript` 项目的渲染层提供局域网远程访问能力，使同一局域网内的平板、笔记本、第二屏设备可以访问地图、航图和状态页面，同时继续保留 Electron 本机作为：
 
 - 飞行数据采集端
 - 本地 SQLite / 文件存储端
@@ -58,7 +58,7 @@ SimConnectService
 
 - 不需要把 Electron 窗口做远控，稳定性和安全性更好
 - 主进程已经是天然的数据聚合点，改造成本低
-- Web 端和桌面端共用 Vue 页面和组合式状态模型
+- Web 端和桌面端可以共用大部分 React 页面和状态模型
 - 便于后续扩展到“只读副屏模式”“教员观察模式”“移动端查看模式”
 - 后续若要做外网访问，也可在该层继续演进
 
@@ -305,7 +305,7 @@ src/main/services/lan/
 
 ## 6.1 阶段 A：前端适配层改造
 
-目标：让现有 Vue 页面同时支持 Electron 和 Web。
+目标：让现有 React 页面同时支持 Electron 和 Web。
 
 ### 工作项
 
@@ -349,12 +349,12 @@ src/main/services/lan/
 
 ### 推荐方式
 
-- 继续共用 Vite/Vue 工程
+- 继续共用 Vite/React 工程
 - 区分 `electron renderer build` 和 `lan web build`
 
 ### 验收标准
 
-- 通过浏览器打开局域网地址后可正常进入 Vue 页面
+- 通过浏览器打开局域网地址后可正常进入 React 页面
 - 样式、i18n、PDF 预览资源均可正常加载
 
 ## 6.4 阶段 D：安全与运维增强
@@ -387,9 +387,9 @@ src/
       AppClient.ts
       ElectronAppClient.ts
       WebLanAppClient.ts
-      AppClient.ts
+      AppClientContext.tsx
     web/
-      main.ts
+      main-web.tsx
 ```
 
 ## 8. 关键实现建议
@@ -469,7 +469,7 @@ type ChartRenderableAsset =
 基于当前代码基础，最合适的落地方案是：
 
 - **保留 Electron 主进程作为唯一数据与存储中心**
-- **把 Vue 渲染层保持为 Electron/Web 双宿主**
+- **把 React 渲染层改造成 Electron/Web 双宿主**
 - **在主进程内新增只读局域网 Web 服务**
 - **将航图等大资源从 IPC base64 改为 HTTP 资源流**
 - **默认只开放只读远程访问，写操作后置**

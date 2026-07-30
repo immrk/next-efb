@@ -2,6 +2,8 @@
   "name": "NextEFB",
   "short_name": "NextEFB",
   "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1783ef",
   "icons": [
     {
       "src": "./icon-192.png",

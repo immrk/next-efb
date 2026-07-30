@@ -1,32 +1,32 @@
 {
-  "version": "0.2.0",
-  "configurations": [
-    {
-      "name": "Electron TS Development",
-      "type": "node",
-      "request": "launch",
-      "program": "${workspaceFolder}/dist/main/main.js",
-      "preLaunchTask": "build-main",
-      "sourceMaps": true,
-      "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-      "skipFiles": ["<node_internals>/**", "${workspaceFolder}/node_modules/**"],
-      "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron",
-      "env": {
-        "NODE_ENV": "development"
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Electron TS Development",
+        "type": "node",
+        "request": "launch",
+        "program": "${workspaceFolder}/dist/main/main.js",
+        "preLaunchTask": "build-main",
+        "sourceMaps": true,
+        "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+        "skipFiles": ["<node_internals>/**", "${workspaceFolder}/node_modules/**"],
+        "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron",
+        "env": {
+          "NODE_ENV": "development"
+        }
+      },
+      {
+        "name": "Electron TS Production",
+        "type": "node",
+        "request": "launch",
+        "preLaunchTask": "build-all",
+        "program": "${workspaceFolder}/dist/main/main.js",
+        "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+        "skipFiles": ["<node_internals>/**", "${workspaceFolder}/node_modules/**"],
+        "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron",
+        "env": {
+          "NODE_ENV": "production"
+        }
       }
-    },
-    {
-      "name": "Electron TS Production",
-      "type": "node",
-      "request": "launch",
-      "preLaunchTask": "build-all",
-      "program": "${workspaceFolder}/dist/main/main.js",
-      "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-      "skipFiles": ["<node_internals>/**", "${workspaceFolder}/node_modules/**"],
-      "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron",
-      "env": {
-        "NODE_ENV": "production"
-      }
-    }
-  ]
-}
+    ]
+  }

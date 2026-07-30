@@ -31,7 +31,7 @@ export interface ProcedureNavContext {
 }
 
 export function buildProcedureMountCards(
-  charts: readonly ChartRecord[],
+  charts: ChartRecord[],
   selection: FlightPlanSelection | null,
   navContext: ProcedureNavContext
 ): ProcedureMountCard[] {
@@ -111,10 +111,7 @@ export function buildProcedureMountCards(
   return cards
 }
 
-export function buildManualMountCards(
-  charts: readonly ChartRecord[],
-  excludedChartIds: Set<string>
-): ManualMountCard[] {
+export function buildManualMountCards(charts: ChartRecord[], excludedChartIds: Set<string>): ManualMountCard[] {
   return charts
     .filter((chart) => chart.isGeoreferenced && !excludedChartIds.has(chart.id))
     .map((chart) => ({

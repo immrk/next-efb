@@ -1,5 +1,6 @@
 export enum MenuEnum {
-  MAP = 'map',
-  CHARTS = 'charts',
-  SETTINGS = 'settings'
+  HOME = "home",
+  SYSTEM = "system",
+  WINDOW = "window",
+  API_TEST = "apiTest",
 }

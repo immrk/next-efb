@@ -54,6 +54,18 @@ export class ElectronAppClient implements AppClient {
     return window.msfsApi.getRemoteAccessStatus()
   }
 
+  getAppUpdateState() {
+    return window.msfsApi.getAppUpdateState()
+  }
+
+  checkForAppUpdate() {
+    return window.msfsApi.checkForAppUpdate()
+  }
+
+  downloadAndInstallAppUpdate() {
+    return window.msfsApi.downloadAndInstallAppUpdate()
+  }
+
   getChart(chartId: string) {
     return window.msfsApi.getChart(chartId)
   }
@@ -92,6 +104,38 @@ export class ElectronAppClient implements AppClient {
 
   deleteChart(chartId: string) {
     return window.msfsApi.deleteChart(chartId)
+  }
+
+  getChecklist(checklistId: string) {
+    return window.msfsApi.getChecklist(checklistId)
+  }
+
+  getChecklistAsset(checklistId: string) {
+    return window.msfsApi.getChecklistAsset(checklistId)
+  }
+
+  listChecklists() {
+    return window.msfsApi.listChecklists()
+  }
+
+  pickChecklistFile() {
+    return window.msfsApi.pickChecklistFile()
+  }
+
+  importChecklistFromUrl(input: Parameters<typeof window.msfsApi.importChecklistFromUrl>[0]) {
+    return window.msfsApi.importChecklistFromUrl(input)
+  }
+
+  finalizeChecklistImport(input: Parameters<typeof window.msfsApi.finalizeChecklistImport>[0]) {
+    return window.msfsApi.finalizeChecklistImport(input)
+  }
+
+  deleteChecklist(checklistId: string) {
+    return window.msfsApi.deleteChecklist(checklistId)
+  }
+
+  updateChecklist(input: Parameters<typeof window.msfsApi.updateChecklist>[0]) {
+    return window.msfsApi.updateChecklist(input)
   }
 
   saveChartReferencePoints(
@@ -141,7 +185,15 @@ export class ElectronAppClient implements AppClient {
     return () => void 0
   }
 
+  onChecklistsChanged(listener: Parameters<typeof window.msfsApi.onChecklistsChanged>[0]) {
+    return window.msfsApi.onChecklistsChanged(listener)
+  }
+
   onSettingsChanged() {
     return () => void 0
+  }
+
+  onAppUpdateStateChange(listener: Parameters<typeof window.msfsApi.onAppUpdateStateChange>[0]) {
+    return window.msfsApi.onAppUpdateStateChange(listener)
   }
 }

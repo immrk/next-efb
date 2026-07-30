@@ -1,0 +1,168 @@
+{
+  "hello": "Hello World",
+  "main": {
+    "login": {
+      "logined": "Logged in",
+      "unlogin": "Not logged in",
+      "toLogin": "Go to login",
+      "logout": "Log out"
+    },
+    "navigation": {
+      "home": "Home",
+      "system": "System information",
+      "window": "Window manager",
+      "apiTest": "API test",
+      "setting": "Settings"
+    },
+    "home": {
+      "title": "Electron-Modern-Template",
+      "description": "Modern Electron development framework, making desktop application development simpler and more efficient",
+      "coreFeatures": "Core Features",
+      "features": {
+        "modernDev": {
+          "title": "Modern Development Experience",
+          "description": "Built with React + TypeScript + Vite, providing hot reload, type safety and other modern development experiences"
+        },
+        "crossPlatform": {
+          "title": "Cross-Platform Compatibility",
+          "description": "Supports Windows, macOS, and Linux, the three major operating systems. Develop once, deploy across multiple platforms"
+        },
+        "uiComponents": {
+          "title": "Modern UI Components",
+          "description": "Integrated with shadcn/ui and Lucide icons for a consistent, accessible interface with centralized theme configuration"
+        },
+        "i18n": {
+          "title": "i18n Internationalization Support",
+          "description": "Electron main process, renderer process, and UI components are all integrated with internationalization, supporting multi-language switching for rapid multi-language application development"
+        }
+      }
+    },
+    "system": {
+      "alert": "This page information comes from the main process, exposed to the renderer process through preload files, serving as an example of main process and renderer process communication",
+      "title": "System Information",
+      "nodeVersion": "Node.js Version",
+      "chromeVersion": "Chrome Version",
+      "electronVersion": "Electron Version",
+      "pingResult": "Ping Result",
+      "loading": "Loading...",
+      "notTested": "Not tested yet",
+      "ping": "Ping",
+      "pingSuccess": "Ping successful: {result}",
+      "pingFailed": "Ping failed"
+    },
+    "window": {
+      "alert": "This page demonstrates the usage of window management APIs, communicating with the main process through the windowManager interface exposed by preload files",
+      "operations": {
+        "title": "Window Operations",
+        "refreshList": "Refresh Window List",
+        "basicOperations": "Basic Window Operations",
+        "createSetting": "Create Setting Window",
+        "showAll": "Show All Windows",
+        "hideAll": "Hide All Windows",
+        "closeAll": "Close All Windows",
+        "statusControl": "Window Status Control",
+        "focusMain": "Focus Main Window",
+        "minimizeMain": "Minimize Main Window",
+        "maximizeMain": "Maximize Main Window",
+        "restoreMain": "Restore Main Window",
+        "infoQuery": "Window Information Query",
+        "checkStatus": "Check Window Status",
+        "getVisibleCount": "Get Visible Window Count",
+        "getAllWindows": "Get All Windows"
+      },
+      "status": {
+        "title": "Window Status",
+        "currentWindowInfo": "Current Window Information",
+        "mainExists": "Main Window Exists",
+        "mainVisible": "Main Window Visible",
+        "visibleCount": "Visible Window Count",
+        "totalCount": "Total Window Count",
+        "windowList": "Window List",
+        "windowName": "Window Name",
+        "visibleStatus": "Visible Status",
+        "visible": "Visible",
+        "hidden": "Hidden",
+        "actions": "Actions",
+        "focus": "Focus",
+        "close": "Close"
+      },
+      "messages": {
+        "windowManagerUnavailable": "windowManager API unavailable",
+        "listRefreshed": "Window list refreshed",
+        "refreshFailed": "Failed to refresh window list",
+        "createSettingFailed": "Failed to create setting window",
+        "allWindowsShown": "All windows shown",
+        "showWindowsFailed": "Failed to show windows",
+        "allWindowsHidden": "All windows hidden",
+        "hideWindowsFailed": "Failed to hide windows",
+        "nonMainWindowsClosed": "All non-main windows closed",
+        "closeWindowsFailed": "Failed to close windows",
+        "mainWindowFocused": "Main window focused",
+        "focusMainFailed": "Failed to focus main window",
+        "mainWindowMinimized": "Main window minimized",
+        "minimizeMainFailed": "Failed to minimize main window",
+        "mainWindowMaximized": "Main window maximized",
+        "maximizeMainFailed": "Failed to maximize main window",
+        "mainWindowRestored": "Main window restored",
+        "restoreMainFailed": "Failed to restore main window",
+        "statusChecked": "Window status checked",
+        "visibleCountInfo": "Current visible window count: {count}",
+        "getVisibleCountFailed": "Failed to get visible window count",
+        "totalWindowsInfo": "Currently have {count} windows",
+        "windowFocused": "Window {name} focused",
+        "focusWindowFailed": "Failed to focus window {name}",
+        "windowClosed": "Window {name} closed",
+        "closeWindowFailed": "Failed to close window {name}",
+        "windowStateChanged": "Window state changed: {windowName} - {action}"
+      }
+    },
+    "apiTest": {
+      "title": "API Test",
+      "description": "This test page uses the encapsulated request method to request the mock service, demonstrating the API usage method of this framework",
+      "testGetRenderer": "Send GET Request (Renderer)",
+      "testGetMain": "Send GET Request (Main)",
+      "testResult": "Response Result",
+      "testFailed": "Request Failed",
+      "loading": "Requesting..."
+    }
+  },
+  "setting": {
+    "title": "Settings",
+    "theme": {
+      "label": "Theme",
+      "description": "Switch software color theme, follows system by default",
+      "light": "Light",
+      "dark": "Dark",
+      "system": "Follow System"
+    },
+    "language": {
+      "label": "Language",
+      "description": "Language changes take effect immediately",
+      "placeholder": "Please select language",
+      "system": "Follow System",
+      "chinese": "Chinese",
+      "english": "English"
+    }
+  },
+  "common": {
+    "yes": "Yes",
+    "no": "No"
+  },
+  "login": {
+    "title": "Login",
+    "email": "Email",
+    "password": "Password",
+    "login": "Login",
+    "register": "Register",
+    "validation": {
+      "emailRequired": "Please enter your email",
+      "emailInvalid": "Please enter a valid email",
+      "passwordRequired": "Please enter your password"
+    },
+    "messages": {
+      "success": "Login successful",
+      "failed": "Login failed",
+      "registerUnavailable": "Registration is not available yet"
+    }
+  }
+}

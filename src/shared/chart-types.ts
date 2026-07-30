@@ -1,7 +1,14 @@
 export type ChartType = 'airport' | 'sid' | 'star' | 'approach' | 'general'
 export type ChartTitleMode = 'manual' | 'approach-procedure'
 
-export type ChartFileFormat = 'pdf' | 'png' | 'jpg' | 'jpeg'
+import type {
+  DocumentAssetPayload,
+  DocumentFileFormat,
+  DocumentImportFromUrlInput,
+  PickedDocumentFile
+} from './document-types'
+
+export type ChartFileFormat = DocumentFileFormat
 
 export interface ChartRecord {
   id: string
@@ -53,17 +60,8 @@ export interface ChartImportResult {
   chart: ChartRecord
 }
 
-export interface PickedChartFile {
-  sourcePath?: string | null
-  fileName: string
-  fileFormat: ChartFileFormat
-  mimeType: string
-  base64: string
-}
-
-export interface ChartImportFromUrlInput {
-  url: string
-}
+export type PickedChartFile = PickedDocumentFile
+export type ChartImportFromUrlInput = DocumentImportFromUrlInput
 
 export interface FinalizeChartImportInput {
   title: string
@@ -86,11 +84,6 @@ export interface ChartUpdateInput {
   boundApproachProcedureIds: string[]
 }
 
-export interface ChartAssetPayload {
+export interface ChartAssetPayload extends Omit<DocumentAssetPayload, 'documentId'> {
   chartId: string
-  fileFormat: ChartFileFormat
-  mimeType: string
-  base64?: string | null
-  url?: string | null
-  filePath?: string | null
 }

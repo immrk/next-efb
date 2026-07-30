@@ -19,6 +19,15 @@ import type {
   StorageSummary
 } from '@shared/chart-types'
 import type {
+  ChecklistAssetPayload,
+  ChecklistImportFromUrlInput,
+  ChecklistImportResult,
+  ChecklistRecord,
+  ChecklistUpdateInput,
+  FinalizeChecklistImportInput,
+  PickedChecklistFile
+} from '@shared/checklist-types'
+import type {
   BuildFlightPlanInput,
   BuildFlightPlanResult,
   NavAirportOption,
@@ -33,38 +42,10 @@ import type {
   NavMapSearchInput,
   NavMapSearchResult
 } from '@shared/nav-map-types'
+import type { AppUpdateState } from '@shared/update-types'
 
 declare global {
-  interface TemplateIpcResponse<T = undefined> {
-    success: boolean
-    data?: T
-    error?: string
-  }
-
   interface Window {
-    windowManager?: {
-      createWindow: (name: string, options?: Electron.BrowserWindowConstructorOptions) => Promise<TemplateIpcResponse>
-      showWindow: (name: string) => Promise<TemplateIpcResponse>
-      hideWindow: (name: string) => Promise<TemplateIpcResponse>
-      closeWindow: (name: string) => Promise<TemplateIpcResponse>
-      focusWindow: (name: string) => Promise<TemplateIpcResponse>
-      minimizeWindow: (name: string) => Promise<TemplateIpcResponse>
-      maximizeWindow: (name: string) => Promise<TemplateIpcResponse>
-      restoreWindow: (name: string) => Promise<TemplateIpcResponse>
-      hasWindow: (name: string) => Promise<TemplateIpcResponse<boolean>>
-      isWindowVisible: (name: string) => Promise<TemplateIpcResponse<boolean>>
-      getAllWindows: () => Promise<TemplateIpcResponse<Array<{ name: string; isVisible: boolean }>>>
-      getVisibleWindowCount: () => Promise<TemplateIpcResponse<number>>
-    }
-    auth?: {
-      login: (data: unknown) => Promise<TemplateIpcResponse>
-      logout: () => Promise<TemplateIpcResponse>
-      getToken: () => Promise<TemplateIpcResponse<import('./composables/useAuth').MockUser | null>>
-      tokenRefresh: () => Promise<TemplateIpcResponse<import('./composables/useAuth').MockUser | null>>
-      onTokenChange: (
-        listener: (user: import('./composables/useAuth').MockUser | null) => void
-      ) => () => void
-    }
     msfsApi: {
       getSnapshot: () => Promise<{ aircraft: AircraftState; connection: ConnectionState }>
       getSettings: () => Promise<AppSettings>
@@ -86,10 +67,26 @@ declare global {
       getStorageSummary: () => Promise<StorageSummary>
       finalizeChartImport: (input: FinalizeChartImportInput) => Promise<ChartImportResult>
       deleteChart: (chartId: string) => Promise<boolean>
+      getChecklist: (checklistId: string) => Promise<ChecklistRecord | null>
+      getChecklistAsset: (checklistId: string) => Promise<ChecklistAssetPayload | null>
+      listChecklists: () => Promise<ChecklistRecord[]>
+      pickChecklistFile: () => Promise<PickedChecklistFile | null>
+      importChecklistFromUrl: (
+        input: ChecklistImportFromUrlInput
+      ) => Promise<PickedChecklistFile>
+      finalizeChecklistImport: (
+        input: FinalizeChecklistImportInput
+      ) => Promise<ChecklistImportResult>
+      deleteChecklist: (checklistId: string) => Promise<boolean>
+      updateChecklist: (input: ChecklistUpdateInput) => Promise<ChecklistRecord | null>
       saveChartReferencePoints: (chartId: string, points: GeoReferencePoint[]) => Promise<GeoReferencePoint[]>
       updateChart: (input: ChartUpdateInput) => Promise<ChartRecord | null>
       updateSettings: (partial: Partial<AppSettings>) => Promise<AppSettings>
       getRemoteAccessStatus: () => Promise<RemoteAccessStatus>
+      getAppUpdateState: () => Promise<AppUpdateState>
+      checkForAppUpdate: () => Promise<AppUpdateState>
+      downloadAndInstallAppUpdate: () => Promise<AppUpdateState>
+      onAppUpdateStateChange: (listener: (state: AppUpdateState) => void) => () => void
       openExternal: (url: string) => Promise<boolean>
       performWindowAction: (action: DesktopWindowAction) => Promise<DesktopWindowState>
       getWindowState: () => Promise<DesktopWindowState>
@@ -97,6 +94,7 @@ declare global {
       performDevAction: (action: DesktopDevAction) => Promise<boolean>
       onAircraftUpdate: (listener: (state: AircraftState) => void) => () => void
       onConnectionUpdate: (listener: (state: ConnectionState) => void) => () => void
+      onChecklistsChanged: (listener: () => void) => () => void
     }
   }
 }
