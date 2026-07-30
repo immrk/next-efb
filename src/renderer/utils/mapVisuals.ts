@@ -58,6 +58,30 @@ export const ROUTE_VISUAL_COLORS: Record<RouteVisualTheme, string> = {
 
 const iconCache = new Map<string, DivIcon>()
 
+export function createMapReferenceLeafletIcon(
+  label: string,
+  removeLabel: string
+): DivIcon {
+  const safeLabel = escapeHtml(label)
+  const safeRemoveLabel = escapeHtml(removeLabel)
+
+  return divIcon({
+    className: 'map-reference-icon',
+    html: [
+      '<div class="map-reference-pin">',
+      `<span>${safeLabel}</span>`,
+      `<button type="button" class="map-reference-delete" data-map-reference-delete aria-label="${safeRemoveLabel}" title="${safeRemoveLabel}">`,
+      '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">',
+      '<path d="M18 6 6 18M6 6l12 12" />',
+      '</svg>',
+      '</button>',
+      '</div>'
+    ].join(''),
+    iconSize: [28, 38],
+    iconAnchor: [14, 38]
+  })
+}
+
 export function createMapSymbolLeafletIcon(
   kind: MapSymbolKind,
   state: MapSymbolState = 'default',
@@ -376,4 +400,18 @@ function toRadians(value: number): number {
 
 function toDegrees(value: number): number {
   return (value * 180) / Math.PI
+}
+
+function escapeHtml(value: string): string {
+  return value.replace(
+    /[&<>"']/g,
+    (character) =>
+      ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      })[character] ?? character
+  )
 }

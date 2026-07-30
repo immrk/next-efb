@@ -21,11 +21,13 @@ interface MapViewportState {
 export function NavDataOverlay({
   layerVisibility,
   selectedFeatureKey = null,
-  onSelectFeature
+  onSelectFeature,
+  onPickPoint
 }: {
   layerVisibility: NavMapLayerVisibility
   selectedFeatureKey?: string | null
   onSelectFeature?: (key: string) => void
+  onPickPoint?: (point: { lat: number; lon: number }) => void
 }) {
   const map = useMap()
   const appClient = getAppClient()
@@ -111,7 +113,10 @@ export function NavDataOverlay({
             riseOnHover
             zIndexOffset={isSelected ? 900 : 420}
             eventHandlers={{
-              click: () => onSelectFeature?.(featureKey)
+              click: () => {
+                onSelectFeature?.(featureKey)
+                onPickPoint?.({ lat: airport.lat, lon: airport.lon })
+              }
             }}
           >
             <Tooltip
@@ -172,7 +177,10 @@ export function NavDataOverlay({
             riseOnHover
             zIndexOffset={isSelected ? 900 : 320}
             eventHandlers={{
-              click: () => onSelectFeature?.(featureKey)
+              click: () => {
+                onSelectFeature?.(featureKey)
+                onPickPoint?.({ lat: vor.lat, lon: vor.lon })
+              }
             }}
           >
             <Tooltip
@@ -222,7 +230,10 @@ export function NavDataOverlay({
             riseOnHover
             zIndexOffset={isSelected ? 900 : 300}
             eventHandlers={{
-              click: () => onSelectFeature?.(featureKey)
+              click: () => {
+                onSelectFeature?.(featureKey)
+                onPickPoint?.({ lat: ndb.lat, lon: ndb.lon })
+              }
             }}
           >
             <Tooltip
@@ -270,7 +281,10 @@ export function NavDataOverlay({
             riseOnHover
             zIndexOffset={isSelected ? 900 : 260}
             eventHandlers={{
-              click: () => onSelectFeature?.(featureKey)
+              click: () => {
+                onSelectFeature?.(featureKey)
+                onPickPoint?.({ lat: waypoint.lat, lon: waypoint.lon })
+              }
             }}
           >
             <Tooltip

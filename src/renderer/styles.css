@@ -2947,8 +2947,8 @@ body {
 
 .chart-meta-modal {
   position: relative;
-  width: min(520px, calc(100% - 24px));
-  max-height: min(760px, calc(100vh - 32px));
+  width: min(560px, calc(100% - 24px));
+  max-height: min(780px, calc(100vh - 32px));
   border: 1px solid var(--ui-border);
   border-radius: 14px;
   background: var(--popover);
@@ -2974,14 +2974,14 @@ body {
 }
 
 .chart-meta-modal-body {
-  padding: 4px 12px 12px;
+  padding: 14px 16px 16px;
   overflow: auto;
   min-height: 0;
 }
 
 .chart-meta-tabs {
   display: grid;
-  gap: 12px;
+  gap: 16px;
 }
 
 .chart-meta-tabs-list {
@@ -3030,150 +3030,290 @@ body {
 .chart-meta-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: 14px;
 }
 
 .chart-meta-tab-panel {
   display: grid;
-  gap: 12px;
+  gap: 14px;
 }
 
-.chart-procedure-multiselect {
+.chart-procedure-selectors {
   display: grid;
-  gap: 12px;
+  gap: 14px;
 }
 
-.chart-procedure-multiselect-label {
+.multi-select {
+  position: relative;
+  display: grid;
+  gap: 7px;
+}
+
+.multi-select-label {
   color: var(--foreground);
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
 }
 
-.chart-procedure-multiselect-trigger {
+.multi-select-trigger {
   width: 100%;
-  min-height: 44px;
-  padding: 0.75rem 0.875rem;
-  border: 1px solid color-mix(in oklab, var(--primary) 20%, transparent);
-  border-radius: 0.875rem;
+  min-height: 48px;
+  height: auto;
+  padding: 7px 10px 7px 8px;
+  border: 1px solid var(--ui-border);
+  border-radius: 10px;
   color: var(--foreground);
-  background: color-mix(in oklab, var(--background) 92%, transparent);
+  background: color-mix(in oklab, var(--card) 88%, var(--background));
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   cursor: pointer;
   text-align: left;
-  font: inherit;
+  white-space: normal;
+  box-shadow: 0 1px 2px color-mix(in oklab, black 8%, transparent);
+  transition:
+    border-color 150ms ease,
+    background 150ms ease,
+    box-shadow 150ms ease;
 }
 
-.chart-procedure-multiselect-trigger:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
+.multi-select-trigger:hover:not(:disabled) {
+  border-color: color-mix(in oklab, var(--primary) 42%, var(--ui-border));
+  background: color-mix(in oklab, var(--primary) 4%, var(--card));
 }
 
-.chart-procedure-multiselect-trigger svg {
-  width: 16px;
-  height: 16px;
-  flex: 0 0 auto;
-  stroke: currentColor;
-  stroke-width: 2;
-  fill: none;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  transition: transform 160ms ease;
+.multi-select.is-open .multi-select-trigger {
+  border-color: color-mix(in oklab, var(--primary) 72%, transparent);
+  background: color-mix(in oklab, var(--primary) 5%, var(--card));
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--primary) 12%, transparent);
 }
 
-.chart-procedure-multiselect-trigger svg.open {
-  transform: rotate(180deg);
-}
-
-.chart-procedure-multiselect-value {
+.multi-select-trigger-value {
   min-width: 0;
-  color: color-mix(in oklab, var(--primary) 78%, transparent);
-  line-height: 1.45;
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  overflow: hidden;
 }
 
-.chart-procedure-multiselect-panel {
-  max-height: 280px;
-  overflow: auto;
-  padding: 8px;
-  border: 1px solid color-mix(in oklab, var(--primary) 14%, transparent);
-  border-radius: 14px;
-  background: color-mix(in oklab, var(--primary) 3%, transparent);
-  display: grid;
-  gap: 8px;
-}
-
-.chart-multiselect-tools {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 8px;
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  padding-bottom: 4px;
-  background: color-mix(in oklab, var(--background) 98%, transparent);
-}
-
-.chart-multiselect-toggle {
-  min-height: 44px;
+.multi-select-placeholder {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muted-foreground);
+  font-weight: 400;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.chart-procedure-option {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid color-mix(in oklab, var(--primary) 12%, transparent);
+.multi-select-chip {
+  max-width: min(180px, 42%);
+  min-width: 0;
+  padding: 4px 8px;
+  overflow: hidden;
+  border: 1px solid color-mix(in oklab, var(--primary) 22%, transparent);
+  border-radius: 6px;
+  background: color-mix(in oklab, var(--primary) 10%, var(--card));
+  color: var(--foreground);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.multi-select-chip-overflow {
+  max-width: none;
+  color: var(--primary);
+}
+
+.multi-select-trigger-meta {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.multi-select-count {
+  min-width: 34px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--primary) 12%, transparent);
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.multi-select-chevron {
+  width: 16px;
+  height: 16px;
+  color: var(--muted-foreground);
+  transition: transform 150ms ease;
+}
+
+.multi-select.is-open .multi-select-chevron {
+  color: var(--primary);
+  transform: rotate(180deg);
+}
+
+.multi-select-panel {
+  display: grid;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid color-mix(in oklab, var(--primary) 24%, var(--ui-border));
   border-radius: 12px;
-  background: color-mix(in oklab, var(--primary) 2%, transparent);
+  background: color-mix(in oklab, var(--popover) 97%, var(--primary));
+  box-shadow:
+    0 12px 28px color-mix(in oklab, black 18%, transparent),
+    inset 0 1px 0 color-mix(in oklab, white 4%, transparent);
+}
+
+.multi-select-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.multi-select-search {
+  position: relative;
+  min-width: 0;
+}
+
+.multi-select-search > svg {
+  position: absolute;
+  top: 50%;
+  left: 10px;
+  z-index: 1;
+  width: 15px;
+  height: 15px;
+  color: var(--muted-foreground);
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.multi-select-search input {
+  height: 38px;
+  padding-left: 32px;
+  border-radius: 8px;
+  background: color-mix(in oklab, var(--background) 72%, transparent);
+}
+
+.multi-select-bulk-action {
+  min-width: 76px;
+  color: var(--primary);
+}
+
+.multi-select-panel-summary {
+  padding: 0 4px;
+  color: var(--muted-foreground);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.multi-select-options {
+  max-height: 196px;
+  min-height: 0;
+  display: grid;
+  gap: 3px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 2px;
+}
+
+.multi-select-option {
+  width: 100%;
+  min-height: 42px;
+  padding: 7px 9px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
   color: var(--foreground);
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 9px;
   text-align: left;
   cursor: pointer;
   font: inherit;
   transition:
-    border-color 160ms ease,
-    background 160ms ease,
-    transform 160ms ease;
+    border-color 120ms ease,
+    background 120ms ease;
 }
 
-.chart-procedure-option.selected {
-  border-color: color-mix(in oklab, var(--primary) 28%, transparent);
-  background: color-mix(in oklab, var(--primary) 12%, var(--card));
+.multi-select-option:hover {
+  background: color-mix(in oklab, var(--primary) 7%, transparent);
 }
 
-.chart-procedure-option-check {
+.multi-select-option[aria-selected='true'] {
+  border-color: color-mix(in oklab, var(--primary) 18%, transparent);
+  background: color-mix(in oklab, var(--primary) 10%, transparent);
+}
+
+.multi-select-option-check {
   width: 18px;
   height: 18px;
   flex: 0 0 auto;
-  border: 1px solid color-mix(in oklab, var(--primary) 18%, transparent);
-  border-radius: 5px;
+  border: 1px solid color-mix(in oklab, var(--foreground) 24%, transparent);
+  border-radius: 4px;
   display: grid;
   place-items: center;
   color: transparent;
-  background: color-mix(in oklab, var(--background) 92%, transparent);
+  background: color-mix(in oklab, var(--background) 82%, transparent);
+  transition:
+    border-color 120ms ease,
+    background 120ms ease,
+    color 120ms ease;
 }
 
-.chart-procedure-option-check.selected {
-  color: var(--foreground);
-  border-color: color-mix(in oklab, var(--primary) 42%, transparent);
-  background: color-mix(in oklab, var(--background) 92%, transparent);
+.multi-select-option[aria-selected='true'] .multi-select-option-check {
+  color: var(--primary-foreground);
+  border-color: var(--primary);
+  background: var(--primary);
 }
 
-.chart-procedure-option-check svg {
-  width: 12px;
-  height: 12px;
+.multi-select-option-check svg {
+  width: 13px;
+  height: 13px;
   stroke: currentColor;
-  stroke-width: 2.5;
+  stroke-width: 3;
   fill: none;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
-.chart-procedure-option-copy {
+.multi-select-option-copy {
   min-width: 0;
-  line-height: 1.45;
+  display: grid;
+  gap: 2px;
+}
+
+.multi-select-option-copy strong {
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.multi-select-option-copy small {
+  overflow: hidden;
+  color: var(--muted-foreground);
+  font-size: 11px;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.multi-select-empty {
+  padding: 18px 12px;
+  color: var(--muted-foreground);
+  text-align: center;
+  font-size: 12px;
 }
 
 .chart-meta-derived-title {
@@ -3196,10 +3336,12 @@ body {
 }
 
 .chart-meta-modal-foot {
-  padding: 10px 12px 12px;
+  padding: 10px 16px 12px;
   display: flex;
   justify-content: flex-end;
   gap: 8px;
+  border-top: 1px solid var(--ui-border);
+  background: color-mix(in oklab, var(--popover) 96%, var(--background));
 }
 
 .danger-copy {
@@ -3898,6 +4040,44 @@ body {
   pointer-events: none;
 }
 
+.map-reference-delete {
+  position: absolute;
+  top: -7px;
+  right: -8px;
+  z-index: 3;
+  display: grid;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  place-items: center;
+  border: 2px solid var(--background);
+  border-radius: 50%;
+  background: var(--destructive);
+  color: var(--destructive-foreground, white);
+  box-shadow: 0 3px 9px color-mix(in oklab, var(--background) 38%, transparent);
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.map-reference-delete:hover {
+  filter: brightness(1.08);
+  transform: scale(1.08);
+}
+
+.map-reference-delete:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.map-reference-delete svg {
+  width: 12px;
+  height: 12px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+}
+
 .chart-reference-pin {
   position: absolute;
   width: 28px;
@@ -4351,11 +4531,11 @@ body {
     grid-area: back;
   }
 
-  .chart-multiselect-tools {
+  .multi-select-toolbar {
     grid-template-columns: 1fr;
   }
 
-  .chart-multiselect-toggle {
+  .multi-select-bulk-action {
     width: 100%;
   }
 

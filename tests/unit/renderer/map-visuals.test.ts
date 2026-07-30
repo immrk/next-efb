@@ -6,6 +6,7 @@ import type {
 import {
   ROUTE_VISUAL_COLORS,
   buildRouteLegs,
+  createMapReferenceLeafletIcon,
   createMapSymbolLeafletIcon,
   findNearestRouteLegIndex,
   formatMapCoordinates,
@@ -29,6 +30,17 @@ describe('map visual system', () => {
     expect(selectedFix.options.html).toContain('map-symbol--fix')
     expect(selectedFix.options.html).toContain('map-symbol--selected')
     expect(selectedFix.options.html).toContain('map-symbol-dot')
+  })
+
+  it('creates a map reference marker with an accessible delete icon', () => {
+    const marker = createMapReferenceLeafletIcon('1', 'Remove point "1"')
+
+    expect(marker.options.className).toBe('map-reference-icon')
+    expect(marker.options.iconSize).toEqual([28, 38])
+    expect(marker.options.html).toContain('<span>1</span>')
+    expect(marker.options.html).toContain('data-map-reference-delete')
+    expect(marker.options.html).toContain('aria-label="Remove point &quot;1&quot;"')
+    expect(marker.options.html).toContain('<svg')
   })
 
   it('classifies navigation and flight-plan point types by shape', () => {
