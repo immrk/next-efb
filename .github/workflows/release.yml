@@ -15,10 +15,14 @@ permissions:
   pull-requests: write
 
 jobs:
-  version-or-release:
+  version:
     if: github.ref == 'refs/heads/master'
-    runs-on: windows-latest
-    timeout-minutes: 45
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      should_release: ${{ steps.release.outputs.should_release }}
+      version: ${{ steps.release.outputs.version }}
+      tag: ${{ steps.release.outputs.tag }}
 
     steps:
       - name: Check out repository
@@ -49,43 +53,57 @@ jobs:
       - name: Resolve release target
         id: release
         if: steps.changesets.outputs.hasChangesets == 'false'
-        shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          $version = node -p "require('./package.json').version"
-          $tag = "v$version"
-          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-          "tag=$tag" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          version="$(node -p "require('./package.json').version")"
+          tag="v${version}"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
 
-          gh release view $tag --repo $env:GITHUB_REPOSITORY *> $null
-          if ($LASTEXITCODE -eq 0) {
-            "should_release=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-          } else {
-            "should_release=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-          }
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "should_release=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_release=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  build-and-release:
+    needs: version
+    if: needs.version.outputs.should_release == 'true'
+    runs-on: windows-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
 
       - name: Type check
-        if: steps.release.outputs.should_release == 'true'
         run: npm run typecheck
 
       - name: Run unit tests
-        if: steps.release.outputs.should_release == 'true'
         run: npm run test:unit
 
       - name: Build Windows installer
-        if: steps.release.outputs.should_release == 'true'
         run: npm run make
         env:
           CSC_LINK: ${{ secrets.WINDOWS_CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.WINDOWS_CSC_KEY_PASSWORD }}
 
       - name: Generate release notes
-        if: steps.release.outputs.should_release == 'true'
         run: npm run release:notes
 
       - name: Verify update artifacts
-        if: steps.release.outputs.should_release == 'true'
         shell: pwsh
         run: |
           $installer = Get-ChildItem -Path out -Filter "NextEFB-*-Setup.exe" -File
@@ -95,10 +113,9 @@ jobs:
           }
 
       - name: Upload workflow artifact
-        if: steps.release.outputs.should_release == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: NextEFB-${{ steps.release.outputs.version }}-windows
+          name: NextEFB-${{ needs.version.outputs.version }}-windows
           path: |
             out/NextEFB-*-Setup.exe
             out/NextEFB-*-Setup.exe.blockmap
@@ -106,12 +123,11 @@ jobs:
           if-no-files-found: error
 
       - name: Create GitHub Release
-        if: steps.release.outputs.should_release == 'true'
         shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_TAG: ${{ steps.release.outputs.tag }}
-          RELEASE_VERSION: ${{ steps.release.outputs.version }}
+          RELEASE_TAG: ${{ needs.version.outputs.tag }}
+          RELEASE_VERSION: ${{ needs.version.outputs.version }}
         run: |
           $assets = @(
             Get-ChildItem -Path out -Filter "NextEFB-*-Setup.exe" -File
