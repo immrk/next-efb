@@ -9,6 +9,11 @@ import type {
 } from '@shared/types'
 import type {
   ChartAssetPayload,
+  ChartBundleExportInput,
+  ChartBundleExportResult,
+  ChartBundleImportInput,
+  ChartBundleImportPreview,
+  ChartBundleImportResult,
   ChartImportFromUrlInput,
   ChartImportResult,
   ChartRecord,
@@ -60,6 +65,11 @@ declare global {
       getChart: (chartId: string) => Promise<ChartRecord | null>
       getChartAsset: (chartId: string) => Promise<ChartAssetPayload | null>
       getChartReferencePoints: (chartId: string) => Promise<GeoReferencePoint[]>
+      pickChartBundleImport: () => Promise<ChartBundleImportPreview | null>
+      importChartBundle: (input: ChartBundleImportInput) => Promise<ChartBundleImportResult>
+      exportChartBundle: (
+        input: ChartBundleExportInput
+      ) => Promise<ChartBundleExportResult | null>
       pickChartFile: () => Promise<PickedChartFile | null>
       pickChartsDirectory: () => Promise<string | null>
       importChartFromUrl: (input: ChartImportFromUrlInput) => Promise<PickedChartFile>

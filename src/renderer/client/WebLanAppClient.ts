@@ -1,5 +1,10 @@
 import type {
   ChartAssetPayload,
+  ChartBundleExportInput,
+  ChartBundleExportResult,
+  ChartBundleImportInput,
+  ChartBundleImportPreview,
+  ChartBundleImportResult,
   ChartImportFromUrlInput,
   ChartImportResult,
   ChartRecord,
@@ -174,6 +179,22 @@ export class WebLanAppClient implements AppClient {
 
   getChartReferencePoints(chartId: string): Promise<GeoReferencePoint[]> {
     return this.fetchJson(`/api/charts/${chartId}/reference-points`)
+  }
+
+  async pickChartBundleImport(): Promise<ChartBundleImportPreview | null> {
+    throw new Error('CHART_BUNDLE_DESKTOP_REQUIRED')
+  }
+
+  async importChartBundle(
+    _input: ChartBundleImportInput
+  ): Promise<ChartBundleImportResult> {
+    throw new Error('CHART_BUNDLE_DESKTOP_REQUIRED')
+  }
+
+  async exportChartBundle(
+    _input: ChartBundleExportInput
+  ): Promise<ChartBundleExportResult | null> {
+    throw new Error('CHART_BUNDLE_DESKTOP_REQUIRED')
   }
 
   listCharts(): Promise<ChartRecord[]> {

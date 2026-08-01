@@ -11,6 +11,11 @@ import type {
 } from '../../../shared/types.js'
 import type {
   ChartAssetPayload,
+  ChartBundleExportInput,
+  ChartBundleExportResult,
+  ChartBundleImportInput,
+  ChartBundleImportPreview,
+  ChartBundleImportResult,
   ChartImportFromUrlInput,
   ChartImportResult,
   ChartRecord,
@@ -70,6 +75,14 @@ const api = {
     ipcRenderer.invoke(IPC_CHANNELS.chartAsset, chartId),
   getChartReferencePoints: async (chartId: string): Promise<GeoReferencePoint[]> =>
     ipcRenderer.invoke(IPC_CHANNELS.chartReferenceGet, chartId),
+  pickChartBundleImport: async (): Promise<ChartBundleImportPreview | null> =>
+    ipcRenderer.invoke(IPC_CHANNELS.chartBundlePickImport),
+  importChartBundle: async (input: ChartBundleImportInput): Promise<ChartBundleImportResult> =>
+    ipcRenderer.invoke(IPC_CHANNELS.chartBundleImport, input),
+  exportChartBundle: async (
+    input: ChartBundleExportInput
+  ): Promise<ChartBundleExportResult | null> =>
+    ipcRenderer.invoke(IPC_CHANNELS.chartBundleExport, input),
   pickChartFile: async (): Promise<PickedChartFile | null> => ipcRenderer.invoke(IPC_CHANNELS.chartImport),
   pickChartsDirectory: async (): Promise<string | null> =>
     ipcRenderer.invoke(IPC_CHANNELS.storagePickChartsDirectory),

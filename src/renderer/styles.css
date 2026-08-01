@@ -1263,12 +1263,15 @@ body {
 
 .aircraft-arrow-shape,
 .chart-aircraft-arrow {
+  --aircraft-marker-color: #e273b6;
   width: 26px;
   height: 26px;
   margin-left: 1px;
-  background: var(--primary);
+  background: var(--aircraft-marker-color);
   clip-path: polygon(50% 0%, 100% 100%, 66% 82%, 50% 92%, 34% 82%, 0% 100%);
-  filter: drop-shadow(0 0 14px color-mix(in oklab, var(--primary) 78%, transparent));
+  filter: drop-shadow(
+    0 0 14px color-mix(in oklab, var(--aircraft-marker-color) 78%, transparent)
+  );
 }
 
 .chart-aircraft-arrow {
@@ -1879,6 +1882,7 @@ body {
 
 .chart-picker-search {
   flex: 1;
+  min-width: 0;
   min-height: 44px;
   border: 1px solid var(--ui-border);
   border-radius: 8px;
@@ -1890,6 +1894,13 @@ body {
 
 .chart-picker-link-toggle {
   flex: 0 0 auto;
+}
+
+.chart-picker-bundle-action {
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
 }
 
 .chart-picker-close {
@@ -3344,6 +3355,229 @@ body {
   background: color-mix(in oklab, var(--popover) 96%, var(--background));
 }
 
+.chart-bundle-backdrop {
+  position: fixed;
+}
+
+.chart-bundle-modal {
+  width: min(760px, calc(100% - 32px));
+  max-height: min(820px, calc(100vh - 32px));
+}
+
+.chart-bundle-head {
+  align-items: flex-start;
+  padding: 12px 14px;
+}
+
+.chart-bundle-head > div {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.chart-bundle-head p {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.chart-bundle-body {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+}
+
+.chart-bundle-policy {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 11px 12px;
+  border: 1px solid color-mix(in oklab, var(--primary) 22%, var(--ui-border));
+  border-radius: 10px;
+  background: color-mix(in oklab, var(--primary) 7%, transparent);
+  color: var(--ui-fg);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.chart-bundle-policy svg {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  color: var(--primary);
+}
+
+.chart-bundle-select-all,
+.chart-bundle-chart {
+  cursor: pointer;
+}
+
+.chart-bundle-select-all {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 4px;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.chart-bundle-select-all input,
+.chart-bundle-chart > input,
+.chart-bundle-group-checkbox {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--primary);
+}
+
+.chart-bundle-groups {
+  display: grid;
+  gap: 14px;
+}
+
+.chart-bundle-airport-group {
+  overflow: hidden;
+  border: 1px solid var(--ui-border);
+  border-radius: 12px;
+  background: color-mix(in oklab, var(--background) 56%, transparent);
+}
+
+.chart-bundle-airport-head,
+.chart-bundle-type-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.chart-bundle-airport-head {
+  min-height: 46px;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--ui-border);
+  background: color-mix(in oklab, var(--primary) 8%, var(--background));
+}
+
+.chart-bundle-airport-head strong {
+  font-size: 14px;
+  letter-spacing: 0.04em;
+}
+
+.chart-bundle-type-groups {
+  display: grid;
+  gap: 1px;
+  background: var(--ui-border-soft);
+}
+
+.chart-bundle-type-group {
+  display: grid;
+  gap: 9px;
+  padding: 10px;
+  background: var(--popover);
+}
+
+.chart-bundle-type-head {
+  min-height: 30px;
+  padding: 0 2px;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.chart-bundle-group-checkbox {
+  margin: 0;
+  cursor: pointer;
+}
+
+.chart-bundle-chart-list {
+  display: grid;
+  gap: 8px;
+}
+
+.chart-bundle-chart {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: flex-start;
+  gap: 11px;
+  padding: 12px;
+  border: 1px solid var(--ui-border);
+  border-radius: 11px;
+  background: color-mix(in oklab, var(--background) 62%, transparent);
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease;
+}
+
+.chart-bundle-chart:hover,
+.chart-bundle-chart.is-selected {
+  border-color: color-mix(in oklab, var(--primary) 38%, var(--ui-border));
+  background: color-mix(in oklab, var(--primary) 5%, var(--background));
+}
+
+.chart-bundle-chart > input {
+  margin-top: 2px;
+}
+
+.chart-bundle-chart-copy {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+
+.chart-bundle-chart-title {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.chart-bundle-chart-title strong,
+.chart-bundle-export-chart strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+}
+
+.chart-bundle-chart-title > div {
+  flex: 0 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 5px;
+}
+
+.chart-bundle-chart-meta,
+.chart-bundle-local-title {
+  color: var(--muted-foreground);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.chart-bundle-foot {
+  align-items: center;
+  justify-content: space-between;
+}
+
+.chart-bundle-foot > span {
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+
+.chart-bundle-foot > div {
+  display: flex;
+  gap: 8px;
+}
+
+.chart-bundle-export-modal {
+  width: min(640px, calc(100% - 32px));
+}
+
+.chart-bundle-export-chart {
+  align-items: center;
+}
+
 .danger-copy {
   margin: 0;
   color: var(--destructive-foreground, var(--foreground));
@@ -4518,6 +4752,29 @@ body {
 
   .chart-import-url-submit {
     width: 100%;
+  }
+
+  .chart-bundle-modal {
+    width: calc(100% - 16px);
+    max-height: calc(100vh - 16px);
+  }
+
+  .chart-bundle-chart-title,
+  .chart-bundle-foot {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .chart-bundle-chart-title > div {
+    justify-content: flex-start;
+  }
+
+  .chart-bundle-foot > div {
+    width: 100%;
+  }
+
+  .chart-bundle-foot > div > button {
+    flex: 1;
   }
 
   .chart-editor-topbar {

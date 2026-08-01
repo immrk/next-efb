@@ -78,6 +78,18 @@ export class ElectronAppClient implements AppClient {
     return window.msfsApi.getChartReferencePoints(chartId)
   }
 
+  pickChartBundleImport() {
+    return window.msfsApi.pickChartBundleImport()
+  }
+
+  importChartBundle(input: Parameters<typeof window.msfsApi.importChartBundle>[0]) {
+    return window.msfsApi.importChartBundle(input)
+  }
+
+  exportChartBundle(input: Parameters<typeof window.msfsApi.exportChartBundle>[0]) {
+    return window.msfsApi.exportChartBundle(input)
+  }
+
   listCharts() {
     return window.msfsApi.listCharts()
   }

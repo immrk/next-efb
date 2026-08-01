@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import * as pdfjs from 'pdfjs-dist'
 import type {
+  ChartBundleImportInput,
+  ChartBundleImportPreview,
   ChartImportResult,
   ChartRecord,
   PickedChartFile,
@@ -132,12 +134,28 @@ export function useChartLibraryData() {
     notifyChartChanged()
   }
 
+  const pickChartBundleImport = async (): Promise<ChartBundleImportPreview | null> =>
+    appClient.pickChartBundleImport()
+
+  const importChartBundle = async (input: ChartBundleImportInput) => {
+    const result = await appClient.importChartBundle(input)
+    refresh()
+    notifyChartChanged()
+    return result
+  }
+
+  const exportChartBundle = async (chartIds: string[]) =>
+    appClient.exportChartBundle({ chartIds })
+
   return {
     charts,
     storageSummary,
     refresh,
     importChart,
     importChartFromUrl,
+    pickChartBundleImport,
+    importChartBundle,
+    exportChartBundle,
     deleteChart
   }
 }

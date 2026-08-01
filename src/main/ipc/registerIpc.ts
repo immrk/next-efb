@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { BrowserWindow, dialog, ipcMain, shell } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron'
 import { IPC_CHANNELS } from '@shared/channels'
 import type { AppSettings, DesktopDevAction, DesktopWindowAction, DesktopWindowState } from '@shared/types'
 import type {
@@ -19,6 +19,11 @@ import type {
 } from '@shared/nav-map-types'
 import type {
   ChartAssetPayload,
+  ChartBundleExportInput,
+  ChartBundleExportResult,
+  ChartBundleImportInput,
+  ChartBundleImportPreview,
+  ChartBundleImportResult,
   ChartImportFromUrlInput,
   ChartImportResult,
   ChartRecord,
@@ -43,6 +48,7 @@ import { ChartRepository } from '../services/storage/ChartRepository'
 import { ChecklistRepository } from '../services/storage/ChecklistRepository'
 import { StorageService } from '../services/storage/StorageService'
 import { RemoteChartImportService } from '../services/storage/RemoteChartImportService'
+import { ChartBundleService } from '../services/storage/ChartBundleService'
 import { LanServer } from '../services/lan/LanServer'
 import { NavDataService } from '../services/navigation/NavDataService'
 import { AppUpdateService } from '../services/updates/AppUpdateService'
@@ -74,6 +80,11 @@ export function registerIpc(options: RegisterIpcOptions): void {
     appUpdateService
   } = options
   const remoteChartImportService = new RemoteChartImportService()
+  const chartBundleService = new ChartBundleService({
+    chartRepository,
+    getStorageSummary: () => storageService.getSummary(),
+    navDataService
+  })
 
   simConnectService.onAircraftState((state) => {
     flightStateStore.setAircraftState(state)
@@ -198,6 +209,49 @@ export function registerIpc(options: RegisterIpcOptions): void {
       filePath: displayPath
     }
   })
+  ipcMain.handle(
+    IPC_CHANNELS.chartBundlePickImport,
+    async (): Promise<ChartBundleImportPreview | null> => {
+      const result = await dialog.showOpenDialog(mainWindow, {
+        properties: ['openFile'],
+        filters: [{ name: 'NextEFB Chart Bundle', extensions: ['zip'] }]
+      })
+      if (result.canceled || result.filePaths.length === 0) {
+        return null
+      }
+      return chartBundleService.previewImport(result.filePaths[0], settingsStore.get())
+    }
+  )
+  ipcMain.handle(
+    IPC_CHANNELS.chartBundleImport,
+    (_event, input: ChartBundleImportInput): ChartBundleImportResult => {
+      const imported = chartBundleService.importBundle(input, settingsStore.get())
+      lanServer.broadcastChartChanged()
+      return imported
+    }
+  )
+  ipcMain.handle(
+    IPC_CHANNELS.chartBundleExport,
+    async (
+      _event,
+      input: ChartBundleExportInput
+    ): Promise<ChartBundleExportResult | null> => {
+      const today = new Date().toISOString().slice(0, 10).replaceAll('-', '')
+      const result = await dialog.showSaveDialog(mainWindow, {
+        defaultPath: `NextEFB-charts-${today}.zip`,
+        filters: [{ name: 'ZIP Archive', extensions: ['zip'] }]
+      })
+      if (result.canceled || !result.filePath) {
+        return null
+      }
+      return chartBundleService.exportBundle(
+        result.filePath,
+        input.chartIds,
+        settingsStore.get(),
+        app.getVersion()
+      )
+    }
+  )
   ipcMain.handle(IPC_CHANNELS.chartImport, async (): Promise<PickedChartFile | null> => {
     const result = await dialog.showOpenDialog(mainWindow, {
       properties: ['openFile'],

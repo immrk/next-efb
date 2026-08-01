@@ -1,5 +1,10 @@
 import type {
   ChartAssetPayload,
+  ChartBundleExportInput,
+  ChartBundleExportResult,
+  ChartBundleImportInput,
+  ChartBundleImportPreview,
+  ChartBundleImportResult,
   ChartImportFromUrlInput,
   ChartImportResult,
   ChartRecord,
@@ -75,6 +80,9 @@ export interface AppClient {
   getChart(chartId: string): Promise<ChartRecord | null>
   getChartAsset(chartId: string): Promise<ChartAssetPayload | null>
   getChartReferencePoints(chartId: string): Promise<GeoReferencePoint[]>
+  pickChartBundleImport(): Promise<ChartBundleImportPreview | null>
+  importChartBundle(input: ChartBundleImportInput): Promise<ChartBundleImportResult>
+  exportChartBundle(input: ChartBundleExportInput): Promise<ChartBundleExportResult | null>
   listCharts(): Promise<ChartRecord[]>
   getStorageSummary(): Promise<StorageSummary>
   pickChartFile(): Promise<PickedChartFile | null>
