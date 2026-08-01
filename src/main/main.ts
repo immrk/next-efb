@@ -18,6 +18,7 @@ import { ChartRepository } from './services/storage/ChartRepository.js'
 import { ChecklistRepository } from './services/storage/ChecklistRepository.js'
 import { StorageService } from './services/storage/StorageService.js'
 import { AppUpdateService } from './services/updates/AppUpdateService.js'
+import { VatsimDataService } from './services/vatsim/VatsimDataService.js'
 import { windowManager } from './windowManager.js'
 import '../utils/logger.js'
 
@@ -39,6 +40,7 @@ const TILE_REQUEST_URLS = [
 const APP_TILE_REFERER = 'https://nextefb.app/'
 
 let appTray: Tray | null = null
+let activeVatsimDataService: VatsimDataService | null = null
 let isQuitting = false
 let hasShownSingleInstanceNotice = false
 const appUpdateService = new AppUpdateService({
@@ -70,6 +72,8 @@ app.whenReady().then(async () => {
 
 app.on('before-quit', () => {
   isQuitting = true
+  activeVatsimDataService?.stop()
+  activeVatsimDataService = null
 })
 
 app.on('second-instance', () => {
@@ -100,6 +104,12 @@ async function createMainWindow(): Promise<void> {
   const simConnectService = new SimConnectService(settingsStore.get())
   const storageService = new StorageService()
   const navDataService = new NavDataService()
+  activeVatsimDataService?.stop()
+  const vatsimDataService = new VatsimDataService({
+    navDataService,
+    getSettings: () => settingsStore.get()
+  })
+  activeVatsimDataService = vatsimDataService
   const chartRepository = new ChartRepository(storageService.getSummary())
   const checklistRepository = new ChecklistRepository(storageService.getSummary().databasePath)
   const lanServer = new LanServer({
@@ -111,7 +121,8 @@ async function createMainWindow(): Promise<void> {
     chartRepository,
     checklistRepository,
     storageService,
-    navDataService
+    navDataService,
+    vatsimDataService
   })
 
   attachWindowGuards(mainWindow)
@@ -127,9 +138,11 @@ async function createMainWindow(): Promise<void> {
     storageService,
     lanServer,
     navDataService,
+    vatsimDataService,
     appUpdateService
   })
 
+  vatsimDataService.start()
   simConnectService.start()
   await lanServer.start()
   sendWindowState(mainWindow)

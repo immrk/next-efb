@@ -5,13 +5,17 @@ import { MapContainer, Marker, Polyline, TileLayer, Tooltip, useMap } from 'reac
 import { useTranslation } from 'react-i18next'
 import type { GeoReferencePoint } from '@shared/chart-types'
 import type { FlightPlanPoint, FlightPlanSegment } from '@shared/flight-plan-types'
+import type { VatsimMetarFeature, VatsimSelectableFeature, VatsimStatus } from '@shared/vatsim-types'
 import { createAircraftLeafletIcon } from './AircraftArrow'
 import { ConnectionBadge } from './ConnectionBadge'
 import { MapDisplayToolbar } from './MapDisplayToolbar'
 import { NavDataOverlay } from './NavDataOverlay'
+import { VatsimDetailsDrawer } from './VatsimDetailsDrawer'
+import { VatsimOverlay } from './VatsimOverlay'
 import { SafeAreaTopInset } from './SafeAreaTopInset'
 import { useAppStore } from '../store/useAppStore'
 import { usePersistentMapDisplaySettings } from '../hooks/usePersistentMapDisplaySettings'
+import { usePersistentVatsimDisplaySettings } from '../hooks/usePersistentVatsimDisplaySettings'
 import { useMapOverlayChart } from '../hooks/useMapOverlayChart'
 import { getMapTileConfig } from '../utils/mapTileProviders'
 import {
@@ -31,6 +35,15 @@ const DEFAULT_MAP_ZOOM = 7
 const DEFAULT_MAP_CENTERS: Record<'zh-CN' | 'en-US', { lat: number; lon: number }> = {
   'zh-CN': { lat: 31.2304, lon: 121.4737 },
   'en-US': { lat: 40.7128, lon: -74.006 }
+}
+const INITIAL_VATSIM_STATUS: VatsimStatus = {
+  phase: 'connecting',
+  revision: 0,
+  fetchedAt: null,
+  feedUpdatedAt: null,
+  nextRefreshAt: null,
+  lastError: null,
+  counts: { pilots: 0, controllers: 0, atis: 0, connectedClients: 0 }
 }
 
 interface StoredMapView {
@@ -312,6 +325,7 @@ export function MapPanel({
   const language = useAppStore((state) => state.language)
   const settings = useAppStore((state) => state.settings)
   const { navLayerVisibility, toggleNavLayer } = usePersistentMapDisplaySettings()
+  const { vatsimLayerVisibility, toggleVatsimLayer } = usePersistentVatsimDisplaySettings()
   const [initialMapView] = useState<StoredMapView>(() => readStoredMapView(language))
   const aircraftPositionUsable = aircraft ? isAircraftPositionUsable(aircraft) : false
   const lat = aircraftPositionUsable ? (aircraft?.lat ?? initialMapView.lat) : initialMapView.lat
@@ -320,6 +334,9 @@ export function MapPanel({
   const [isFollowActive, setIsFollowActive] = useState(false)
   const [routeViewTrigger, setRouteViewTrigger] = useState(0)
   const [mapSelection, setMapSelection] = useState<MapSelection>(null)
+  const [vatsimSelection, setVatsimSelection] = useState<VatsimSelectableFeature | null>(null)
+  const [vatsimStatus, setVatsimStatus] = useState<VatsimStatus>(INITIAL_VATSIM_STATUS)
+  const [vatsimWeather, setVatsimWeather] = useState<VatsimMetarFeature[]>([])
   const [searchTarget, setSearchTarget] = useState<{ lat: number; lon: number; key: number } | null>(null)
   const tileConfig = getMapTileConfig(settings?.mapTileProvider)
   const routeLegs = useMemo(
@@ -357,6 +374,7 @@ export function MapPanel({
           className="leaflet-map"
           zoomControl={false}
           attributionControl
+          preferCanvas
         >
           <TileLayer
             attribution={tileConfig.attribution}
@@ -374,14 +392,27 @@ export function MapPanel({
           ) : null}
           <NavDataOverlay
             layerVisibility={navLayerVisibility}
+            airportWeather={vatsimWeather}
             selectedFeatureKey={selectedNavFeatureKey}
-            onSelectFeature={(key) =>
+            onSelectFeature={(key) => {
+              setVatsimSelection(null)
               setMapSelection((current) =>
                 current?.type === 'nav-feature' && current.key === key
                   ? null
                   : { type: 'nav-feature', key }
               )
-            }
+            }}
+          />
+          <VatsimOverlay
+            layerVisibility={vatsimLayerVisibility}
+            selectedFeature={vatsimSelection}
+            airportWeatherEnabled={navLayerVisibility.airports}
+            onStatusChange={setVatsimStatus}
+            onWeatherChange={setVatsimWeather}
+            onSelectFeature={(feature) => {
+              setMapSelection(null)
+              setVatsimSelection((current) => current?.id === feature?.id ? null : feature)
+            }}
           />
           <ActiveChartOverlay chartId={activeChartId} />
           {routeLegs.map((leg, index) => {
@@ -394,12 +425,14 @@ export function MapPanel({
               [leg.from.lat, leg.from.lon],
               [leg.to.lat, leg.to.lon]
             ]
-            const selectLeg = () =>
+            const selectLeg = () => {
+              setVatsimSelection(null)
               setMapSelection((current) =>
                 current?.type === 'route-leg' && current.index === index
                   ? null
                   : { type: 'route-leg', index }
               )
+            }
 
             return (
               <Fragment key={`route-leg:${index}:${leg.from.ident}:${leg.to.ident}`}>
@@ -522,12 +555,14 @@ export function MapPanel({
                 riseOnHover
                 zIndexOffset={isSelected ? 1100 : isEndpoint ? 760 : 680}
                 eventHandlers={{
-                  click: () =>
+                  click: () => {
+                    setVatsimSelection(null)
                     setMapSelection((current) =>
                       current?.type === 'route-point' && current.index === index
                         ? null
                         : { type: 'route-point', index }
                     )
+                  }
                 }}
               >
                 <Tooltip
@@ -569,6 +604,7 @@ export function MapPanel({
           <FollowAircraft lat={lat} lon={lon} enabled={aircraftPositionUsable && isFollowActive} />
           <MapViewPersistence />
         </MapContainer>
+        <VatsimDetailsDrawer feature={vatsimSelection} onClose={() => setVatsimSelection(null)} />
         <div className="map-coordinates">
           <span>{`${t('map.lat')} ${formatCoord(aircraftPositionUsable ? aircraft?.lat : undefined)}`}</span>
           <span>{`${t('map.lon')} ${formatCoord(aircraftPositionUsable ? aircraft?.lon : undefined)}`}</span>
@@ -609,8 +645,19 @@ export function MapPanel({
             className="map-toolbar-inline"
             navLayerVisibility={navLayerVisibility}
             onToggleLayer={toggleNavLayer}
+            vatsimLayerVisibility={vatsimLayerVisibility}
+            vatsimStatus={vatsimStatus}
+            onToggleVatsimLayer={toggleVatsimLayer}
+            onVatsimStatusChange={setVatsimStatus}
             onSearchSelect={(result) => {
               setIsFollowActive(false)
+              if (result.type === 'pilots') {
+                if (!vatsimLayerVisibility.pilots) toggleVatsimLayer('pilots')
+                setMapSelection(null)
+                setVatsimSelection(result.pilot)
+              } else {
+                setVatsimSelection(null)
+              }
               setSearchTarget({
                 lat: result.lat,
                 lon: result.lon,

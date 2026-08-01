@@ -50,6 +50,13 @@ import type {
   NavMapSearchResult
 } from '../../../shared/nav-map-types.js'
 import type { AppUpdateState } from '../../../shared/update-types.js'
+import type {
+  VatsimMapFeatureCollection,
+  VatsimMapQueryInput,
+  VatsimPilotFeature,
+  VatsimPilotSearchInput,
+  VatsimStatus
+} from '../../../shared/vatsim-types.js'
 
 const api = {
   getSnapshot: async (): Promise<{ aircraft: AircraftState; connection: ConnectionState }> =>
@@ -67,6 +74,16 @@ const api = {
     ipcRenderer.invoke(IPC_CHANNELS.navMapFeatures, input),
   searchNavMapPoints: async (input: NavMapSearchInput): Promise<NavMapSearchResult[]> =>
     ipcRenderer.invoke(IPC_CHANNELS.navMapSearch, input),
+  getVatsimStatus: async (): Promise<VatsimStatus> =>
+    ipcRenderer.invoke(IPC_CHANNELS.vatsimStatus),
+  getVatsimMapFeatures: async (
+    input: VatsimMapQueryInput
+  ): Promise<VatsimMapFeatureCollection> =>
+    ipcRenderer.invoke(IPC_CHANNELS.vatsimMapFeatures, input),
+  searchVatsimPilots: async (input: VatsimPilotSearchInput): Promise<VatsimPilotFeature[]> =>
+    ipcRenderer.invoke(IPC_CHANNELS.vatsimPilotSearch, input),
+  refreshVatsim: async (): Promise<VatsimStatus> =>
+    ipcRenderer.invoke(IPC_CHANNELS.vatsimRefresh),
   importSimBrief: async (input: SimBriefImportInput): Promise<SimBriefImportResult> =>
     ipcRenderer.invoke(IPC_CHANNELS.simbriefImport, input),
   getChart: async (chartId: string): Promise<ChartRecord | null> =>
@@ -160,6 +177,11 @@ const api = {
     const wrapped = (_event: Electron.IpcRendererEvent, payload: ConnectionState) => listener(payload)
     ipcRenderer.on(IPC_CHANNELS.connectionUpdate, wrapped)
     return () => ipcRenderer.removeListener(IPC_CHANNELS.connectionUpdate, wrapped)
+  },
+  onVatsimChanged: (listener: (status: VatsimStatus) => void): (() => void) => {
+    const wrapped = (_event: Electron.IpcRendererEvent, payload: VatsimStatus) => listener(payload)
+    ipcRenderer.on(IPC_CHANNELS.vatsimChanged, wrapped)
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.vatsimChanged, wrapped)
   },
   onChecklistsChanged: (_listener: () => void): (() => void) => () => void 0
 }

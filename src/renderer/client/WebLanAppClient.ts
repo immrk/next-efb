@@ -47,6 +47,13 @@ import type {
 import type { AppClient } from './AppClient'
 import type { SnapshotPayload } from './AppClient'
 import type { AppUpdateState } from '@shared/update-types'
+import type {
+  VatsimMapFeatureCollection,
+  VatsimMapQueryInput,
+  VatsimPilotFeature,
+  VatsimPilotSearchInput,
+  VatsimStatus
+} from '@shared/vatsim-types'
 
 type ServerEvent =
   | { type: 'aircraft:update'; payload: AircraftState }
@@ -54,6 +61,7 @@ type ServerEvent =
   | { type: 'chart:changed' }
   | { type: 'checklist:changed' }
   | { type: 'settings:changed' }
+  | { type: 'vatsim:changed'; payload: VatsimStatus }
 
 const TOKEN_STORAGE_KEY = `msfs-lan-token:${window.location.origin}`
 
@@ -63,6 +71,7 @@ export class WebLanAppClient implements AppClient {
   private readonly chartListeners = new Set<() => void>()
   private readonly checklistListeners = new Set<() => void>()
   private readonly settingsListeners = new Set<() => void>()
+  private readonly vatsimListeners = new Set<(status: VatsimStatus) => void>()
   private readonly token = this.resolveToken()
   private socket: WebSocket | null = null
   private reconnectTimer: number | null = null
@@ -140,6 +149,28 @@ export class WebLanAppClient implements AppClient {
       method: 'POST',
       body: JSON.stringify(input)
     })
+  }
+
+  getVatsimStatus(): Promise<VatsimStatus> {
+    return this.fetchJson('/api/vatsim/status')
+  }
+
+  getVatsimMapFeatures(input: VatsimMapQueryInput): Promise<VatsimMapFeatureCollection> {
+    return this.fetchJson('/api/vatsim/map-features', {
+      method: 'POST',
+      body: JSON.stringify(input)
+    })
+  }
+
+  searchVatsimPilots(input: VatsimPilotSearchInput): Promise<VatsimPilotFeature[]> {
+    return this.fetchJson('/api/vatsim/search-pilots', {
+      method: 'POST',
+      body: JSON.stringify(input)
+    })
+  }
+
+  refreshVatsim(): Promise<VatsimStatus> {
+    return this.fetchJson('/api/vatsim/refresh', { method: 'POST' })
   }
 
   importSimBrief(input: SimBriefImportInput): Promise<SimBriefImportResult> {
@@ -383,6 +414,12 @@ export class WebLanAppClient implements AppClient {
     return () => this.settingsListeners.delete(listener)
   }
 
+  onVatsimChanged(listener: (status: VatsimStatus) => void) {
+    this.vatsimListeners.add(listener)
+    this.connectSocket()
+    return () => this.vatsimListeners.delete(listener)
+  }
+
   onAppUpdateStateChange() {
     return () => void 0
   }
@@ -447,6 +484,9 @@ export class WebLanAppClient implements AppClient {
           break
         case 'settings:changed':
           this.settingsListeners.forEach((listener) => listener())
+          break
+        case 'vatsim:changed':
+          this.vatsimListeners.forEach((listener) => listener(message.payload))
           break
       }
     }

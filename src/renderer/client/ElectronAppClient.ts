@@ -46,6 +46,22 @@ export class ElectronAppClient implements AppClient {
     return window.msfsApi.searchNavMapPoints(input)
   }
 
+  getVatsimStatus() {
+    return window.msfsApi.getVatsimStatus()
+  }
+
+  getVatsimMapFeatures(input: Parameters<typeof window.msfsApi.getVatsimMapFeatures>[0]) {
+    return window.msfsApi.getVatsimMapFeatures(input)
+  }
+
+  searchVatsimPilots(input: Parameters<typeof window.msfsApi.searchVatsimPilots>[0]) {
+    return window.msfsApi.searchVatsimPilots(input)
+  }
+
+  refreshVatsim() {
+    return window.msfsApi.refreshVatsim()
+  }
+
   importSimBrief(input: Parameters<typeof window.msfsApi.importSimBrief>[0]) {
     return window.msfsApi.importSimBrief(input)
   }
@@ -203,6 +219,10 @@ export class ElectronAppClient implements AppClient {
 
   onSettingsChanged() {
     return () => void 0
+  }
+
+  onVatsimChanged(listener: Parameters<typeof window.msfsApi.onVatsimChanged>[0]) {
+    return window.msfsApi.onVatsimChanged(listener)
   }
 
   onAppUpdateStateChange(listener: Parameters<typeof window.msfsApi.onAppUpdateStateChange>[0]) {

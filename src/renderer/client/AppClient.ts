@@ -48,6 +48,13 @@ import type {
   NavMapSearchResult
 } from '@shared/nav-map-types'
 import type { AppUpdateState } from '@shared/update-types'
+import type {
+  VatsimMapFeatureCollection,
+  VatsimMapQueryInput,
+  VatsimPilotFeature,
+  VatsimPilotSearchInput,
+  VatsimStatus
+} from '@shared/vatsim-types'
 
 export interface AppClientRuntime {
   host: 'electron' | 'web'
@@ -72,6 +79,10 @@ export interface AppClient {
   buildFlightPlan(input: BuildFlightPlanInput): Promise<BuildFlightPlanResult>
   getNavMapFeatures(input: NavMapQueryInput): Promise<NavMapFeatureCollection>
   searchNavMapPoints(input: NavMapSearchInput): Promise<NavMapSearchResult[]>
+  getVatsimStatus(): Promise<VatsimStatus>
+  getVatsimMapFeatures(input: VatsimMapQueryInput): Promise<VatsimMapFeatureCollection>
+  searchVatsimPilots(input: VatsimPilotSearchInput): Promise<VatsimPilotFeature[]>
+  refreshVatsim(): Promise<VatsimStatus>
   importSimBrief(input: SimBriefImportInput): Promise<SimBriefImportResult>
   getRemoteAccessStatus(): Promise<RemoteAccessStatus>
   getAppUpdateState(): Promise<AppUpdateState>
@@ -111,5 +122,6 @@ export interface AppClient {
   onChartsChanged(listener: () => void): () => void
   onChecklistsChanged(listener: () => void): () => void
   onSettingsChanged(listener: () => void): () => void
+  onVatsimChanged(listener: (status: VatsimStatus) => void): () => void
   onAppUpdateStateChange(listener: (state: AppUpdateState) => void): () => void
 }

@@ -48,6 +48,13 @@ import type {
   NavMapSearchResult
 } from '@shared/nav-map-types'
 import type { AppUpdateState } from '@shared/update-types'
+import type {
+  VatsimMapFeatureCollection,
+  VatsimMapQueryInput,
+  VatsimPilotFeature,
+  VatsimPilotSearchInput,
+  VatsimStatus
+} from '@shared/vatsim-types'
 
 declare global {
   interface Window {
@@ -61,6 +68,10 @@ declare global {
       buildFlightPlan: (input: BuildFlightPlanInput) => Promise<BuildFlightPlanResult>
       getNavMapFeatures: (input: NavMapQueryInput) => Promise<NavMapFeatureCollection>
       searchNavMapPoints: (input: NavMapSearchInput) => Promise<NavMapSearchResult[]>
+      getVatsimStatus: () => Promise<VatsimStatus>
+      getVatsimMapFeatures: (input: VatsimMapQueryInput) => Promise<VatsimMapFeatureCollection>
+      searchVatsimPilots: (input: VatsimPilotSearchInput) => Promise<VatsimPilotFeature[]>
+      refreshVatsim: () => Promise<VatsimStatus>
       importSimBrief: (input: SimBriefImportInput) => Promise<SimBriefImportResult>
       getChart: (chartId: string) => Promise<ChartRecord | null>
       getChartAsset: (chartId: string) => Promise<ChartAssetPayload | null>
@@ -104,6 +115,7 @@ declare global {
       performDevAction: (action: DesktopDevAction) => Promise<boolean>
       onAircraftUpdate: (listener: (state: AircraftState) => void) => () => void
       onConnectionUpdate: (listener: (state: ConnectionState) => void) => () => void
+      onVatsimChanged: (listener: (status: VatsimStatus) => void) => () => void
       onChecklistsChanged: (listener: () => void) => () => void
     }
   }

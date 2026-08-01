@@ -18,6 +18,12 @@ import type {
   NavMapSearchResult
 } from '@shared/nav-map-types'
 import type {
+  VatsimMapQueryInput,
+  VatsimPilotFeature,
+  VatsimPilotSearchInput,
+  VatsimStatus
+} from '@shared/vatsim-types'
+import type {
   ChartAssetPayload,
   ChartBundleExportInput,
   ChartBundleExportResult,
@@ -52,6 +58,7 @@ import { ChartBundleService } from '../services/storage/ChartBundleService'
 import { LanServer } from '../services/lan/LanServer'
 import { NavDataService } from '../services/navigation/NavDataService'
 import { AppUpdateService } from '../services/updates/AppUpdateService'
+import { VatsimDataService } from '../services/vatsim/VatsimDataService'
 
 interface RegisterIpcOptions {
   mainWindow: BrowserWindow
@@ -63,6 +70,7 @@ interface RegisterIpcOptions {
   storageService: StorageService
   lanServer: LanServer
   navDataService: NavDataService
+  vatsimDataService: VatsimDataService
   appUpdateService: AppUpdateService
 }
 
@@ -77,6 +85,7 @@ export function registerIpc(options: RegisterIpcOptions): void {
     storageService,
     lanServer,
     navDataService,
+    vatsimDataService,
     appUpdateService
   } = options
   const remoteChartImportService = new RemoteChartImportService()
@@ -96,6 +105,13 @@ export function registerIpc(options: RegisterIpcOptions): void {
     flightStateStore.setConnectionState(state)
     lanServer.broadcastConnectionState(state)
     mainWindow.webContents.send(IPC_CHANNELS.connectionUpdate, state)
+  })
+
+  vatsimDataService.onChanged((status) => {
+    lanServer.broadcastVatsimChanged(status)
+    if (!mainWindow.isDestroyed()) {
+      mainWindow.webContents.send(IPC_CHANNELS.vatsimChanged, status)
+    }
   })
 
   ipcMain.handle(IPC_CHANNELS.aircraftSnapshot, () => {
@@ -149,6 +165,17 @@ export function registerIpc(options: RegisterIpcOptions): void {
     (_event, input: NavMapSearchInput): NavMapSearchResult[] =>
       navDataService.searchMapPoints(settingsStore.get(), input)
   )
+  ipcMain.handle(IPC_CHANNELS.vatsimStatus, (): VatsimStatus => vatsimDataService.getStatus())
+  ipcMain.handle(
+    IPC_CHANNELS.vatsimMapFeatures,
+    (_event, input: VatsimMapQueryInput) => vatsimDataService.getMapFeatures(input)
+  )
+  ipcMain.handle(
+    IPC_CHANNELS.vatsimPilotSearch,
+    (_event, input: VatsimPilotSearchInput): VatsimPilotFeature[] =>
+      vatsimDataService.searchPilots(input)
+  )
+  ipcMain.handle(IPC_CHANNELS.vatsimRefresh, () => vatsimDataService.refreshNow())
   ipcMain.handle(
     IPC_CHANNELS.simbriefImport,
     async (_event, input: SimBriefImportInput): Promise<SimBriefImportResult> =>
