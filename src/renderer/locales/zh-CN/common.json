@@ -1,5 +1,5 @@
 {
-  "app.subtitle": "私人航图工作流与地理配准工具",
+  "app.subtitle": "航图精准就位，飞行全程相连。",
   "nav.map": "地图",
   "nav.flight": "航班",
   "nav.charts": "航图",
@@ -70,6 +70,11 @@
   "settings.themeSystem": "跟随系统",
   "settings.language": "语言",
   "settings.languageZhCN": "简体中文",
+  "settings.languages.en-US": "English",
+  "settings.languages.zh-CN": "简体中文",
+  "settings.languages.zh-TW": "繁體中文",
+  "settings.languages.ja-JP": "日本語",
+  "settings.languages.ko-KR": "한국어",
   "settings.provider": "数据来源",
   "settings.providerSimConnect": "SimConnect 实时数据",
   "settings.providerMock": "Mock 模拟数据",

@@ -11,7 +11,7 @@
   },
   "main": "./dist/main/main.js",
   "type": "module",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "build": {
     "appId": "com.nextflight.nextefb",
     "productName": "NextEFB",

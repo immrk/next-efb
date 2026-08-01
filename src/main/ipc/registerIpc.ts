@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron'
 import { IPC_CHANNELS } from '@shared/channels'
 import type { AppSettings, DesktopDevAction, DesktopWindowAction, DesktopWindowState } from '@shared/types'
+import type { AppLanguage } from '@shared/i18n'
 import type {
   BuildFlightPlanInput,
   BuildFlightPlanResult,
@@ -59,6 +60,7 @@ import { LanServer } from '../services/lan/LanServer'
 import { NavDataService } from '../services/navigation/NavDataService'
 import { AppUpdateService } from '../services/updates/AppUpdateService'
 import { VatsimDataService } from '../services/vatsim/VatsimDataService'
+import { t } from '../i18n/index.js'
 
 interface RegisterIpcOptions {
   mainWindow: BrowserWindow
@@ -72,6 +74,7 @@ interface RegisterIpcOptions {
   navDataService: NavDataService
   vatsimDataService: VatsimDataService
   appUpdateService: AppUpdateService
+  onLanguageChanged: (language: AppLanguage) => Promise<void>
 }
 
 export function registerIpc(options: RegisterIpcOptions): void {
@@ -86,7 +89,8 @@ export function registerIpc(options: RegisterIpcOptions): void {
     lanServer,
     navDataService,
     vatsimDataService,
-    appUpdateService
+    appUpdateService,
+    onLanguageChanged
   } = options
   const remoteChartImportService = new RemoteChartImportService()
   const chartBundleService = new ChartBundleService({
@@ -126,7 +130,7 @@ export function registerIpc(options: RegisterIpcOptions): void {
   ipcMain.handle(IPC_CHANNELS.navDataPickSqlite, async (): Promise<string | null> => {
     const result = await dialog.showOpenDialog(mainWindow, {
       properties: ['openFile'],
-      filters: [{ name: 'SQLite Database', extensions: ['sqlite', 'db'] }]
+      filters: [{ name: t('app.filterSqlite'), extensions: ['sqlite', 'db'] }]
     })
     if (result.canceled || result.filePaths.length === 0) {
       return null
@@ -241,7 +245,7 @@ export function registerIpc(options: RegisterIpcOptions): void {
     async (): Promise<ChartBundleImportPreview | null> => {
       const result = await dialog.showOpenDialog(mainWindow, {
         properties: ['openFile'],
-        filters: [{ name: 'NextEFB Chart Bundle', extensions: ['zip'] }]
+        filters: [{ name: t('app.filterChartBundle'), extensions: ['zip'] }]
       })
       if (result.canceled || result.filePaths.length === 0) {
         return null
@@ -266,7 +270,7 @@ export function registerIpc(options: RegisterIpcOptions): void {
       const today = new Date().toISOString().slice(0, 10).replaceAll('-', '')
       const result = await dialog.showSaveDialog(mainWindow, {
         defaultPath: `NextEFB-charts-${today}.zip`,
-        filters: [{ name: 'ZIP Archive', extensions: ['zip'] }]
+        filters: [{ name: t('app.filterZip'), extensions: ['zip'] }]
       })
       if (result.canceled || !result.filePath) {
         return null
@@ -283,7 +287,7 @@ export function registerIpc(options: RegisterIpcOptions): void {
     const result = await dialog.showOpenDialog(mainWindow, {
       properties: ['openFile'],
       filters: [
-        { name: 'Charts', extensions: ['pdf', 'png', 'jpg', 'jpeg'] }
+        { name: t('app.filterCharts'), extensions: ['pdf', 'png', 'jpg', 'jpeg'] }
       ]
     })
 
@@ -392,7 +396,7 @@ export function registerIpc(options: RegisterIpcOptions): void {
     const result = await dialog.showOpenDialog(mainWindow, {
       properties: ['openFile'],
       filters: [
-        { name: 'Checklists', extensions: ['pdf', 'png', 'jpg', 'jpeg'] }
+        { name: t('app.filterChecklists'), extensions: ['pdf', 'png', 'jpg', 'jpeg'] }
       ]
     })
 
@@ -474,6 +478,9 @@ export function registerIpc(options: RegisterIpcOptions): void {
       storageService,
       chartRepository
     })
+    if (partial.language !== undefined) {
+      await onLanguageChanged(nextSettings.language)
+    }
     simConnectService.reconfigure(nextSettings)
     await lanServer.reconfigure(nextSettings)
     lanServer.broadcastSettingsChanged()

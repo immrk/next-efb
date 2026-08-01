@@ -1,5 +1,5 @@
 {
-  "app.subtitle": "Private chart workflow for map and georeference operations.",
+  "app.subtitle": "Charts aligned. Flights connected.",
   "nav.map": "Map",
   "nav.flight": "Flight",
   "nav.charts": "Charts",
@@ -82,6 +82,11 @@
   "settings.themeSystem": "Follow system",
   "settings.language": "Language",
   "settings.languageZhCN": "Simplified Chinese",
+  "settings.languages.en-US": "English",
+  "settings.languages.zh-CN": "简体中文",
+  "settings.languages.zh-TW": "繁體中文",
+  "settings.languages.ja-JP": "日本語",
+  "settings.languages.ko-KR": "한국어",
   "settings.provider": "Data Provider",
   "settings.providerSimConnect": "Live SimConnect Data",
   "settings.providerMock": "Mock Simulated Data",

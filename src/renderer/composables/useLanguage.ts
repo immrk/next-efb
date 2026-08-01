@@ -15,9 +15,10 @@
  */
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { isAppLanguage, resolveAppLanguage, type AppLanguage } from "@shared/i18n";
 
 /** 统一定义类型，便于在别处复用 */
-export type LanguageType = "system" | "zh-CN" | "en-US";
+export type LanguageType = "system" | AppLanguage;
 
 /**
  * 负责：
@@ -35,8 +36,8 @@ export function useLanguage() {
       const { data } = await window.system.getLanguage();
       const nextLanguage = (data.storeLanguage as LanguageType) || "system";
       const resolvedLanguage = nextLanguage === "system"
-        ? data.systemLanguage as "zh-CN" | "en-US"
-        : nextLanguage;
+        ? resolveAppLanguage(data.systemLanguage)
+        : isAppLanguage(nextLanguage) ? nextLanguage : resolveAppLanguage(data.systemLanguage);
       setCurrentLanguage(nextLanguage);
       localStorage.setItem("locale", resolvedLanguage);
       await i18n.changeLanguage(resolvedLanguage);
@@ -49,7 +50,7 @@ export function useLanguage() {
     setCurrentLanguage(value);
     if (!window.system) {
       const fallbackLanguage = value === "system"
-        ? navigator.language.toLowerCase().startsWith("en") ? "en-US" : "zh-CN"
+        ? resolveAppLanguage(navigator.languages?.length ? navigator.languages : navigator.language)
         : value;
       localStorage.setItem("locale", fallbackLanguage);
       await i18n.changeLanguage(fallbackLanguage);
@@ -61,8 +62,14 @@ export function useLanguage() {
 
   useEffect(() => {
     void syncLanguage();
-    window.system?.onChangeLanguage(syncLanguage);
-  }, [syncLanguage]);
+    const removeLanguageListener = window.system?.onChangeLanguage((language) => {
+      const resolvedLanguage = resolveAppLanguage(language);
+      setCurrentLanguage(resolvedLanguage);
+      localStorage.setItem("locale", resolvedLanguage);
+      void i18n.changeLanguage(resolvedLanguage);
+    });
+    return removeLanguageListener;
+  }, [i18n, syncLanguage]);
 
   return {
     currentLanguage,

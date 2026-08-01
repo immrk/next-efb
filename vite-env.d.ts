@@ -19,7 +19,7 @@ interface SystemAPI {
   // 语言管理相关方法
   changeLanguage: (language: string) => Promise<any>
   getLanguage: () => Promise<{ data: { storeLanguage: string | undefined; systemLanguage: string } }>
-  onChangeLanguage: (callback: (language: string) => void) => void
+  onChangeLanguage: (callback: (language: string) => void) => () => void
 }
 
 // 窗口管理 API 类型定义

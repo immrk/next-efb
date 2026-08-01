@@ -34,6 +34,18 @@
     "services": "服务",
     "windowMenu": "窗口"
   },
+  "app": {
+    "trayShow": "显示 {{appName}}",
+    "trayExit": "退出",
+    "dialogOk": "确定",
+    "alreadyRunning": "{{appName}} 已在运行。",
+    "alreadyRunningDetail": "现有窗口已移至最前方。",
+    "filterSqlite": "SQLite 数据库",
+    "filterChartBundle": "NextEFB 航图包",
+    "filterZip": "ZIP 压缩包",
+    "filterCharts": "航图",
+    "filterChecklists": "检查单"
+  },
   "window": {
     "main": {
       "index": "首页",
@@ -42,4 +54,4 @@
       "windows": "窗口管理"
     }
   }
-} 
+}

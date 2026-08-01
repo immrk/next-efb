@@ -4,6 +4,7 @@ import Store from 'electron-store'
 import { createMenu } from '../../menu.js'
 import { windowManager } from '../../windowManager.js'
 import { setLanguage, SupportedLanguages } from '../../i18n/index.js'
+import { resolveAppLanguage } from '../../../shared/i18n.js'
 
 const store = new Store()
 type ThemeColor = 'light' | 'dark' | 'system'
@@ -118,7 +119,7 @@ export const setupSystemHandlers = (): void => {
     return wrapAsyncOperation(async () => {
       // 获取store中的语言
       const storeLanguage = store.get('language')
-      const systemLanguage = app.getLocale() as string
+      const systemLanguage = resolveAppLanguage(app.getLocale())
       return {
         storeLanguage: storeLanguage,
         systemLanguage: systemLanguage
@@ -130,11 +131,7 @@ export const setupSystemHandlers = (): void => {
   ipcMain.handle('system:changeLanguage', async (event, language: string) => {
     return wrapAsyncOperation(async () => {
       store.set('language', language)
-      if (language === 'system') {
-        language = app.getLocale() as string
-      } else {
-        await setLanguage(language as SupportedLanguages)
-      }
+      language = await setLanguage(language as SupportedLanguages)
 
       // 重新创建菜单以应用新语言
       createMenu(windowManager)

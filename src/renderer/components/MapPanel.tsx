@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next'
 import type { GeoReferencePoint } from '@shared/chart-types'
 import type { FlightPlanPoint, FlightPlanSegment } from '@shared/flight-plan-types'
 import type { VatsimMetarFeature, VatsimSelectableFeature, VatsimStatus } from '@shared/vatsim-types'
+import type { AppLanguage } from '@shared/i18n'
 import { createAircraftLeafletIcon } from './AircraftArrow'
 import { ConnectionBadge } from './ConnectionBadge'
 import { MapDisplayToolbar } from './MapDisplayToolbar'
@@ -28,13 +29,17 @@ import {
   getRouteLegGeometry,
   getRouteVisualTheme
 } from '../utils/mapVisuals'
+import { ensureChartOverlayPane } from '../utils/mapLayerPanes'
 import { Button } from './ui/button'
 
 const MAP_VIEW_STORAGE_KEY = 'nextefb.map-view.v1'
 const DEFAULT_MAP_ZOOM = 7
-const DEFAULT_MAP_CENTERS: Record<'zh-CN' | 'en-US', { lat: number; lon: number }> = {
+const DEFAULT_MAP_CENTERS: Record<AppLanguage, { lat: number; lon: number }> = {
+  'en-US': { lat: 40.7128, lon: -74.006 },
   'zh-CN': { lat: 31.2304, lon: 121.4737 },
-  'en-US': { lat: 40.7128, lon: -74.006 }
+  'zh-TW': { lat: 25.033, lon: 121.5654 },
+  'ja-JP': { lat: 35.6762, lon: 139.6503 },
+  'ko-KR': { lat: 37.5665, lon: 126.978 }
 }
 const INITIAL_VATSIM_STATUS: VatsimStatus = {
   phase: 'connecting',
@@ -70,7 +75,7 @@ function isAircraftPositionUsable(aircraft: {
   return !(aircraft.lat === 0 && aircraft.lon === 0 && aircraft.altitudeFt === 0)
 }
 
-function readStoredMapView(language: 'zh-CN' | 'en-US'): StoredMapView {
+function readStoredMapView(language: AppLanguage): StoredMapView {
   const defaultCenter = DEFAULT_MAP_CENTERS[language]
 
   if (typeof window === 'undefined') {
@@ -229,7 +234,7 @@ function ChartOverlay({
   useEffect(() => {
     if (!rasterUrl || !width || !height || points.length !== 2) return
 
-    const pane = map.getPanes().overlayPane
+    const pane = ensureChartOverlayPane(map)
     const container = containerRef.current ?? DomUtil.create('div', 'chart-overlay-container', pane)
     const image = imageRef.current ?? DomUtil.create('img', 'chart-overlay-image', container)
 

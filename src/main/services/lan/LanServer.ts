@@ -32,6 +32,7 @@ import type {
 } from '@shared/flight-plan-types'
 import type { NavMapQueryInput, NavMapSearchInput } from '@shared/nav-map-types'
 import type { VatsimMapQueryInput, VatsimPilotSearchInput, VatsimStatus } from '@shared/vatsim-types'
+import type { AppLanguage } from '@shared/i18n'
 import { WebSocket, WebSocketServer } from 'ws'
 import { SettingsStore } from '../config/SettingsStore'
 import { SimConnectService } from '../simconnect/SimConnectService'
@@ -54,6 +55,7 @@ interface LanServerOptions {
   storageService: StorageService
   navDataService: NavDataService
   vatsimDataService: VatsimDataService
+  onLanguageChanged: (language: AppLanguage) => Promise<void>
 }
 
 type ServerEvent =
@@ -76,6 +78,7 @@ export class LanServer {
   private readonly remoteChartImportService: RemoteChartImportService
   private readonly navDataService: NavDataService
   private readonly vatsimDataService: VatsimDataService
+  private readonly onLanguageChanged: (language: AppLanguage) => Promise<void>
   private server: ReturnType<typeof createServer> | null = null
   private readonly wsServer = new WebSocketServer({ noServer: true })
   private readonly sockets = new Set<WebSocket>()
@@ -92,6 +95,7 @@ export class LanServer {
     this.remoteChartImportService = new RemoteChartImportService()
     this.navDataService = options.navDataService
     this.vatsimDataService = options.vatsimDataService
+    this.onLanguageChanged = options.onLanguageChanged
   }
 
   async start(): Promise<void> {
@@ -249,6 +253,9 @@ export class LanServer {
           }
           const partial = (await this.readJsonBody(request)) as Partial<AppSettings>
           const nextSettings = this.applySettingsUpdate(partial)
+          if (partial.language !== undefined) {
+            await this.onLanguageChanged(nextSettings.language)
+          }
           this.settings = nextSettings
           this.simConnectService.reconfigure(nextSettings)
           await this.reconfigure(nextSettings)
