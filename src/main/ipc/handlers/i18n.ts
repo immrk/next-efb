@@ -20,7 +20,7 @@ export const setupI18nHandlers = (): void => {
 
   // 设置语言
   ipcMain.handle('i18n:setLanguage', async (event, language: SupportedLanguages) => {
-      await setLanguage(language)
+      const resolvedLanguage = await setLanguage(language)
       
       // 重新创建菜单以应用新语言
       createMenu(windowManager)
@@ -28,7 +28,7 @@ export const setupI18nHandlers = (): void => {
       // 通知所有渲染进程语言已更改
       BrowserWindow.getAllWindows().forEach(window => {
         if (!window.isDestroyed()) {
-          window.webContents.send('i18n:languageChanged', language)
+          window.webContents.send('i18n:languageChanged', resolvedLanguage)
         }
       })
       
@@ -39,4 +39,4 @@ export const setupI18nHandlers = (): void => {
   ipcMain.handle('i18n:translate', (event, key: string, options?: any) => {
     return t(key, options)
   })
-} 
+}

@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto'
-import { BrowserWindow, dialog, ipcMain, shell } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron'
 import { IPC_CHANNELS } from '@shared/channels'
 import type { AppSettings, DesktopDevAction, DesktopWindowAction, DesktopWindowState } from '@shared/types'
+import type { AppLanguage } from '@shared/i18n'
 import type {
   BuildFlightPlanInput,
   BuildFlightPlanResult,
@@ -18,7 +19,18 @@ import type {
   NavMapSearchResult
 } from '@shared/nav-map-types'
 import type {
+  VatsimMapQueryInput,
+  VatsimPilotFeature,
+  VatsimPilotSearchInput,
+  VatsimStatus
+} from '@shared/vatsim-types'
+import type {
   ChartAssetPayload,
+  ChartBundleExportInput,
+  ChartBundleExportResult,
+  ChartBundleImportInput,
+  ChartBundleImportPreview,
+  ChartBundleImportResult,
   ChartImportFromUrlInput,
   ChartImportResult,
   ChartRecord,
@@ -43,9 +55,12 @@ import { ChartRepository } from '../services/storage/ChartRepository'
 import { ChecklistRepository } from '../services/storage/ChecklistRepository'
 import { StorageService } from '../services/storage/StorageService'
 import { RemoteChartImportService } from '../services/storage/RemoteChartImportService'
+import { ChartBundleService } from '../services/storage/ChartBundleService'
 import { LanServer } from '../services/lan/LanServer'
 import { NavDataService } from '../services/navigation/NavDataService'
 import { AppUpdateService } from '../services/updates/AppUpdateService'
+import { VatsimDataService } from '../services/vatsim/VatsimDataService'
+import { t } from '../i18n/index.js'
 
 interface RegisterIpcOptions {
   mainWindow: BrowserWindow
@@ -57,7 +72,9 @@ interface RegisterIpcOptions {
   storageService: StorageService
   lanServer: LanServer
   navDataService: NavDataService
+  vatsimDataService: VatsimDataService
   appUpdateService: AppUpdateService
+  onLanguageChanged: (language: AppLanguage) => Promise<void>
 }
 
 export function registerIpc(options: RegisterIpcOptions): void {
@@ -71,9 +88,16 @@ export function registerIpc(options: RegisterIpcOptions): void {
     storageService,
     lanServer,
     navDataService,
-    appUpdateService
+    vatsimDataService,
+    appUpdateService,
+    onLanguageChanged
   } = options
   const remoteChartImportService = new RemoteChartImportService()
+  const chartBundleService = new ChartBundleService({
+    chartRepository,
+    getStorageSummary: () => storageService.getSummary(),
+    navDataService
+  })
 
   simConnectService.onAircraftState((state) => {
     flightStateStore.setAircraftState(state)
@@ -85,6 +109,13 @@ export function registerIpc(options: RegisterIpcOptions): void {
     flightStateStore.setConnectionState(state)
     lanServer.broadcastConnectionState(state)
     mainWindow.webContents.send(IPC_CHANNELS.connectionUpdate, state)
+  })
+
+  vatsimDataService.onChanged((status) => {
+    lanServer.broadcastVatsimChanged(status)
+    if (!mainWindow.isDestroyed()) {
+      mainWindow.webContents.send(IPC_CHANNELS.vatsimChanged, status)
+    }
   })
 
   ipcMain.handle(IPC_CHANNELS.aircraftSnapshot, () => {
@@ -99,7 +130,7 @@ export function registerIpc(options: RegisterIpcOptions): void {
   ipcMain.handle(IPC_CHANNELS.navDataPickSqlite, async (): Promise<string | null> => {
     const result = await dialog.showOpenDialog(mainWindow, {
       properties: ['openFile'],
-      filters: [{ name: 'SQLite Database', extensions: ['sqlite', 'db'] }]
+      filters: [{ name: t('app.filterSqlite'), extensions: ['sqlite', 'db'] }]
     })
     if (result.canceled || result.filePaths.length === 0) {
       return null
@@ -138,6 +169,17 @@ export function registerIpc(options: RegisterIpcOptions): void {
     (_event, input: NavMapSearchInput): NavMapSearchResult[] =>
       navDataService.searchMapPoints(settingsStore.get(), input)
   )
+  ipcMain.handle(IPC_CHANNELS.vatsimStatus, (): VatsimStatus => vatsimDataService.getStatus())
+  ipcMain.handle(
+    IPC_CHANNELS.vatsimMapFeatures,
+    (_event, input: VatsimMapQueryInput) => vatsimDataService.getMapFeatures(input)
+  )
+  ipcMain.handle(
+    IPC_CHANNELS.vatsimPilotSearch,
+    (_event, input: VatsimPilotSearchInput): VatsimPilotFeature[] =>
+      vatsimDataService.searchPilots(input)
+  )
+  ipcMain.handle(IPC_CHANNELS.vatsimRefresh, () => vatsimDataService.refreshNow())
   ipcMain.handle(
     IPC_CHANNELS.simbriefImport,
     async (_event, input: SimBriefImportInput): Promise<SimBriefImportResult> =>
@@ -198,11 +240,54 @@ export function registerIpc(options: RegisterIpcOptions): void {
       filePath: displayPath
     }
   })
+  ipcMain.handle(
+    IPC_CHANNELS.chartBundlePickImport,
+    async (): Promise<ChartBundleImportPreview | null> => {
+      const result = await dialog.showOpenDialog(mainWindow, {
+        properties: ['openFile'],
+        filters: [{ name: t('app.filterChartBundle'), extensions: ['zip'] }]
+      })
+      if (result.canceled || result.filePaths.length === 0) {
+        return null
+      }
+      return chartBundleService.previewImport(result.filePaths[0], settingsStore.get())
+    }
+  )
+  ipcMain.handle(
+    IPC_CHANNELS.chartBundleImport,
+    (_event, input: ChartBundleImportInput): ChartBundleImportResult => {
+      const imported = chartBundleService.importBundle(input, settingsStore.get())
+      lanServer.broadcastChartChanged()
+      return imported
+    }
+  )
+  ipcMain.handle(
+    IPC_CHANNELS.chartBundleExport,
+    async (
+      _event,
+      input: ChartBundleExportInput
+    ): Promise<ChartBundleExportResult | null> => {
+      const today = new Date().toISOString().slice(0, 10).replaceAll('-', '')
+      const result = await dialog.showSaveDialog(mainWindow, {
+        defaultPath: `NextEFB-charts-${today}.zip`,
+        filters: [{ name: t('app.filterZip'), extensions: ['zip'] }]
+      })
+      if (result.canceled || !result.filePath) {
+        return null
+      }
+      return chartBundleService.exportBundle(
+        result.filePath,
+        input.chartIds,
+        settingsStore.get(),
+        app.getVersion()
+      )
+    }
+  )
   ipcMain.handle(IPC_CHANNELS.chartImport, async (): Promise<PickedChartFile | null> => {
     const result = await dialog.showOpenDialog(mainWindow, {
       properties: ['openFile'],
       filters: [
-        { name: 'Charts', extensions: ['pdf', 'png', 'jpg', 'jpeg'] }
+        { name: t('app.filterCharts'), extensions: ['pdf', 'png', 'jpg', 'jpeg'] }
       ]
     })
 
@@ -311,7 +396,7 @@ export function registerIpc(options: RegisterIpcOptions): void {
     const result = await dialog.showOpenDialog(mainWindow, {
       properties: ['openFile'],
       filters: [
-        { name: 'Checklists', extensions: ['pdf', 'png', 'jpg', 'jpeg'] }
+        { name: t('app.filterChecklists'), extensions: ['pdf', 'png', 'jpg', 'jpeg'] }
       ]
     })
 
@@ -393,6 +478,9 @@ export function registerIpc(options: RegisterIpcOptions): void {
       storageService,
       chartRepository
     })
+    if (partial.language !== undefined) {
+      await onLanguageChanged(nextSettings.language)
+    }
     simConnectService.reconfigure(nextSettings)
     await lanServer.reconfigure(nextSettings)
     lanServer.broadcastSettingsChanged()

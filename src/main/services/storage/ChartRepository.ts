@@ -7,6 +7,11 @@ import type {
   StorageSummary
 } from '@shared/chart-types'
 
+export interface ChartRepositoryImportEntry {
+  chart: ChartRecord
+  points: GeoReferencePoint[]
+}
+
 type ChartRow = {
   id: string
   title: string
@@ -91,6 +96,86 @@ export class ChartRepository {
       )
 
     return chart
+  }
+
+  upsertCharts(entries: ChartRepositoryImportEntry[]): ChartRecord[] {
+    const upsertChart = this.db.prepare(
+      `
+      INSERT INTO charts (
+        id, title, airport_code, chart_type, title_mode, bound_runway_names,
+        bound_approach_procedure_id, bound_approach_procedure_ids, source_file_path,
+        preview_image_path, file_format, width, height, is_georeferenced, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        title = excluded.title,
+        airport_code = excluded.airport_code,
+        chart_type = excluded.chart_type,
+        title_mode = excluded.title_mode,
+        bound_runway_names = excluded.bound_runway_names,
+        bound_approach_procedure_id = excluded.bound_approach_procedure_id,
+        bound_approach_procedure_ids = excluded.bound_approach_procedure_ids,
+        source_file_path = excluded.source_file_path,
+        preview_image_path = excluded.preview_image_path,
+        file_format = excluded.file_format,
+        width = excluded.width,
+        height = excluded.height,
+        is_georeferenced = excluded.is_georeferenced,
+        created_at = excluded.created_at,
+        updated_at = excluded.updated_at
+      `
+    )
+    const deletePoints = this.db.prepare(
+      'DELETE FROM chart_reference_points WHERE chart_id = ?'
+    )
+    const insertPoint = this.db.prepare(
+      `
+      INSERT INTO chart_reference_points (
+        id, chart_id, point_index, map_lat, map_lon, chart_x, chart_y, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `
+    )
+
+    const trx = this.db.transaction((nextEntries: ChartRepositoryImportEntry[]) => {
+      for (const { chart, points } of nextEntries) {
+        upsertChart.run(
+          chart.id,
+          chart.title,
+          chart.airportCode,
+          chart.chartType,
+          chart.titleMode,
+          JSON.stringify(chart.boundRunwayNames),
+          chart.boundApproachProcedureIds[0] ?? null,
+          JSON.stringify(chart.boundApproachProcedureIds),
+          chart.sourceFilePath,
+          chart.previewImagePath,
+          chart.fileFormat,
+          chart.width,
+          chart.height,
+          chart.isGeoreferenced ? 1 : 0,
+          chart.createdAt,
+          chart.updatedAt
+        )
+
+        deletePoints.run(chart.id)
+        for (const point of points) {
+          insertPoint.run(
+            point.id,
+            chart.id,
+            point.index,
+            point.mapLat,
+            point.mapLon,
+            point.chartX,
+            point.chartY,
+            Date.now()
+          )
+        }
+      }
+    })
+
+    trx(entries)
+    return entries
+      .map(({ chart }) => this.getChart(chart.id))
+      .filter((chart): chart is ChartRecord => chart !== null)
   }
 
   updateChart(input: ChartUpdateInput): ChartRecord | null {

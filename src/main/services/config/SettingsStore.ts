@@ -2,6 +2,7 @@ import { randomBytes } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { AppLanguage, AppSettings } from '@shared/types'
+import { DEFAULT_APP_LANGUAGE, isAppLanguage } from '@shared/i18n'
 import { ensureAppStoragePaths } from '../storage/AppDataPaths'
 
 const DEFAULT_SETTINGS_BASE: AppSettings = {
@@ -50,9 +51,16 @@ export class SettingsStore {
   }
 
   update(partial: Partial<AppSettings>): AppSettings {
+    const language = partial.language === undefined
+      ? this.settings.language
+      : isAppLanguage(partial.language)
+        ? partial.language
+        : DEFAULT_APP_LANGUAGE
+
     this.settings = {
       ...this.settings,
       ...partial,
+      language,
       storage: {
         ...this.settings.storage,
         ...partial.storage
@@ -87,6 +95,7 @@ export class SettingsStore {
       return {
         ...this.withDefaultLanguage(DEFAULT_SETTINGS_BASE),
         ...parsed,
+        language: isAppLanguage(parsed.language) ? parsed.language : DEFAULT_APP_LANGUAGE,
         storage: {
           ...DEFAULT_SETTINGS_BASE.storage,
           ...parsed.storage

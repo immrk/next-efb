@@ -4,6 +4,11 @@ import type {
   NavMapSearchType
 } from '@shared/nav-map-types'
 import type { MapTileProvider } from '@shared/types'
+import type {
+  VatsimMapLayerVisibility,
+  VatsimPilotFeature,
+  VatsimStatus
+} from '@shared/vatsim-types'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Map as MapIcon, Search } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -12,24 +17,45 @@ import { useAppStore } from '../store/useAppStore'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger } from './ui/select'
+import { VatsimLayerControl } from './VatsimLayerControl'
+
+export interface VatsimPilotMapSearchResult {
+  id: string
+  type: 'pilots'
+  ident: string
+  name: string | null
+  lat: number
+  lon: number
+  pilot: VatsimPilotFeature
+}
+
+export type MapDisplaySearchResult = NavMapSearchResult | VatsimPilotMapSearchResult
 
 export function MapDisplayToolbar({
   className = 'map-floating-toolbar',
   navLayerVisibility,
   onToggleLayer,
+  vatsimLayerVisibility,
+  vatsimStatus,
+  onToggleVatsimLayer,
+  onVatsimStatusChange,
   onSearchSelect
 }: {
   className?: string
   navLayerVisibility: NavMapLayerVisibility
   onToggleLayer: (key: keyof NavMapLayerVisibility) => void
-  onSearchSelect?: (result: NavMapSearchResult) => void
+  vatsimLayerVisibility?: VatsimMapLayerVisibility
+  vatsimStatus?: VatsimStatus
+  onToggleVatsimLayer?: (key: keyof VatsimMapLayerVisibility) => void
+  onVatsimStatusChange?: (status: VatsimStatus) => void
+  onSearchSelect?: (result: MapDisplaySearchResult) => void
 }) {
   const { t } = useTranslation()
   const appClient = getAppClient()
   const settings = useAppStore((state) => state.settings)
   const setSettings = useAppStore((state) => state.setSettings)
   const [search, setSearch] = useState('')
-  const [results, setResults] = useState<NavMapSearchResult[]>([])
+  const [results, setResults] = useState<MapDisplaySearchResult[]>([])
   const [isOpen, setIsOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const rootRef = useRef<HTMLDivElement | null>(null)
@@ -42,6 +68,8 @@ export function MapDisplayToolbar({
     if (navLayerVisibility.waypoints) types.push('waypoints')
     return types
   }, [navLayerVisibility])
+  const pilotSearchEnabled = vatsimLayerVisibility !== undefined
+  const searchEnabled = activeSearchTypes.length > 0 || pilotSearchEnabled
 
   const updateMapTileProvider = async (mapTileProvider: MapTileProvider): Promise<void> => {
     const nextSettings = await appClient.updateSettings({ mapTileProvider })
@@ -61,7 +89,7 @@ export function MapDisplayToolbar({
 
   useEffect(() => {
     const query = search.trim()
-    if (!query || activeSearchTypes.length === 0) {
+    if (!query || !searchEnabled) {
       setResults([])
       setLoading(false)
       return
@@ -70,14 +98,20 @@ export function MapDisplayToolbar({
     let active = true
     setLoading(true)
     const timer = window.setTimeout(() => {
-      void appClient
-        .searchNavMapPoints({
-          query,
-          types: activeSearchTypes
-        })
-        .then((nextResults) => {
+      const navSearch = activeSearchTypes.length > 0
+        ? appClient.searchNavMapPoints({ query, types: activeSearchTypes }).catch(() => [])
+        : Promise.resolve([] as NavMapSearchResult[])
+      const pilotSearch = pilotSearchEnabled
+        ? appClient.searchVatsimPilots({ query, limit: 12 }).catch(() => [])
+        : Promise.resolve([] as VatsimPilotFeature[])
+
+      void Promise.all([pilotSearch, navSearch])
+        .then(([pilots, navResults]) => {
           if (!active) return
-          setResults(nextResults)
+          setResults([
+            ...pilots.map(toPilotSearchResult),
+            ...navResults
+          ])
         })
         .catch(() => {
           if (!active) return
@@ -94,12 +128,12 @@ export function MapDisplayToolbar({
       active = false
       window.clearTimeout(timer)
     }
-  }, [activeSearchTypes, appClient, search])
+  }, [activeSearchTypes, appClient, pilotSearchEnabled, search, searchEnabled])
 
   const placeholder =
-    activeSearchTypes.length > 0
+    searchEnabled
       ? t('map.searchPlaceholder', { defaultValue: 'Search active points' })
-      : t('map.searchDisabledPlaceholder', { defaultValue: 'Enable APT/VOR/NDB/WPT' })
+      : t('map.searchDisabledPlaceholder', { defaultValue: 'Enable a searchable layer' })
 
   return (
     <div className={className}>
@@ -114,13 +148,13 @@ export function MapDisplayToolbar({
           }}
           onFocus={() => setIsOpen(true)}
           placeholder={placeholder}
-          disabled={activeSearchTypes.length === 0}
+          disabled={!searchEnabled}
           autoComplete="off"
           autoCorrect="off"
           enterKeyHint="search"
           spellCheck={false}
         />
-        {isOpen && search.trim() && activeSearchTypes.length > 0 ? (
+        {isOpen && search.trim() && searchEnabled ? (
           <div className="map-search-panel">
             {loading ? (
               <div className="map-search-empty">
@@ -161,6 +195,14 @@ export function MapDisplayToolbar({
         <ToolbarLayerButton label="NDB" active={navLayerVisibility.ndbs} onClick={() => onToggleLayer('ndbs')} />
         <ToolbarLayerButton label="WPT" active={navLayerVisibility.waypoints} onClick={() => onToggleLayer('waypoints')} />
       </div>
+      {vatsimLayerVisibility && vatsimStatus && onToggleVatsimLayer && onVatsimStatusChange ? (
+        <VatsimLayerControl
+          layerVisibility={vatsimLayerVisibility}
+          status={vatsimStatus}
+          onToggleLayer={onToggleVatsimLayer}
+          onStatusChange={onVatsimStatusChange}
+        />
+      ) : null}
       <Select
         value={settings?.mapTileProvider ?? 'cartoLight'}
         onValueChange={(value) => {
@@ -186,8 +228,10 @@ export function MapDisplayToolbar({
     </div>
   )
 
-  function getTypeLabel(type: NavMapSearchType): string {
+  function getTypeLabel(type: NavMapSearchType | 'pilots'): string {
     switch (type) {
+      case 'pilots':
+        return 'LIVE'
       case 'airports':
         return 'APT'
       case 'vors':
@@ -198,6 +242,22 @@ export function MapDisplayToolbar({
       default:
         return 'WPT'
     }
+  }
+}
+
+function toPilotSearchResult(pilot: VatsimPilotFeature): VatsimPilotMapSearchResult {
+  const route = pilot.flightPlan?.departure && pilot.flightPlan.arrival
+    ? `${pilot.flightPlan.departure} → ${pilot.flightPlan.arrival}`
+    : pilot.flightPlan?.departure ?? pilot.flightPlan?.arrival ?? null
+  const name = [pilot.name, pilot.flightPlan?.aircraft, route].filter(Boolean).join(' · ') || null
+  return {
+    id: `vatsim-pilot:${pilot.id}`,
+    type: 'pilots',
+    ident: pilot.callsign,
+    name,
+    lat: pilot.lat,
+    lon: pilot.lon,
+    pilot
   }
 }
 

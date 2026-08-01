@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { FileText, Plus, X } from 'lucide-react'
+import { ArchiveRestore, FileText, PackageOpen, Plus, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
@@ -19,6 +19,8 @@ interface LibraryImportToolbarProps {
   importUrlDisabled?: boolean
   onImportUrlValueChange?: (value: string) => void
   onImportFromUrl?: () => void
+  onImportBundle?: () => void
+  onExportBundle?: () => void
   importMetadata?: ReactNode
 }
 
@@ -37,6 +39,8 @@ export function LibraryImportToolbar({
   importUrlDisabled = false,
   onImportUrlValueChange,
   onImportFromUrl,
+  onImportBundle,
+  onExportBundle,
   importMetadata
 }: LibraryImportToolbarProps) {
   const { t } = useTranslation()
@@ -55,6 +59,32 @@ export function LibraryImportToolbar({
           enterKeyHint="search"
           spellCheck={false}
         />
+        {onImportBundle ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="chart-picker-bundle-action"
+            onClick={onImportBundle}
+            aria-label={t('charts.bundleImportAction')}
+            title={t('charts.bundleImportAction')}
+          >
+            <ArchiveRestore className="size-4" />
+          </Button>
+        ) : null}
+        {onExportBundle ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="chart-picker-bundle-action"
+            onClick={onExportBundle}
+            aria-label={t('charts.bundleExportAction')}
+            title={t('charts.bundleExportAction')}
+          >
+            <PackageOpen className="size-4" />
+          </Button>
+        ) : null}
         {onImportFromUrl ? (
           <Button
             type="button"

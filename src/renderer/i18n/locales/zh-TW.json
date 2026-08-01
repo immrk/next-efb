@@ -1,0 +1,168 @@
+{
+  "hello": "你好，世界",
+  "main": {
+    "login": {
+      "logined": "已登錄",
+      "unlogin": "未登錄",
+      "toLogin": "前往登錄",
+      "logout": "退出登錄"
+    },
+    "navigation": {
+      "home": "首頁",
+      "system": "系統資訊",
+      "window": "窗口管理",
+      "apiTest": "API 測試",
+      "setting": "設定"
+    },
+    "home": {
+      "title": "Electron-Modern-Template",
+      "description": "現代化Electron開發框架，讓桌面應用開發更簡單高效",
+      "coreFeatures": "核心特性",
+      "features": {
+        "modernDev": {
+          "title": "現代化開發體驗",
+          "description": "基于 React + TypeScript + Vite 構建，提供熱重載、類型安全等現代化開發體驗"
+        },
+        "crossPlatform": {
+          "title": "跨平臺兼容",
+          "description": "支援Windows、macOS、Linux三大主流操作系統，一次開發，多平臺部署"
+        },
+        "uiComponents": {
+          "title": "現代化 UI 組件",
+          "description": "集成 shadcn/ui 與 Lucide 圖標，提供一致、可訪問且支援統一主題配置的使用者界面"
+        },
+        "i18n": {
+          "title": "i18n國際化支援",
+          "description": "Electron主進程、渲染進程、UI組件均已集成國際化，支援多語言切換；快速構建多語言應用"
+        }
+      }
+    },
+    "system": {
+      "alert": "該頁面資訊來源于主進程，透過 preload 檔案暴露給渲染進程，作為主進程與渲染進程通信樣例",
+      "title": "系統資訊",
+      "nodeVersion": "Node.js 版本",
+      "chromeVersion": "Chrome 版本",
+      "electronVersion": "Electron 版本",
+      "pingResult": "Ping 結果",
+      "loading": "載入中...",
+      "notTested": "暫未測試",
+      "ping": "Ping",
+      "pingSuccess": "Ping 成功: {result}",
+      "pingFailed": "Ping 失敗"
+    },
+    "window": {
+      "alert": "該頁面演示窗口管理API的使用，透過preload檔案暴露的windowManager接口與主進程通信",
+      "operations": {
+        "title": "窗口操作",
+        "refreshList": "刷新窗口列表",
+        "basicOperations": "基礎窗口操作",
+        "createSetting": "創建設定窗口",
+        "showAll": "顯示所有窗口",
+        "hideAll": "隱藏所有窗口",
+        "closeAll": "關閉所有窗口",
+        "statusControl": "窗口狀態控制",
+        "focusMain": "聚焦主窗口",
+        "minimizeMain": "最小化主窗口",
+        "maximizeMain": "最大化主窗口",
+        "restoreMain": "恢復主窗口",
+        "infoQuery": "窗口資訊查詢",
+        "checkStatus": "檢查窗口狀態",
+        "getVisibleCount": "取得可見窗口數",
+        "getAllWindows": "取得所有窗口"
+      },
+      "status": {
+        "title": "窗口狀態",
+        "currentWindowInfo": "目前窗口資訊",
+        "mainExists": "主窗口存在",
+        "mainVisible": "主窗口可見",
+        "visibleCount": "可見窗口數量",
+        "totalCount": "總窗口數量",
+        "windowList": "窗口列表",
+        "windowName": "窗口名稱",
+        "visibleStatus": "可見狀態",
+        "visible": "可見",
+        "hidden": "隱藏",
+        "actions": "操作",
+        "focus": "聚焦",
+        "close": "關閉"
+      },
+      "messages": {
+        "windowManagerUnavailable": "windowManager API 不可用",
+        "listRefreshed": "窗口列表已刷新",
+        "refreshFailed": "刷新窗口列表失敗",
+        "createSettingFailed": "創建設定窗口失敗",
+        "allWindowsShown": "所有窗口已顯示",
+        "showWindowsFailed": "顯示窗口失敗",
+        "allWindowsHidden": "所有窗口已隱藏",
+        "hideWindowsFailed": "隱藏窗口失敗",
+        "nonMainWindowsClosed": "所有非主窗口已關閉",
+        "closeWindowsFailed": "關閉窗口失敗",
+        "mainWindowFocused": "主窗口已聚焦",
+        "focusMainFailed": "聚焦主窗口失敗",
+        "mainWindowMinimized": "主窗口已最小化",
+        "minimizeMainFailed": "最小化主窗口失敗",
+        "mainWindowMaximized": "主窗口已最大化",
+        "maximizeMainFailed": "最大化主窗口失敗",
+        "mainWindowRestored": "主窗口已恢復",
+        "restoreMainFailed": "恢復主窗口失敗",
+        "statusChecked": "窗口狀態已檢查",
+        "visibleCountInfo": "目前可見窗口數量: {count}",
+        "getVisibleCountFailed": "取得可見窗口數失敗",
+        "totalWindowsInfo": "目前共有 {count} 個窗口",
+        "windowFocused": "窗口 {name} 已聚焦",
+        "focusWindowFailed": "聚焦窗口 {name} 失敗",
+        "windowClosed": "窗口 {name} 已關閉",
+        "closeWindowFailed": "關閉窗口 {name} 失敗",
+        "windowStateChanged": "窗口狀態變化: {windowName} - {action}"
+      }
+    },
+    "apiTest": {
+      "title": "API 測試",
+      "description": "該測試頁面使用封裝好的請求方法，請求mock服務，用于展示該框架的API使用方法",
+      "testGetRenderer": "發送GET請求（渲染進程）",
+      "testGetMain": "發送GET請求（主進程）",
+      "testResult": "響應結果",
+      "testFailed": "請求失敗",
+      "loading": "請求中..."
+    }
+  },
+  "setting": {
+    "title": "設定",
+    "theme": {
+      "label": "主題",
+      "description": "切換軟體配色主題，預設跟隨系統",
+      "light": "明亮",
+      "dark": "暗黑",
+      "system": "跟隨系統"
+    },
+    "language": {
+      "label": "語言",
+      "description": "語言更改立即生效",
+      "placeholder": "請選擇語言",
+      "system": "跟隨系統",
+      "chinese": "中文",
+      "english": "英文"
+    }
+  },
+  "login": {
+    "title": "登錄",
+    "email": "郵箱",
+    "password": "密碼",
+    "login": "登錄",
+    "register": "注冊",
+    "validation": {
+      "emailRequired": "請輸入郵箱",
+      "emailInvalid": "請輸入正確的郵箱",
+      "passwordRequired": "請輸入密碼"
+    },
+    "messages": {
+      "success": "登錄成功",
+      "failed": "登錄失敗",
+      "registerUnavailable": "暫未開放注冊"
+    }
+  },
+  "common": {
+    "yes": "是",
+    "no": "否"
+  }
+}

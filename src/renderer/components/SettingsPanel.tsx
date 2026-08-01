@@ -3,8 +3,9 @@ import { useEffect, useState } from 'react'
 import QRCode from 'qrcode'
 import { getAppClient } from '../client'
 import i18n from '../i18n'
+import { APP_LANGUAGES, DEFAULT_APP_LANGUAGE, isAppLanguage, type AppLanguage } from '@shared/i18n'
 import { useTheme, type ThemeColor } from '../composables/useTheme'
-import type { AppLanguage, AircraftSource, RemoteAccessStatus } from '@shared/types'
+import type { AircraftSource, RemoteAccessStatus } from '@shared/types'
 import type { NavDataStatus } from '@shared/flight-plan-types'
 import type { StorageSummary } from '@shared/chart-types'
 import { useAppStore } from '../store/useAppStore'
@@ -40,7 +41,6 @@ export function SettingsPanel() {
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null)
   const [isMobileAccess, setIsMobileAccess] = useState(false)
   const [isSavingChartsPath, setIsSavingChartsPath] = useState(false)
-  const isChinese = (settings?.language ?? i18n.language).toLowerCase().startsWith('zh')
 
   useEffect(() => {
     const refreshRemoteAccessStatus = () => {
@@ -134,7 +134,8 @@ export function SettingsPanel() {
   const updateLanguage = async (language: AppLanguage): Promise<void> => {
     const nextSettings = await appClient.updateSettings({ language })
     setSettings(nextSettings)
-    await i18n.changeLanguage(language)
+    localStorage.setItem('locale', nextSettings.language)
+    await i18n.changeLanguage(nextSettings.language)
   }
 
   const updateProviderMode = async (providerMode: AircraftSource): Promise<void> => {
@@ -230,7 +231,9 @@ export function SettingsPanel() {
       <div className="settings-field">
         <label htmlFor="language-select">{t('settings.language')}</label>
         <Select
-          value={settings?.language ?? 'zh-CN'}
+          value={settings?.language ?? (
+            isAppLanguage(i18n.resolvedLanguage) ? i18n.resolvedLanguage : DEFAULT_APP_LANGUAGE
+          )}
           disabled={!runtime.canWrite}
           onValueChange={(value) => {
             void updateLanguage(value as AppLanguage)
@@ -240,8 +243,11 @@ export function SettingsPanel() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="zh-CN">{t('settings.languageZhCN')}</SelectItem>
-            <SelectItem value="en-US">English</SelectItem>
+            {APP_LANGUAGES.map((language) => (
+              <SelectItem key={language} value={language}>
+                {t(`settings.languages.${language}`)}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
@@ -342,29 +348,17 @@ export function SettingsPanel() {
       {!isMobileAccess ? (
         <div className="settings-field">
           <label>
-            {t('settings.chartLibraryTitle', {
-              defaultValue: isChinese ? '航图库路径' : 'Chart Library Path'
-            })}
+            {t('settings.chartLibraryTitle')}
           </label>
           <div className="settings-note settings-note-card">
             <span>
-              {t('settings.chartLibraryDefaultPath', {
-                defaultValue: isChinese ? '默认路径：{{path}}' : 'Default path: {{path}}',
-                path: storageSummary?.defaultChartsRoot ?? '-'
-              })}
+              {t('settings.chartLibraryDefaultPath', { path: storageSummary?.defaultChartsRoot ?? '-' })}
             </span>
             <span>
-              {t('settings.chartLibraryActivePath', {
-                defaultValue: isChinese ? '当前路径：{{path}}' : 'Current path: {{path}}',
-                path: storageSummary?.chartsRoot ?? '-'
-              })}
+              {t('settings.chartLibraryActivePath', { path: storageSummary?.chartsRoot ?? '-' })}
             </span>
             <span className="settings-note-inline">
-              {t('settings.chartLibraryHint', {
-                defaultValue: isChinese
-                  ? '保存新路径后，已有航图文件会自动迁移到新位置。'
-                  : 'Saving a new path will move existing chart files to the new location.'
-              })}
+              {t('settings.chartLibraryHint')}
             </span>
             <div className="settings-inline-row">
               <Input
@@ -384,7 +378,7 @@ export function SettingsPanel() {
                   setChartsPathDraft(picked)
                 }}
               >
-                {t('settings.chartLibraryBrowse', { defaultValue: isChinese ? '浏览' : 'Browse' })}
+                {t('settings.chartLibraryBrowse')}
               </Button>
             ) : null}
             <Button
@@ -395,7 +389,7 @@ export function SettingsPanel() {
                 void saveChartLibraryPath(chartsPathDraft)
               }}
             >
-              {t('settings.chartLibrarySave', { defaultValue: isChinese ? '保存路径' : 'Save Path' })}
+              {t('settings.chartLibrarySave')}
             </Button>
             <Button
                 type="button"
@@ -405,7 +399,7 @@ export function SettingsPanel() {
                 void saveChartLibraryPath(null)
               }}
             >
-              {t('settings.chartLibraryReset', { defaultValue: isChinese ? '恢复默认' : 'Use Default' })}
+              {t('settings.chartLibraryReset')}
             </Button>
           </div>
         </div>

@@ -31,6 +31,8 @@ import type {
   SimBriefImportInput
 } from '@shared/flight-plan-types'
 import type { NavMapQueryInput, NavMapSearchInput } from '@shared/nav-map-types'
+import type { VatsimMapQueryInput, VatsimPilotSearchInput, VatsimStatus } from '@shared/vatsim-types'
+import type { AppLanguage } from '@shared/i18n'
 import { WebSocket, WebSocketServer } from 'ws'
 import { SettingsStore } from '../config/SettingsStore'
 import { SimConnectService } from '../simconnect/SimConnectService'
@@ -40,6 +42,7 @@ import { ChecklistRepository } from '../storage/ChecklistRepository'
 import { StorageService } from '../storage/StorageService'
 import { RemoteChartImportService } from '../storage/RemoteChartImportService'
 import { NavDataService } from '../navigation/NavDataService'
+import { VatsimDataService } from '../vatsim/VatsimDataService'
 
 interface LanServerOptions {
   settings: AppSettings
@@ -51,6 +54,8 @@ interface LanServerOptions {
   checklistRepository: ChecklistRepository
   storageService: StorageService
   navDataService: NavDataService
+  vatsimDataService: VatsimDataService
+  onLanguageChanged: (language: AppLanguage) => Promise<void>
 }
 
 type ServerEvent =
@@ -59,6 +64,7 @@ type ServerEvent =
   | { type: 'chart:changed' }
   | { type: 'checklist:changed' }
   | { type: 'settings:changed' }
+  | { type: 'vatsim:changed'; payload: VatsimStatus }
 
 export class LanServer {
   private settings: AppSettings
@@ -71,6 +77,8 @@ export class LanServer {
   private readonly storageService: StorageService
   private readonly remoteChartImportService: RemoteChartImportService
   private readonly navDataService: NavDataService
+  private readonly vatsimDataService: VatsimDataService
+  private readonly onLanguageChanged: (language: AppLanguage) => Promise<void>
   private server: ReturnType<typeof createServer> | null = null
   private readonly wsServer = new WebSocketServer({ noServer: true })
   private readonly sockets = new Set<WebSocket>()
@@ -86,6 +94,8 @@ export class LanServer {
     this.storageService = options.storageService
     this.remoteChartImportService = new RemoteChartImportService()
     this.navDataService = options.navDataService
+    this.vatsimDataService = options.vatsimDataService
+    this.onLanguageChanged = options.onLanguageChanged
   }
 
   async start(): Promise<void> {
@@ -201,6 +211,10 @@ export class LanServer {
     this.broadcast({ type: 'settings:changed' })
   }
 
+  broadcastVatsimChanged(status: VatsimStatus): void {
+    this.broadcast({ type: 'vatsim:changed', payload: status })
+  }
+
   private async handleRequest(request: IncomingMessage, response: ServerResponse): Promise<void> {
     try {
       const url = new URL(request.url ?? '/', 'http://127.0.0.1')
@@ -239,6 +253,9 @@ export class LanServer {
           }
           const partial = (await this.readJsonBody(request)) as Partial<AppSettings>
           const nextSettings = this.applySettingsUpdate(partial)
+          if (partial.language !== undefined) {
+            await this.onLanguageChanged(nextSettings.language)
+          }
           this.settings = nextSettings
           this.simConnectService.reconfigure(nextSettings)
           await this.reconfigure(nextSettings)
@@ -286,6 +303,28 @@ export class LanServer {
       if (url.pathname === '/api/nav/search-points' && request.method === 'POST') {
         const input = (await this.readJsonBody(request)) as NavMapSearchInput
         this.sendJson(response, this.navDataService.searchMapPoints(this.settingsStore.get(), input))
+        return
+      }
+
+      if (url.pathname === '/api/vatsim/status') {
+        this.sendJson(response, this.vatsimDataService.getStatus())
+        return
+      }
+
+      if (url.pathname === '/api/vatsim/map-features' && request.method === 'POST') {
+        const input = (await this.readJsonBody(request)) as VatsimMapQueryInput
+        this.sendJson(response, await this.vatsimDataService.getMapFeatures(input))
+        return
+      }
+
+      if (url.pathname === '/api/vatsim/search-pilots' && request.method === 'POST') {
+        const input = (await this.readJsonBody(request)) as VatsimPilotSearchInput
+        this.sendJson(response, this.vatsimDataService.searchPilots(input))
+        return
+      }
+
+      if (url.pathname === '/api/vatsim/refresh' && request.method === 'POST') {
+        this.sendJson(response, await this.vatsimDataService.refreshNow())
         return
       }
 

@@ -14,6 +14,7 @@ export function useDesktopData(): void {
     const refreshSettings = () => {
       void appClient.getSettings().then((settings) => {
         setSettings(settings)
+        localStorage.setItem('locale', settings.language)
         void i18n.changeLanguage(settings.language)
       })
     }

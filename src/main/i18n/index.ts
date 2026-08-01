@@ -3,6 +3,13 @@ import { fileURLToPath } from 'url'
 import i18next, { InitOptions, TOptions } from 'i18next'
 import Backend from 'i18next-fs-backend'
 import { i18nConfig } from '../../config/i18nConfig.js'
+import {
+  APP_LANGUAGES,
+  DEFAULT_APP_LANGUAGE,
+  isAppLanguage,
+  resolveAppLanguage,
+  type AppLanguage
+} from '../../shared/i18n.js'
 import Store from 'electron-store'
 import { app } from 'electron'
 
@@ -15,10 +22,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 // ⽀持的语⾔列表，如需新增，请在此处维护后再补充 locale JSON
 export const SUPPORTED_LANGUAGES: typeof i18nConfig.locales = i18nConfig.locales
-const DEFAULT_LANGUAGE: SupportedLanguages = 'en-US'
+const DEFAULT_LANGUAGE: AppLanguage = DEFAULT_APP_LANGUAGE
 
 /** 把语⾔写⼊进程环境变量，避免系统语⾔影响 i18next */
-const patchProcessEnv = (lng: SupportedLanguages) => {
+const patchProcessEnv = (lng: AppLanguage) => {
   Object.assign(process.env, {
     LANG: lng,
     LANGUAGE: lng,
@@ -39,28 +46,19 @@ export const initMainI18n = async (): Promise<void> => {
   if (initialized) return // 避免重复初始化
 
   // 获取 store 中的语言
-  let language = store.get('language') as SupportedLanguages
-  if (!language || language === 'system') {
-    language = app.getLocale() as SupportedLanguages
-  }
-
-  // 获取系统语言
-  const lng = isLanguageSupported(language) ? language : DEFAULT_LANGUAGE
+  const storedLanguage = store.get('language')
+  const lng = storedLanguage === 'system' || storedLanguage === undefined
+    ? resolveAppLanguage(app.getLocale())
+    : isAppLanguage(storedLanguage)
+      ? storedLanguage
+      : DEFAULT_LANGUAGE
   patchProcessEnv(lng)
 
   const options: InitOptions = {
     lng,
-    fallbackLng: {
-      zh: ['zh-CN'],
-      'zh-CN': ['zh-CN'],
-      'zh-TW': ['zh-CN'],
-      'zh-HK': ['zh-CN'],
-      en: ['en-US'],
-      'en-US': ['en-US'],
-      'en-GB': ['en-US'],
-      default: [DEFAULT_LANGUAGE],
-    },
-    supportedLngs: SUPPORTED_LANGUAGES,
+    fallbackLng: DEFAULT_LANGUAGE,
+    supportedLngs: APP_LANGUAGES,
+    load: 'currentOnly',
     ns: ['menu'],
     defaultNS: 'menu',
     backend: {
@@ -86,15 +84,25 @@ export const t = (key: string, options?: TOptions): string =>
 
 export const setLanguage = async (
   language: SupportedLanguages,
-): Promise<void> => {
-  if (!isLanguageSupported(language)) return
-  await i18next.changeLanguage(language)
+): Promise<AppLanguage> => {
+  const resolvedLanguage = language === 'system'
+    ? resolveAppLanguage(app.getLocale())
+    : isAppLanguage(language)
+      ? language
+      : DEFAULT_LANGUAGE
+  store.set(
+    'language',
+    language === 'system' || isAppLanguage(language) ? language : DEFAULT_LANGUAGE
+  )
+  patchProcessEnv(resolvedLanguage)
+  await i18next.changeLanguage(resolvedLanguage)
+  return resolvedLanguage
 }
 
-export const getCurrentLanguage = (): SupportedLanguages =>
-  (i18next.language ?? DEFAULT_LANGUAGE) as SupportedLanguages
+export const getCurrentLanguage = (): AppLanguage =>
+  isAppLanguage(i18next.resolvedLanguage) ? i18next.resolvedLanguage : DEFAULT_LANGUAGE
 
-export const getSupportedLanguages = (): SupportedLanguages[] => SUPPORTED_LANGUAGES
+export const getSupportedLanguages = (): SupportedLanguages[] => [...SUPPORTED_LANGUAGES]
 
 export const isLanguageSupported = (lng: string): lng is SupportedLanguages =>
   SUPPORTED_LANGUAGES.includes(lng as SupportedLanguages)

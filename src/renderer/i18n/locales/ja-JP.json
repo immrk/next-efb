@@ -1,0 +1,57 @@
+{
+  "hello": "こんにちは",
+  "main": {
+    "login": {
+      "logined": "ログイン済み",
+      "unlogin": "ログインしていません",
+      "toLogin": "ログイン",
+      "logout": "ログアウト"
+    },
+    "navigation": {
+      "home": "ホーム",
+      "system": "システム情報",
+      "window": "ウィンドウ管理",
+      "apiTest": "API テスト",
+      "setting": "設定"
+    }
+  },
+  "setting": {
+    "title": "設定",
+    "theme": {
+      "label": "テーマ",
+      "description": "アプリの配色を切り替えます",
+      "light": "ライト",
+      "dark": "ダーク",
+      "system": "システム設定に従う"
+    },
+    "language": {
+      "label": "言語",
+      "description": "言語の変更はすぐに反映されます",
+      "placeholder": "言語を選択してください",
+      "system": "システム設定に従う",
+      "chinese": "中国語",
+      "english": "英語"
+    }
+  },
+  "common": {
+    "yes": "はい",
+    "no": "いいえ"
+  },
+  "login": {
+    "title": "ログイン",
+    "email": "メールアドレス",
+    "password": "パスワード",
+    "login": "ログイン",
+    "register": "登録",
+    "validation": {
+      "emailRequired": "メールアドレスを入力してください",
+      "emailInvalid": "有効なメールアドレスを入力してください",
+      "passwordRequired": "パスワードを入力してください"
+    },
+    "messages": {
+      "success": "ログインしました",
+      "failed": "ログインに失敗しました",
+      "registerUnavailable": "現在、登録は利用できません"
+    }
+  }
+}
