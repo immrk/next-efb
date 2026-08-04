@@ -147,10 +147,6 @@ export function MapPage({
   )
 
   useEffect(() => {
-    if (charts.length === 0) {
-      return
-    }
-
     setMountedChartIds((current) => current.filter((chartId) => charts.some((chart) => chart.id === chartId)))
     setActiveChartId((current) => (current && charts.some((chart) => chart.id === current) ? current : null))
   }, [charts])

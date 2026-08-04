@@ -200,4 +200,19 @@ describe('settings and local storage services', () => {
       )
     ).toBe(resolve(configured))
   })
+
+  it('initializes and watches the configured chart library', async () => {
+    const configured = join(testRoot, 'configured-on-startup')
+    const storage = new StorageService(
+      createSettings({ storage: { chartLibraryPath: configured } })
+    )
+    const onChanged = vi.fn()
+    const stopWatching = storage.onChartLibraryChanged(onChanged)
+
+    expect(storage.getSummary().chartsRoot).toBe(resolve(configured))
+    writeFileSync(join(configured, 'external-change.txt'), 'changed')
+    await vi.waitFor(() => expect(onChanged).toHaveBeenCalled(), { timeout: 2_000 })
+
+    stopWatching()
+  })
 })

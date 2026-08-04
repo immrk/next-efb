@@ -30,7 +30,10 @@ export function ChartsPage({
   const [importingUrl, setImportingUrl] = useState(false)
 
   useEffect(() => {
-    if (charts.length === 0 || selectedChartId) return
+    if (
+      charts.length === 0 ||
+      (selectedChartId && charts.some((chart) => chart.id === selectedChartId))
+    ) return
     onSelectChart(charts[0].id)
   }, [charts, onSelectChart, selectedChartId])
 

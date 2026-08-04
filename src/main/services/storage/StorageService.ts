@@ -1,4 +1,13 @@
-import { copyFileSync, cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  copyFileSync,
+  cpSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  watch,
+  writeFileSync,
+  type FSWatcher
+} from 'node:fs'
 import { basename, extname, join, resolve, sep } from 'node:path'
 import type { ChartFileFormat, StorageSummary } from '@shared/chart-types'
 import type { DocumentFileFormat } from '@shared/document-types'
@@ -8,9 +17,15 @@ import { ensureAppStoragePaths, resolveChartsRootPath } from './AppDataPaths'
 export class StorageService {
   private storageSummary: StorageSummary
   private readonly checklistsRoot: string
+  private chartLibraryWatcher: FSWatcher | null = null
+  private readonly chartLibraryListeners = new Set<() => void>()
 
-  constructor() {
-    const { settingsRoot, databasePath, chartsRoot, defaultChartsRoot, legacyDataRoot } = ensureAppStoragePaths()
+  constructor(settings?: AppSettings) {
+    const paths = ensureAppStoragePaths()
+    const { settingsRoot, databasePath, defaultChartsRoot, legacyDataRoot } = paths
+    const chartsRoot = settings
+      ? resolveChartsRootPath(settings.storage.chartLibraryPath)
+      : paths.chartsRoot
     this.checklistsRoot = join(settingsRoot, 'checklists')
 
     mkdirSync(settingsRoot, { recursive: true })
@@ -51,17 +66,26 @@ export class StorageService {
       throw new Error('CHART_LIBRARY_PATH_CONFLICT')
     }
 
-    mkdirSync(normalizedNextChartsRoot, { recursive: true })
-    cpSync(previousChartsRoot, normalizedNextChartsRoot, {
-      recursive: true,
-      force: false,
-      errorOnExist: false
-    })
-    rmSync(previousChartsRoot, { recursive: true, force: true })
+    const shouldRestartWatcher = this.chartLibraryWatcher !== null
+    this.stopChartLibraryWatcher()
 
-    this.storageSummary = {
-      ...this.storageSummary,
-      chartsRoot: normalizedNextChartsRoot
+    try {
+      mkdirSync(normalizedNextChartsRoot, { recursive: true })
+      cpSync(previousChartsRoot, normalizedNextChartsRoot, {
+        recursive: true,
+        force: false,
+        errorOnExist: false
+      })
+      rmSync(previousChartsRoot, { recursive: true, force: true })
+
+      this.storageSummary = {
+        ...this.storageSummary,
+        chartsRoot: normalizedNextChartsRoot
+      }
+    } finally {
+      if (shouldRestartWatcher) {
+        this.startChartLibraryWatcher()
+      }
     }
 
     return {
@@ -122,6 +146,18 @@ export class StorageService {
     rmSync(chartDir, { recursive: true, force: true })
   }
 
+  onChartLibraryChanged(listener: () => void): () => void {
+    this.chartLibraryListeners.add(listener)
+    this.startChartLibraryWatcher()
+
+    return () => {
+      this.chartLibraryListeners.delete(listener)
+      if (this.chartLibraryListeners.size === 0) {
+        this.stopChartLibraryWatcher()
+      }
+    }
+  }
+
   importChecklistFile(
     sourcePath: string,
     checklistId: string
@@ -140,6 +176,32 @@ export class StorageService {
   deleteChecklistFiles(checklistId: string): void {
     const checklistDir = join(this.checklistsRoot, checklistId)
     rmSync(checklistDir, { recursive: true, force: true })
+  }
+
+  private startChartLibraryWatcher(): void {
+    if (this.chartLibraryWatcher || this.chartLibraryListeners.size === 0) {
+      return
+    }
+
+    mkdirSync(this.storageSummary.chartsRoot, { recursive: true })
+    try {
+      const watcher = watch(this.storageSummary.chartsRoot, { recursive: true }, () => {
+        this.chartLibraryListeners.forEach((listener) => listener())
+      })
+      watcher.on('error', () => {
+        if (this.chartLibraryWatcher === watcher) {
+          this.stopChartLibraryWatcher()
+        }
+      })
+      this.chartLibraryWatcher = watcher
+    } catch {
+      this.chartLibraryWatcher = null
+    }
+  }
+
+  private stopChartLibraryWatcher(): void {
+    this.chartLibraryWatcher?.close()
+    this.chartLibraryWatcher = null
   }
 }
 

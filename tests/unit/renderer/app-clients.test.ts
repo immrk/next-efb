@@ -62,7 +62,8 @@ describe('application clients', () => {
       downloadAndInstallAppUpdate: vi.fn().mockResolvedValue(updateState),
       onAppUpdateStateChange: vi.fn(() => off),
       performWindowAction: vi.fn().mockResolvedValue({ isMaximized: true }),
-      onAircraftUpdate: vi.fn(() => off)
+      onAircraftUpdate: vi.fn(() => off),
+      onChartsChanged: vi.fn(() => off)
     }
     Object.defineProperty(window, 'msfsApi', {
       configurable: true,
@@ -87,6 +88,7 @@ describe('application clients', () => {
     await client.performWindowAction('toggle-maximize')
     const listener = vi.fn()
     expect(client.onAircraftUpdate(listener)).toBe(off)
+    expect(client.onChartsChanged(listener)).toBe(off)
     expect(client.onAppUpdateStateChange(listener)).toBe(off)
 
     expect(preload.getChart).toHaveBeenCalledWith('chart-1')
@@ -96,7 +98,7 @@ describe('application clients', () => {
     expect(preload.downloadAndInstallAppUpdate).toHaveBeenCalledOnce()
     expect(preload.onAppUpdateStateChange).toHaveBeenCalledWith(listener)
     expect(preload.onAircraftUpdate).toHaveBeenCalledWith(listener)
-    expect(client.onChartsChanged(vi.fn())).toEqual(expect.any(Function))
+    expect(preload.onChartsChanged).toHaveBeenCalledWith(listener)
     expect(client.onSettingsChanged(vi.fn())).toEqual(expect.any(Function))
   })
 

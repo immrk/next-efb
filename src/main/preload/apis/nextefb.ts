@@ -148,6 +148,11 @@ const api = {
     ipcRenderer.on(IPC_CHANNELS.connectionUpdate, wrapped)
     return () => ipcRenderer.removeListener(IPC_CHANNELS.connectionUpdate, wrapped)
   },
+  onChartsChanged: (listener: () => void): (() => void) => {
+    const wrapped = () => listener()
+    ipcRenderer.on(IPC_CHANNELS.chartsChanged, wrapped)
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.chartsChanged, wrapped)
+  },
   onChecklistsChanged: (_listener: () => void): (() => void) => () => void 0
 }
 

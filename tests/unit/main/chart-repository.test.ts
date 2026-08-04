@@ -1,4 +1,4 @@
-import { mkdtempSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { beforeEach, describe, expect, it } from 'vitest'
@@ -93,5 +93,22 @@ describe('ChartRepository', () => {
       previewImagePath: join(nextRoot, 'chart-1', 'display.png')
     })
     expect(repository.getChart('external')?.sourceFilePath).toBe(join(root, 'external.png'))
+  })
+
+  it('removes chart metadata and reference points when the managed source is deleted', () => {
+    const repository = new ChartRepository(storage)
+    const chartDir = join(storage.chartsRoot, 'chart-1')
+    const sourceFilePath = join(chartDir, 'source.png')
+    mkdirSync(chartDir, { recursive: true })
+    writeFileSync(sourceFilePath, 'chart')
+    repository.createChart(createChart({ sourceFilePath, previewImagePath: null }))
+    repository.saveReferencePoints('chart-1', createReferencePoints())
+
+    expect(repository.reconcileMissingCharts()).toEqual([])
+    rmSync(sourceFilePath)
+
+    expect(repository.reconcileMissingCharts()).toEqual(['chart-1'])
+    expect(repository.getChart('chart-1')).toBeNull()
+    expect(repository.listReferencePoints('chart-1')).toEqual([])
   })
 })

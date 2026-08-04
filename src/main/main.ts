@@ -98,7 +98,7 @@ async function createMainWindow(): Promise<void> {
   const settingsStore = new SettingsStore(resolveSystemLanguage(app.getLocale()))
   const flightStateStore = new FlightStateStore()
   const simConnectService = new SimConnectService(settingsStore.get())
-  const storageService = new StorageService()
+  const storageService = new StorageService(settingsStore.get())
   const navDataService = new NavDataService()
   const chartRepository = new ChartRepository(storageService.getSummary())
   const checklistRepository = new ChecklistRepository(storageService.getSummary().databasePath)
@@ -111,7 +111,35 @@ async function createMainWindow(): Promise<void> {
     chartRepository,
     checklistRepository,
     storageService,
-    navDataService
+    navDataService,
+    onChartsChanged: () => {
+      if (!mainWindow.isDestroyed()) {
+        mainWindow.webContents.send(IPC_CHANNELS.chartsChanged)
+      }
+    }
+  })
+
+  chartRepository.reconcileMissingCharts().forEach((chartId) => {
+    storageService.deleteChartFiles(chartId)
+  })
+  let chartReconcileTimer: ReturnType<typeof setTimeout> | null = null
+  const stopWatchingChartLibrary = storageService.onChartLibraryChanged(() => {
+    if (chartReconcileTimer) {
+      clearTimeout(chartReconcileTimer)
+    }
+    chartReconcileTimer = setTimeout(() => {
+      chartReconcileTimer = null
+      chartRepository.reconcileMissingCharts().forEach((chartId) => {
+        storageService.deleteChartFiles(chartId)
+      })
+      lanServer.broadcastChartChanged()
+    }, 300)
+  })
+  mainWindow.once('closed', () => {
+    stopWatchingChartLibrary()
+    if (chartReconcileTimer) {
+      clearTimeout(chartReconcileTimer)
+    }
   })
 
   attachWindowGuards(mainWindow)

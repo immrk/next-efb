@@ -51,6 +51,7 @@ interface LanServerOptions {
   checklistRepository: ChecklistRepository
   storageService: StorageService
   navDataService: NavDataService
+  onChartsChanged?: () => void
 }
 
 type ServerEvent =
@@ -71,6 +72,7 @@ export class LanServer {
   private readonly storageService: StorageService
   private readonly remoteChartImportService: RemoteChartImportService
   private readonly navDataService: NavDataService
+  private readonly onChartsChanged: () => void
   private server: ReturnType<typeof createServer> | null = null
   private readonly wsServer = new WebSocketServer({ noServer: true })
   private readonly sockets = new Set<WebSocket>()
@@ -86,6 +88,7 @@ export class LanServer {
     this.storageService = options.storageService
     this.remoteChartImportService = new RemoteChartImportService()
     this.navDataService = options.navDataService
+    this.onChartsChanged = options.onChartsChanged ?? (() => void 0)
   }
 
   async start(): Promise<void> {
@@ -191,6 +194,7 @@ export class LanServer {
 
   broadcastChartChanged(): void {
     this.broadcast({ type: 'chart:changed' })
+    this.onChartsChanged()
   }
 
   broadcastChecklistChanged(): void {
@@ -317,6 +321,11 @@ export class LanServer {
           return
         }
 
+        const removedChartIds = this.chartRepository.reconcileMissingCharts()
+        removedChartIds.forEach((chartId) => this.storageService.deleteChartFiles(chartId))
+        if (removedChartIds.length > 0) {
+          this.broadcastChartChanged()
+        }
         this.sendJson(response, this.chartRepository.listCharts())
         return
       }
@@ -486,11 +495,14 @@ export class LanServer {
       return null
     }
 
-    const displayPath = chart.previewImagePath ?? chart.sourceFilePath
+    const displayPath = chart.previewImagePath && existsSync(chart.previewImagePath)
+      ? chart.previewImagePath
+      : chart.sourceFilePath
+    const fileFormat = getFileFormat(displayPath)
     return {
       chartId,
-      fileFormat: chart.fileFormat,
-      mimeType: getMimeTypeByFormat(chart.fileFormat),
+      fileFormat,
+      mimeType: getMimeTypeByFormat(fileFormat),
       filePath: displayPath
     }
   }

@@ -1,4 +1,5 @@
 import Database from 'better-sqlite3'
+import { existsSync } from 'node:fs'
 import { isAbsolute, join, relative, resolve, sep } from 'node:path'
 import type {
   ChartRecord,
@@ -125,6 +126,30 @@ export class ChartRepository {
     })
 
     trx()
+  }
+
+  reconcileMissingCharts(): string[] {
+    const missingChartIds = this.listCharts()
+      .filter((chart) => !existsSync(chart.sourceFilePath))
+      .map((chart) => chart.id)
+
+    if (missingChartIds.length === 0) {
+      return []
+    }
+
+    const deleteReferencePoints = this.db.prepare(
+      'DELETE FROM chart_reference_points WHERE chart_id = ?'
+    )
+    const deleteChart = this.db.prepare('DELETE FROM charts WHERE id = ?')
+    const trx = this.db.transaction(() => {
+      missingChartIds.forEach((chartId) => {
+        deleteReferencePoints.run(chartId)
+        deleteChart.run(chartId)
+      })
+    })
+
+    trx()
+    return missingChartIds
   }
 
   listReferencePoints(chartId: string): GeoReferencePoint[] {

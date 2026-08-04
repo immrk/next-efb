@@ -13,6 +13,7 @@ export const IPC_CHANNELS = {
   chartReferenceGet: 'chart:reference:get',
   chartReferenceSave: 'chart:reference:save',
   chartUpdate: 'chart:update',
+  chartsChanged: 'charts:changed',
   chartsList: 'charts:list',
   checklistAsset: 'checklist:asset',
   checklistDelete: 'checklist:delete',

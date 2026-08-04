@@ -181,8 +181,8 @@ export class ElectronAppClient implements AppClient {
     return window.msfsApi.onConnectionUpdate(listener)
   }
 
-  onChartsChanged() {
-    return () => void 0
+  onChartsChanged(listener: Parameters<typeof window.msfsApi.onChartsChanged>[0]) {
+    return window.msfsApi.onChartsChanged(listener)
   }
 
   onChecklistsChanged(listener: Parameters<typeof window.msfsApi.onChecklistsChanged>[0]) {

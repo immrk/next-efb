@@ -94,6 +94,7 @@ declare global {
       performDevAction: (action: DesktopDevAction) => Promise<boolean>
       onAircraftUpdate: (listener: (state: AircraftState) => void) => () => void
       onConnectionUpdate: (listener: (state: ConnectionState) => void) => () => void
+      onChartsChanged: (listener: () => void) => () => void
       onChecklistsChanged: (listener: () => void) => () => void
     }
   }
