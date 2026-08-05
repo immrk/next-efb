@@ -18,6 +18,7 @@ import { FlightStateStore } from './services/state/FlightStateStore.js'
 import { ChartRepository } from './services/storage/ChartRepository.js'
 import { ChecklistRepository } from './services/storage/ChecklistRepository.js'
 import { StorageService } from './services/storage/StorageService.js'
+import { reconcileChartLibrary } from './services/storage/reconcileChartLibrary.js'
 import { AppUpdateService } from './services/updates/AppUpdateService.js'
 import { VatsimDataService } from './services/vatsim/VatsimDataService.js'
 import { windowManager } from './windowManager.js'
@@ -104,7 +105,7 @@ async function createMainWindow(): Promise<void> {
   await applyAppLanguage(settingsStore.get().language)
   const flightStateStore = new FlightStateStore()
   const simConnectService = new SimConnectService(settingsStore.get())
-  const storageService = new StorageService()
+  const storageService = new StorageService(settingsStore.get())
   const navDataService = new NavDataService()
   activeVatsimDataService?.stop()
   const vatsimDataService = new VatsimDataService({
@@ -125,7 +126,34 @@ async function createMainWindow(): Promise<void> {
     storageService,
     navDataService,
     vatsimDataService,
-    onLanguageChanged: applyAppLanguage
+    onLanguageChanged: applyAppLanguage,
+    onChartsChanged: () => {
+      if (!mainWindow.isDestroyed()) {
+        mainWindow.webContents.send(IPC_CHANNELS.chartsChanged)
+      }
+    }
+  })
+
+  reconcileChartLibrary(chartRepository, storageService)
+  let chartReconcileTimer: ReturnType<typeof setTimeout> | null = null
+  const stopWatchingChartLibrary = storageService.onChartLibraryChanged(() => {
+    if (chartReconcileTimer) {
+      clearTimeout(chartReconcileTimer)
+    }
+    chartReconcileTimer = setTimeout(() => {
+      chartReconcileTimer = null
+      reconcileChartLibrary(
+        chartRepository,
+        storageService,
+        () => lanServer.broadcastChartChanged()
+      )
+    }, 300)
+  })
+  mainWindow.once('closed', () => {
+    stopWatchingChartLibrary()
+    if (chartReconcileTimer) {
+      clearTimeout(chartReconcileTimer)
+    }
   })
 
   attachWindowGuards(mainWindow)

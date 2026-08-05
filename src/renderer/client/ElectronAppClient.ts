@@ -110,6 +110,14 @@ export class ElectronAppClient implements AppClient {
     return window.msfsApi.listCharts()
   }
 
+  listChartAirports(query = '') {
+    return window.msfsApi.listChartAirports(query)
+  }
+
+  listChartsByAirport(airportCode: string, query = '') {
+    return window.msfsApi.listChartsByAirport(airportCode, query)
+  }
+
   getStorageSummary() {
     return window.msfsApi.getStorageSummary()
   }
@@ -209,8 +217,8 @@ export class ElectronAppClient implements AppClient {
     return window.msfsApi.onConnectionUpdate(listener)
   }
 
-  onChartsChanged() {
-    return () => void 0
+  onChartsChanged(listener: Parameters<typeof window.msfsApi.onChartsChanged>[0]) {
+    return window.msfsApi.onChartsChanged(listener)
   }
 
   onChecklistsChanged(listener: Parameters<typeof window.msfsApi.onChecklistsChanged>[0]) {

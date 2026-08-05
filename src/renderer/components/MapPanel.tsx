@@ -7,7 +7,7 @@ import type { GeoReferencePoint } from '@shared/chart-types'
 import type { FlightPlanPoint, FlightPlanSegment } from '@shared/flight-plan-types'
 import type { VatsimMetarFeature, VatsimSelectableFeature, VatsimStatus } from '@shared/vatsim-types'
 import type { AppLanguage } from '@shared/i18n'
-import { createAircraftLeafletIcon } from './AircraftArrow'
+import { AircraftMapMarker } from './AircraftArrow'
 import { ConnectionBadge } from './ConnectionBadge'
 import { MapDisplayToolbar } from './MapDisplayToolbar'
 import { NavDataOverlay } from './NavDataOverlay'
@@ -389,9 +389,10 @@ export function MapPanel({
             {...(tileConfig.subdomains ? { subdomains: tileConfig.subdomains } : {})}
           />
           {aircraftPositionUsable ? (
-            <Marker
-              position={[lat, lon]}
-              icon={createAircraftLeafletIcon(heading)}
+            <AircraftMapMarker
+              lat={lat}
+              lon={lon}
+              headingDeg={heading}
               title={t('map.aircraftMarker')}
             />
           ) : null}

@@ -6,6 +6,8 @@ import { Badge } from './ui/badge'
 import { Button } from './ui/button'
 import { LibraryImportToolbar } from './LibraryImportToolbar'
 
+export { ChartMountDrawer } from './VirtualChartMountDrawer'
+
 const CHART_TYPE_ORDER: ChartType[] = ['airport', 'sid', 'star', 'approach', 'general']
 
 function groupChartsByAirportAndType(charts: ChartRecord[]) {
@@ -64,7 +66,7 @@ interface ChartMountDrawerProps {
   onExportBundle?: () => void
 }
 
-export function ChartMountDrawer({
+function LegacyChartMountDrawer({
   mode = 'overlay',
   isOpen = true,
   closable = true,

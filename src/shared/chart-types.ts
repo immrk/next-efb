@@ -28,6 +28,11 @@ export interface ChartRecord {
   updatedAt: number
 }
 
+export interface ChartAirportSummary {
+  airportCode: string
+  chartCount: number
+}
+
 export interface GeoReferencePoint {
   id: string
   chartId: string

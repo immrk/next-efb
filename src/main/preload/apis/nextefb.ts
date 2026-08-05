@@ -11,6 +11,7 @@ import type {
 } from '../../../shared/types.js'
 import type {
   ChartAssetPayload,
+  ChartAirportSummary,
   ChartBundleExportInput,
   ChartBundleExportResult,
   ChartBundleImportInput,
@@ -105,6 +106,10 @@ const api = {
     ipcRenderer.invoke(IPC_CHANNELS.storagePickChartsDirectory),
   importChartFromUrl: async (input: ChartImportFromUrlInput): Promise<PickedChartFile> =>
     ipcRenderer.invoke(IPC_CHANNELS.chartImportFromUrl, input),
+  listChartAirports: async (query = ''): Promise<ChartAirportSummary[]> =>
+    ipcRenderer.invoke(IPC_CHANNELS.chartAirportsList, query),
+  listChartsByAirport: async (airportCode: string, query = ''): Promise<ChartRecord[]> =>
+    ipcRenderer.invoke(IPC_CHANNELS.chartsListByAirport, airportCode, query),
   listCharts: async (): Promise<ChartRecord[]> => ipcRenderer.invoke(IPC_CHANNELS.chartsList),
   getStorageSummary: async (): Promise<StorageSummary> =>
     ipcRenderer.invoke(IPC_CHANNELS.storageSummary),
@@ -177,6 +182,11 @@ const api = {
     const wrapped = (_event: Electron.IpcRendererEvent, payload: ConnectionState) => listener(payload)
     ipcRenderer.on(IPC_CHANNELS.connectionUpdate, wrapped)
     return () => ipcRenderer.removeListener(IPC_CHANNELS.connectionUpdate, wrapped)
+  },
+  onChartsChanged: (listener: () => void): (() => void) => {
+    const wrapped = () => listener()
+    ipcRenderer.on(IPC_CHANNELS.chartsChanged, wrapped)
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.chartsChanged, wrapped)
   },
   onVatsimChanged: (listener: (status: VatsimStatus) => void): (() => void) => {
     const wrapped = (_event: Electron.IpcRendererEvent, payload: VatsimStatus) => listener(payload)

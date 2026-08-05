@@ -2285,7 +2285,7 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 12px 14px;
+  padding: 12px;
   border-bottom: 1px solid var(--ui-border);
 }
 
@@ -2387,7 +2387,32 @@ body {
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
-  padding: 12px;
+  padding: 0 0 12px;
+}
+
+.chart-picker-section-head {
+  flex: 0 0 auto;
+  min-height: 36px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid var(--ui-border-soft);
+  color: var(--ui-muted);
+}
+
+.chart-picker-section-head strong {
+  color: var(--foreground);
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.chart-picker-section-head span {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
 }
 
 .chart-picker-list {
@@ -2397,14 +2422,78 @@ body {
   width: 100%;
 }
 
+.chart-picker-virtual-spacer {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+
+.chart-picker-virtual-row {
+  position: absolute;
+  top: var(--virtual-row-top);
+  left: 0;
+  right: 0;
+  height: var(--virtual-row-height);
+  padding-bottom: 0;
+  contain: layout paint;
+}
+
+.chart-picker-virtual-row > .chart-airport-group,
+.chart-picker-virtual-row > .chart-type-group,
+.chart-picker-virtual-row > .chart-candidate-item,
+.chart-picker-virtual-row > .chart-virtual-status {
+  height: 100%;
+}
+
+.chart-picker-virtual-row.is-airport .chart-airport-head,
+.chart-picker-virtual-row.is-type .chart-type-head {
+  height: 100%;
+}
+
+.chart-picker-virtual-row.is-type {
+  padding-left: 20px;
+}
+
+.chart-picker-virtual-row.is-type .chart-type-group {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.chart-picker-virtual-row.is-chart {
+  padding-left: 32px;
+}
+
+.chart-picker-virtual-row.is-chart .chart-candidate-item {
+  min-height: 0;
+  border: 0;
+  border-bottom: 1px solid color-mix(in oklab, var(--ui-border-soft) 72%, transparent);
+  border-radius: 0;
+}
+
+.chart-virtual-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--ui-muted);
+  font-size: 12px;
+}
+
+.chart-virtual-status svg {
+  width: 16px;
+  height: 16px;
+}
+
 .chart-airport-group {
   flex: 0 0 auto;
   width: 100%;
   height: auto;
   max-height: none;
-  border: 1px solid var(--ui-border-soft);
-  border-radius: 8px;
-  background: color-mix(in oklab, var(--background) 72%, transparent);
+  border: 0;
+  border-bottom: 1px solid var(--ui-border-soft);
+  border-radius: 0;
+  background: transparent;
   overflow: visible;
 }
 
@@ -2415,37 +2504,53 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 38px;
+  min-height: 42px;
   padding: 0 10px;
-  background: color-mix(in oklab, var(--background) 96%, transparent);
-  border-bottom: 1px solid var(--ui-border-soft);
-  font-weight: 700;
+  background: transparent;
+  border: 0;
+  font-weight: 650;
   color: inherit;
   font-family: inherit;
-  font-size: inherit;
+  font-size: 13px;
   text-align: left;
-  border-top: 0;
-  border-right: 0;
-  border-left: 0;
-  border-radius: 7px 7px 0 0;
-  letter-spacing: 0.04em;
+  border-radius: 0;
+  letter-spacing: 0.05em;
   cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
 }
 
 .chart-airport-group:not(.is-open) > .chart-airport-head {
-  border-bottom-color: transparent;
-  border-radius: 7px;
+  border-radius: 0;
+}
+
+.chart-airport-head:hover {
+  background: color-mix(in oklab, var(--accent) 72%, transparent);
+}
+
+.chart-airport-group.is-open > .chart-airport-head {
+  color: var(--accent-foreground);
+  background: var(--accent);
 }
 
 .chart-airport-code {
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chart-airport-code.is-unassigned {
+  letter-spacing: 0;
+  color: var(--muted-foreground);
+  font-weight: 600;
 }
 
 .chart-type-group {
   display: block;
   height: auto;
   max-height: none;
-  border-top: 1px solid var(--ui-border-soft);
+  border: 0;
 }
 
 .chart-type-head {
@@ -2454,18 +2559,24 @@ body {
   -webkit-appearance: none;
   display: flex;
   align-items: center;
-  gap: 8px;
-  min-height: 34px;
-  padding: 0 10px;
-  color: color-mix(in oklab, var(--primary) 84%, transparent);
+  gap: 6px;
+  min-height: 30px;
+  padding: 0 8px;
+  color: var(--muted-foreground);
   border: 0;
   background: transparent;
   font-family: inherit;
-  font-size: 12px;
+  font-size: 11px;
+  font-weight: 650;
   text-align: left;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  letter-spacing: 0.035em;
   cursor: pointer;
+  border-radius: 5px;
+}
+
+.chart-type-head:hover {
+  color: var(--foreground);
+  background: color-mix(in oklab, var(--accent) 60%, transparent);
 }
 
 .collapse-chevron {
@@ -2503,11 +2614,21 @@ body {
   padding: 0 6px;
   display: grid;
   place-items: center;
-  border: 1px solid var(--ui-border);
+  border: 1px solid color-mix(in oklab, var(--ui-border) 80%, transparent);
   border-radius: 999px;
   color: var(--ui-muted);
+  background: color-mix(in oklab, var(--background) 72%, transparent);
   font-size: 11px;
   line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.chart-type-count {
+  margin-left: auto;
+  color: var(--ui-muted);
+  font-size: 11px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
 }
 
 .chart-candidate-list {
@@ -2521,8 +2642,8 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 8px 12px;
+  gap: 8px;
+  padding: 6px 6px 6px 10px;
   border-top: 1px solid var(--ui-border-soft);
 }
 
@@ -2543,7 +2664,11 @@ body {
 }
 
 .chart-candidate-item.selected {
-  background: color-mix(in oklab, var(--primary) 45%, transparent);
+  background: var(--accent) !important;
+}
+
+.chart-candidate-item:hover {
+  background: color-mix(in oklab, var(--accent) 52%, transparent);
 }
 
 .chart-candidate-actions {
@@ -2554,9 +2679,9 @@ body {
 
 .chart-action-button,
 .chart-pin-button {
-  width: 36px;
-  height: 36px;
-  min-height: 36px;
+  width: 30px;
+  height: 30px;
+  min-height: 30px;
   padding: 0;
   border: 0;
   border-radius: 6px;
@@ -2585,11 +2710,30 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-size: 13px;
+  font-weight: 600;
 }
 
-.chart-candidate-main span {
-  color: color-mix(in oklab, var(--primary) 65%, transparent);
-  font-size: 12px;
+.chart-candidate-status {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--ui-muted);
+  font-size: 11px;
+  font-weight: 450;
+}
+
+.chart-candidate-status-dot {
+  width: 5px;
+  height: 5px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: 0.7;
+}
+
+.chart-candidate-status.is-georeferenced {
+  color: color-mix(in oklab, var(--primary) 72%, var(--foreground));
 }
 
 .chart-pin-button.mounted {
@@ -2629,6 +2773,45 @@ body {
 .chart-picker-empty span {
   color: var(--muted-foreground);
   font-size: 12px;
+}
+
+.chart-preview-empty-state {
+  min-height: 100%;
+  margin: 0;
+  padding: 32px;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  border-radius: 0;
+  background: transparent;
+  color: var(--muted-foreground);
+}
+
+.chart-preview-empty-state strong {
+  color: var(--foreground);
+  font-size: 16px;
+  font-weight: 650;
+}
+
+.chart-preview-empty-state p {
+  max-width: 420px;
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+@media (hover: hover) {
+  .chart-candidate-actions {
+    opacity: 0;
+    transition: opacity 120ms ease;
+  }
+
+  .chart-candidate-item:hover .chart-candidate-actions,
+  .chart-candidate-item:focus-within .chart-candidate-actions,
+  .chart-candidate-item.selected .chart-candidate-actions {
+    opacity: 1;
+  }
 }
 
 .library-workspace,

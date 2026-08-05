@@ -14,7 +14,7 @@ import { FlightPlanDrawer } from '../components/FlightPlanDrawer'
 import { MapPanel } from '../components/MapPanel'
 import { SafeAreaTopInset } from '../components/SafeAreaTopInset'
 import { Button } from '../components/ui/button'
-import { useChartLibraryData } from '../hooks/useChartLibraryData'
+import { useChartAirportLibraryData } from '../hooks/useChartAirportLibraryData'
 import {
   buildManualMountCards,
   buildProcedureMountCards,
@@ -66,7 +66,7 @@ export function MapPage({
   const appClient = getAppClient()
   const runtime = appClient.getRuntime()
   const { t } = useTranslation()
-  const { charts } = useChartLibraryData()
+  const chartLibrary = useChartAirportLibraryData()
   const storedDockState = readStoredChartDockState()
   const [mountedChartIds, setMountedChartIds] = useState<string[]>(storedDockState.mountedChartIds)
   const [activeChartId, setActiveChartId] = useState<string | null>(storedDockState.activeChartId)
@@ -77,6 +77,8 @@ export function MapPage({
   const [pendingDisabledCard, setPendingDisabledCard] = useState<ProcedureMountCard | null>(null)
   const [isOverlayDismissed, setIsOverlayDismissed] = useState(storedDockState.overlayDismissed)
   const [proceduresReadySelectionKey, setProceduresReadySelectionKey] = useState('')
+  const [contextCharts, setContextCharts] = useState<ChartRecord[]>([])
+  const [areContextChartsReady, setAreContextChartsReady] = useState(false)
 
   const flightPlanSelection = useMemo<FlightPlanSelection>(
     () => ({
@@ -92,6 +94,19 @@ export function MapPage({
     [flightPlanDraft]
   )
   const selectionKey = useMemo(() => buildSelectionKey(flightPlanSelection), [flightPlanSelection])
+  const routeAirportCodes = useMemo(
+    () => Array.from(new Set([
+      flightPlanSelection.departureAirport,
+      flightPlanSelection.destinationAirport
+    ].filter(Boolean))),
+    [flightPlanSelection.departureAirport, flightPlanSelection.destinationAirport]
+  )
+  const routeAirportKey = routeAirportCodes.join('|')
+  const mountedChartKey = mountedChartIds.join('|')
+  const charts = useMemo(
+    () => deduplicateCharts([...contextCharts, ...chartLibrary.charts]),
+    [chartLibrary.charts, contextCharts]
+  )
   const previousSelectionKeyRef = useRef(selectionKey)
   const autoCards = useMemo(
     () =>
@@ -131,6 +146,37 @@ export function MapPage({
   }, [selectionKey])
 
   useEffect(() => {
+    let active = true
+    setAreContextChartsReady(false)
+    const airportRequests = routeAirportCodes.map((airportCode) =>
+      appClient.listChartsByAirport(airportCode)
+    )
+    const mountedRequests = mountedChartIds.map((chartId) => appClient.getChart(chartId))
+
+    void Promise.all([
+      ...airportRequests,
+      ...mountedRequests
+    ]).then(
+      (results) => {
+        if (!active) return
+        const nextCharts = results.flatMap((result) =>
+          Array.isArray(result) ? result : result ? [result] : []
+        )
+        setContextCharts(deduplicateCharts(nextCharts))
+        setAreContextChartsReady(true)
+      },
+      () => {
+        if (!active) return
+        setAreContextChartsReady(false)
+      }
+    )
+
+    return () => {
+      active = false
+    }
+  }, [appClient, chartLibrary.revision, mountedChartKey, routeAirportKey])
+
+  useEffect(() => {
     persistStoredChartDockState({
       mountedChartIds,
       activeChartId,
@@ -147,13 +193,10 @@ export function MapPage({
   )
 
   useEffect(() => {
-    if (charts.length === 0) {
-      return
-    }
-
+    if (!areContextChartsReady) return
     setMountedChartIds((current) => current.filter((chartId) => charts.some((chart) => chart.id === chartId)))
     setActiveChartId((current) => (current && charts.some((chart) => chart.id === current) ? current : null))
-  }, [charts])
+  }, [areContextChartsReady, charts])
 
   useEffect(() => {
     if (isOverlayDismissed) {
@@ -322,13 +365,20 @@ export function MapPage({
         <ChartMountDrawer
           mode="overlay"
           isOpen={isChartDrawerOpen}
-          charts={charts}
+          charts={chartLibrary.charts}
+          airports={chartLibrary.airports}
+          expandedAirportCode={chartLibrary.expandedAirportCode}
+          isAirportLoading={chartLibrary.isLoadingCharts}
+          isLoadingAirports={chartLibrary.isLoadingAirports}
+          searchValue={chartLibrary.search}
           selectedChartId={activeChartId}
           mountedChartIds={mountedChartIds}
           onClose={() => setIsChartDrawerOpen(false)}
           onSelect={(chartId) => onOpenChartLibrary(chartId)}
           onEdit={runtime.canWrite ? onEditChart : undefined}
           onPin={mountChart}
+          onExpandedAirportChange={chartLibrary.setExpandedAirportCode}
+          onSearchValueChange={chartLibrary.setSearch}
         />
 
         <FlightPlanDrawer
@@ -509,4 +559,8 @@ function buildSelectionKey(selection: FlightPlanSelection | null): string {
     selection.approachProcedureId ?? '',
     selection.arrivalTransitionId ?? ''
   ].join('|')
+}
+
+function deduplicateCharts(charts: ChartRecord[]): ChartRecord[] {
+  return Array.from(new Map(charts.map((chart) => [chart.id, chart])).values())
 }

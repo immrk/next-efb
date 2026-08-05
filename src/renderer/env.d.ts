@@ -9,6 +9,7 @@ import type {
 } from '@shared/types'
 import type {
   ChartAssetPayload,
+  ChartAirportSummary,
   ChartBundleExportInput,
   ChartBundleExportResult,
   ChartBundleImportInput,
@@ -84,6 +85,8 @@ declare global {
       pickChartFile: () => Promise<PickedChartFile | null>
       pickChartsDirectory: () => Promise<string | null>
       importChartFromUrl: (input: ChartImportFromUrlInput) => Promise<PickedChartFile>
+      listChartAirports: (query?: string) => Promise<ChartAirportSummary[]>
+      listChartsByAirport: (airportCode: string, query?: string) => Promise<ChartRecord[]>
       listCharts: () => Promise<ChartRecord[]>
       getStorageSummary: () => Promise<StorageSummary>
       finalizeChartImport: (input: FinalizeChartImportInput) => Promise<ChartImportResult>
@@ -115,6 +118,7 @@ declare global {
       performDevAction: (action: DesktopDevAction) => Promise<boolean>
       onAircraftUpdate: (listener: (state: AircraftState) => void) => () => void
       onConnectionUpdate: (listener: (state: ConnectionState) => void) => () => void
+      onChartsChanged: (listener: () => void) => () => void
       onVatsimChanged: (listener: (status: VatsimStatus) => void) => () => void
       onChecklistsChanged: (listener: () => void) => () => void
     }

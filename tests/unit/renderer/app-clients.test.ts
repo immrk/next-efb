@@ -64,6 +64,8 @@ describe('application clients', () => {
       getSnapshot: vi.fn().mockResolvedValue({ aircraft: null, connection: null }),
       getSettings: vi.fn().mockResolvedValue(createSettings()),
       getChart: vi.fn().mockResolvedValue(createChart()),
+      listChartAirports: vi.fn().mockResolvedValue([{ airportCode: 'ZBAA', chartCount: 1 }]),
+      listChartsByAirport: vi.fn().mockResolvedValue([createChart()]),
       listCharts: vi.fn().mockResolvedValue([createChart()]),
       updateSettings: vi.fn().mockResolvedValue(createSettings({ language: 'zh-CN' })),
       getAppUpdateState: vi.fn().mockResolvedValue(updateState),
@@ -76,7 +78,8 @@ describe('application clients', () => {
       refreshVatsim: vi.fn().mockResolvedValue(vatsimStatus),
       onVatsimChanged: vi.fn(() => off),
       performWindowAction: vi.fn().mockResolvedValue({ isMaximized: true }),
-      onAircraftUpdate: vi.fn(() => off)
+      onAircraftUpdate: vi.fn(() => off),
+      onChartsChanged: vi.fn(() => off)
     }
     Object.defineProperty(window, 'msfsApi', {
       configurable: true,
@@ -91,6 +94,8 @@ describe('application clients', () => {
     })
     await expect(client.getSettings()).resolves.toMatchObject({ language: 'en-US' })
     await expect(client.getChart('chart-1')).resolves.toMatchObject({ id: 'chart-1' })
+    await expect(client.listChartAirports('ils')).resolves.toHaveLength(1)
+    await expect(client.listChartsByAirport('ZBAA', 'ils')).resolves.toHaveLength(1)
     await expect(client.listCharts()).resolves.toHaveLength(1)
     await client.updateSettings({ language: 'zh-CN' })
     await expect(client.getAppUpdateState()).resolves.toMatchObject({
@@ -105,10 +110,13 @@ describe('application clients', () => {
     await client.performWindowAction('toggle-maximize')
     const listener = vi.fn()
     expect(client.onAircraftUpdate(listener)).toBe(off)
+    expect(client.onChartsChanged(listener)).toBe(off)
     expect(client.onAppUpdateStateChange(listener)).toBe(off)
     expect(client.onVatsimChanged(listener)).toBe(off)
 
     expect(preload.getChart).toHaveBeenCalledWith('chart-1')
+    expect(preload.listChartAirports).toHaveBeenCalledWith('ils')
+    expect(preload.listChartsByAirport).toHaveBeenCalledWith('ZBAA', 'ils')
     expect(preload.updateSettings).toHaveBeenCalledWith({ language: 'zh-CN' })
     expect(preload.performWindowAction).toHaveBeenCalledWith('toggle-maximize')
     expect(preload.checkForAppUpdate).toHaveBeenCalledOnce()
@@ -117,7 +125,7 @@ describe('application clients', () => {
     expect(preload.onVatsimChanged).toHaveBeenCalledWith(listener)
     expect(preload.searchVatsimPilots).toHaveBeenCalledWith({ query: 'DAL1' })
     expect(preload.onAircraftUpdate).toHaveBeenCalledWith(listener)
-    expect(client.onChartsChanged(vi.fn())).toEqual(expect.any(Function))
+    expect(preload.onChartsChanged).toHaveBeenCalledWith(listener)
     expect(client.onSettingsChanged(vi.fn())).toEqual(expect.any(Function))
   })
 
@@ -185,6 +193,8 @@ describe('application clients', () => {
     await client.searchVatsimPilots({ query: 'DAL1' })
     await client.refreshVatsim()
     await client.importChartFromUrl({ url: 'https://example.com/chart.pdf' })
+    await client.listChartAirports('Z BA')
+    await client.listChartsByAirport('Z/BAA', 'ILS 36')
     await client.deleteChart('chart id')
     await client.importChecklistFromUrl({ url: 'https://example.com/checklist.pdf' })
     await client.updateChecklist({
@@ -203,6 +213,8 @@ describe('application clients', () => {
       '/api/vatsim/search-pilots',
       '/api/vatsim/refresh',
       '/api/charts/import-from-url',
+      '/api/chart-airports?query=Z+BA',
+      '/api/chart-airports/Z%2FBAA/charts?query=ILS+36',
       '/api/charts/chart id',
       '/api/checklists/import-from-url',
       '/api/checklists/checklist%20id'

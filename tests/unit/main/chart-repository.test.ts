@@ -1,4 +1,4 @@
-import { mkdtempSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { beforeEach, describe, expect, it } from 'vitest'
@@ -50,6 +50,30 @@ describe('ChartRepository', () => {
     })
   })
 
+  it('lists airport summaries and loads charts for one airport on demand', () => {
+    const repository = new ChartRepository(storage)
+    repository.createChart(createChart({ id: 'zbaa-ils', title: 'ILS 36' }))
+    repository.createChart(createChart({ id: 'zbaa-sid', title: 'RENOB 9D', chartType: 'sid' }))
+    repository.createChart(createChart({ id: 'zspd-ils', airportCode: 'zspd', title: 'ILS 35L' }))
+    repository.createChart(createChart({ id: 'general', airportCode: null, title: 'Enroute' }))
+
+    expect(repository.listChartAirports()).toEqual([
+      { airportCode: 'UNSPEC', chartCount: 1 },
+      { airportCode: 'ZBAA', chartCount: 2 },
+      { airportCode: 'ZSPD', chartCount: 1 }
+    ])
+    expect(repository.listChartAirports('renob')).toEqual([
+      { airportCode: 'ZBAA', chartCount: 1 }
+    ])
+    expect(repository.listChartsByAirport('zbaa').map((chart) => chart.id).sort()).toEqual([
+      'zbaa-ils',
+      'zbaa-sid'
+    ])
+    expect(repository.listChartsByAirport('ZBAA', 'sid').map((chart) => chart.id)).toEqual([
+      'zbaa-sid'
+    ])
+  })
+
   it('replaces reference points and maintains georeference state', () => {
     const repository = new ChartRepository(storage)
     repository.createChart(createChart())
@@ -93,5 +117,22 @@ describe('ChartRepository', () => {
       previewImagePath: join(nextRoot, 'chart-1', 'display.png')
     })
     expect(repository.getChart('external')?.sourceFilePath).toBe(join(root, 'external.png'))
+  })
+
+  it('removes chart metadata and reference points when the managed source is deleted', () => {
+    const repository = new ChartRepository(storage)
+    const chartDir = join(storage.chartsRoot, 'chart-1')
+    const sourceFilePath = join(chartDir, 'source.png')
+    mkdirSync(chartDir, { recursive: true })
+    writeFileSync(sourceFilePath, 'chart')
+    repository.createChart(createChart({ sourceFilePath, previewImagePath: null }))
+    repository.saveReferencePoints('chart-1', createReferencePoints())
+
+    expect(repository.reconcileMissingCharts()).toEqual([])
+    rmSync(sourceFilePath)
+
+    expect(repository.reconcileMissingCharts()).toEqual(['chart-1'])
+    expect(repository.getChart('chart-1')).toBeNull()
+    expect(repository.listReferencePoints('chart-1')).toEqual([])
   })
 })

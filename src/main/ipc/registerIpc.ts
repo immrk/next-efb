@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { existsSync } from 'node:fs'
 import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron'
 import { IPC_CHANNELS } from '@shared/channels'
 import type { AppSettings, DesktopDevAction, DesktopWindowAction, DesktopWindowState } from '@shared/types'
@@ -93,6 +94,13 @@ export function registerIpc(options: RegisterIpcOptions): void {
     onLanguageChanged
   } = options
   const remoteChartImportService = new RemoteChartImportService()
+  const reconcileChartLibrary = () => {
+    const removedChartIds = chartRepository.reconcileMissingCharts()
+    removedChartIds.forEach((chartId) => storageService.deleteChartFiles(chartId))
+    if (removedChartIds.length > 0) {
+      lanServer.broadcastChartChanged()
+    }
+  }
   const chartBundleService = new ChartBundleService({
     chartRepository,
     getStorageSummary: () => storageService.getSummary(),
@@ -208,7 +216,19 @@ export function registerIpc(options: RegisterIpcOptions): void {
     performDevAction(mainWindow, action)
     return true
   })
-  ipcMain.handle(IPC_CHANNELS.chartsList, () => chartRepository.listCharts())
+  ipcMain.handle(IPC_CHANNELS.chartsList, () => {
+    reconcileChartLibrary()
+    return chartRepository.listCharts()
+  })
+  ipcMain.handle(IPC_CHANNELS.chartAirportsList, (_event, query = '') => {
+    return chartRepository.listChartAirports(query)
+  })
+  ipcMain.handle(
+    IPC_CHANNELS.chartsListByAirport,
+    (_event, airportCode: string, query = '') => {
+      return chartRepository.listChartsByAirport(airportCode, query)
+    }
+  )
   ipcMain.handle(IPC_CHANNELS.storageSummary, () => storageService.getSummary())
   ipcMain.handle(IPC_CHANNELS.chartGet, (_event, chartId: string) => chartRepository.getChart(chartId))
   ipcMain.handle(IPC_CHANNELS.chartReferenceGet, (_event, chartId: string) =>
@@ -231,13 +251,27 @@ export function registerIpc(options: RegisterIpcOptions): void {
     const chart = chartRepository.getChart(chartId)
     if (!chart) return null
 
-    const displayPath = chart.previewImagePath ?? chart.sourceFilePath
-    return {
-      chartId,
-      fileFormat: chart.fileFormat,
-      mimeType: getMimeType(chart),
-      base64: storageService.readFileBase64(displayPath),
-      filePath: displayPath
+    const displayPath = chart.previewImagePath && existsSync(chart.previewImagePath)
+      ? chart.previewImagePath
+      : chart.sourceFilePath
+    if (!existsSync(displayPath)) {
+      return null
+    }
+
+    try {
+      const fileFormat = getFileFormat(displayPath)
+      return {
+        chartId,
+        fileFormat,
+        mimeType: getMimeTypeByFormat(fileFormat),
+        base64: storageService.readFileBase64(displayPath),
+        filePath: displayPath
+      }
+    } catch (error) {
+      if (isMissingFileError(error)) {
+        return null
+      }
+      throw error
     }
   })
   ipcMain.handle(
@@ -484,6 +518,7 @@ export function registerIpc(options: RegisterIpcOptions): void {
     simConnectService.reconfigure(nextSettings)
     await lanServer.reconfigure(nextSettings)
     lanServer.broadcastSettingsChanged()
+    lanServer.broadcastChartChanged()
     return nextSettings
   })
 }
@@ -581,10 +616,6 @@ function getFileFormat(filePath: string): ChartRecord['fileFormat'] {
   return 'png'
 }
 
-function getMimeType(chart: ChartRecord): string {
-  return getMimeTypeByFormat(chart.fileFormat)
-}
-
 function getMimeTypeByFormat(fileFormat: ChartRecord['fileFormat']): string {
   switch (fileFormat) {
     case 'pdf':
@@ -598,17 +629,8 @@ function getMimeTypeByFormat(fileFormat: ChartRecord['fileFormat']): string {
   }
 }
 
-function _legacyGetMimeType(chart: ChartRecord): string {
-  switch (chart.fileFormat) {
-    case 'pdf':
-      return 'application/pdf'
-    case 'jpg':
-    case 'jpeg':
-      return 'image/jpeg'
-    case 'png':
-    default:
-      return 'image/png'
-  }
+function isMissingFileError(error: unknown): boolean {
+  return error instanceof Error && (error as NodeJS.ErrnoException).code === 'ENOENT'
 }
 
 function mergeSettings(current: AppSettings, partial: Partial<AppSettings>): AppSettings {

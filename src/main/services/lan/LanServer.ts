@@ -54,6 +54,7 @@ interface LanServerOptions {
   checklistRepository: ChecklistRepository
   storageService: StorageService
   navDataService: NavDataService
+  onChartsChanged?: () => void
   vatsimDataService: VatsimDataService
   onLanguageChanged: (language: AppLanguage) => Promise<void>
 }
@@ -77,6 +78,7 @@ export class LanServer {
   private readonly storageService: StorageService
   private readonly remoteChartImportService: RemoteChartImportService
   private readonly navDataService: NavDataService
+  private readonly onChartsChanged: () => void
   private readonly vatsimDataService: VatsimDataService
   private readonly onLanguageChanged: (language: AppLanguage) => Promise<void>
   private server: ReturnType<typeof createServer> | null = null
@@ -94,6 +96,7 @@ export class LanServer {
     this.storageService = options.storageService
     this.remoteChartImportService = new RemoteChartImportService()
     this.navDataService = options.navDataService
+    this.onChartsChanged = options.onChartsChanged ?? (() => void 0)
     this.vatsimDataService = options.vatsimDataService
     this.onLanguageChanged = options.onLanguageChanged
   }
@@ -201,6 +204,7 @@ export class LanServer {
 
   broadcastChartChanged(): void {
     this.broadcast({ type: 'chart:changed' })
+    this.onChartsChanged()
   }
 
   broadcastChecklistChanged(): void {
@@ -345,6 +349,26 @@ export class LanServer {
         return
       }
 
+      if (url.pathname === '/api/chart-airports') {
+        this.sendJson(
+          response,
+          this.chartRepository.listChartAirports(url.searchParams.get('query') ?? '')
+        )
+        return
+      }
+
+      const airportChartsMatch = url.pathname.match(/^\/api\/chart-airports\/([^/]+)\/charts$/)
+      if (airportChartsMatch) {
+        this.sendJson(
+          response,
+          this.chartRepository.listChartsByAirport(
+            decodeURIComponent(airportChartsMatch[1]),
+            url.searchParams.get('query') ?? ''
+          )
+        )
+        return
+      }
+
       if (url.pathname === '/api/charts') {
         if (request.method === 'POST') {
           if (!this.ensureWriteEnabled(response)) {
@@ -356,6 +380,7 @@ export class LanServer {
           return
         }
 
+        this.reconcileChartLibrary()
         this.sendJson(response, this.chartRepository.listCharts())
         return
       }
@@ -525,11 +550,14 @@ export class LanServer {
       return null
     }
 
-    const displayPath = chart.previewImagePath ?? chart.sourceFilePath
+    const displayPath = chart.previewImagePath && existsSync(chart.previewImagePath)
+      ? chart.previewImagePath
+      : chart.sourceFilePath
+    const fileFormat = getFileFormat(displayPath)
     return {
       chartId,
-      fileFormat: chart.fileFormat,
-      mimeType: getMimeTypeByFormat(chart.fileFormat),
+      fileFormat,
+      mimeType: getMimeTypeByFormat(fileFormat),
       filePath: displayPath
     }
   }
@@ -684,6 +712,14 @@ export class LanServer {
     const updated = this.chartRepository.updateChart(input)
     this.broadcastChartChanged()
     return updated
+  }
+
+  private reconcileChartLibrary(): void {
+    const removedChartIds = this.chartRepository.reconcileMissingCharts()
+    removedChartIds.forEach((chartId) => this.storageService.deleteChartFiles(chartId))
+    if (removedChartIds.length > 0) {
+      this.broadcastChartChanged()
+    }
   }
 
   private saveReferencePoints(chartId: string, points: GeoReferencePoint[]): GeoReferencePoint[] {
