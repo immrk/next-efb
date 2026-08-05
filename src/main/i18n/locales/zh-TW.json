@@ -1,0 +1,57 @@
+{
+  "menu": {
+    "file": "檔案",
+    "edit": "編輯",
+    "view": "視圖",
+    "window": "窗口",
+    "help": "幫助",
+    "newMainWindow": "新建主窗口",
+    "openSettingWindow": "打開設定窗口",
+    "about": "關于",
+    "developerTools": "開發人員工具",
+    "copy": "復制",
+    "paste": "粘貼",
+    "undo": "撤銷",
+    "redo": "重做",
+    "cut": "剪切",
+    "delete": "刪除",
+    "selectAll": "全選",
+    "pasteAndMatchStyle": "粘貼並匹配樣式",
+    "reload": "重新加載",
+    "forceReload": "強制重新加載",
+    "toggleDevTools": "切換開發人員工具",
+    "resetZoom": "重置縮放",
+    "zoomIn": "放大",
+    "zoomOut": "縮小",
+    "toggleFullscreen": "切換全屏",
+    "minimize": "最小化",
+    "close": "關閉",
+    "front": "前置",
+    "quit": "退出",
+    "hide": "隱藏",
+    "hideOthers": "隱藏其他",
+    "unhide": "顯示",
+    "services": "服務",
+    "windowMenu": "窗口"
+  },
+  "app": {
+    "trayShow": "顯示 {{appName}}",
+    "trayExit": "退出",
+    "dialogOk": "確定",
+    "alreadyRunning": "{{appName}} 已在運行。",
+    "alreadyRunningDetail": "現有視窗已移至最前方。",
+    "filterSqlite": "SQLite 資料庫",
+    "filterChartBundle": "NextEFB 航圖包",
+    "filterZip": "ZIP 壓縮檔",
+    "filterCharts": "航圖",
+    "filterChecklists": "檢查單"
+  },
+  "window": {
+    "main": {
+      "index": "首頁",
+      "counter": "計數器",
+      "info": "系統資訊",
+      "windows": "窗口管理"
+    }
+  }
+}

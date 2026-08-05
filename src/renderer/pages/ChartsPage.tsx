@@ -9,6 +9,11 @@ import { useChartAirportLibraryData } from '../hooks/useChartAirportLibraryData'
 import { toast } from '../components/ui/use-toast'
 import { Card } from '../components/ui/card'
 import { LibraryWorkspace } from '../components/LibraryWorkspace'
+import {
+  ChartBundleExportDialog,
+  ChartBundleImportDialog
+} from '../components/ChartBundleDialogs'
+import type { ChartBundleImportPreview } from '@shared/chart-types'
 
 interface ChartsPageProps {
   selectedChartId: string | null
@@ -34,11 +39,20 @@ export function ChartsPage({
     setExpandedAirportCode,
     setSearch,
     importChart,
-    importChartFromUrl
+    importChartFromUrl,
+    pickChartBundleImport,
+    importChartBundle,
+    exportChartBundle,
+    listChartsForBundleExport
   } = useChartAirportLibraryData()
   const { chart, asset, points, isLoading: isLoadingChartDetail } = useChartDetailData(selectedChartId)
   const [importUrl, setImportUrl] = useState('')
   const [importingUrl, setImportingUrl] = useState(false)
+  const [bundlePreview, setBundlePreview] = useState<ChartBundleImportPreview | null>(null)
+  const [importingBundle, setImportingBundle] = useState(false)
+  const [showExportBundle, setShowExportBundle] = useState(false)
+  const [exportingBundle, setExportingBundle] = useState(false)
+  const [bundleExportCharts, setBundleExportCharts] = useState<typeof charts>([])
 
   useEffect(() => {
     if (
@@ -87,51 +101,137 @@ export function ChartsPage({
     }
   }
 
+  const handlePickChartBundle = async () => {
+    try {
+      const preview = await pickChartBundleImport()
+      if (preview) setBundlePreview(preview)
+    } catch (error) {
+      toast.error(translateChartBundleError(t, error))
+    }
+  }
+
+  const handleImportChartBundle = async (chartIds: string[]) => {
+    if (!bundlePreview) return
+    setImportingBundle(true)
+    try {
+      const result = await importChartBundle({
+        sessionId: bundlePreview.sessionId,
+        chartIds
+      })
+      setBundlePreview(null)
+      if (result.charts[0]) onSelectChart(result.charts[0].id)
+      toast.success(
+        t('charts.bundleImportSuccess', {
+          create: result.createdCount,
+          update: result.updatedCount
+        })
+      )
+    } catch (error) {
+      toast.error(translateChartBundleError(t, error))
+    } finally {
+      setImportingBundle(false)
+    }
+  }
+
+  const handleExportChartBundle = async (chartIds: string[]) => {
+    setExportingBundle(true)
+    try {
+      const result = await exportChartBundle(chartIds)
+      if (!result) return
+      setShowExportBundle(false)
+      toast.success(
+        t('charts.bundleExportSuccess', {
+          count: result.chartCount,
+          path: result.filePath
+        })
+      )
+    } catch (error) {
+      toast.error(translateChartBundleError(t, error))
+    } finally {
+      setExportingBundle(false)
+    }
+  }
+
+  const handleOpenChartBundleExport = async () => {
+    setExportingBundle(true)
+    try {
+      const allCharts = await listChartsForBundleExport()
+      setBundleExportCharts(allCharts)
+      setShowExportBundle(true)
+    } catch (error) {
+      toast.error(translateChartBundleError(t, error))
+    } finally {
+      setExportingBundle(false)
+    }
+  }
+
   return (
-    <LibraryWorkspace
-      className="charts-workspace"
-      library={<ChartMountDrawer
-        mode="docked"
-        charts={charts}
-        airports={airports}
-        expandedAirportCode={expandedAirportCode}
-        isAirportLoading={isLoadingCharts}
-        isLoadingAirports={isLoadingAirports}
-        searchValue={search}
-        selectedChartId={selectedChartId}
-        closable={false}
-        showPinButton={false}
-        onSelect={onSelectChart}
-        onEdit={runtime.canWrite ? onEditChart : undefined}
-        onExpandedAirportChange={setExpandedAirportCode}
-        onSearchValueChange={setSearch}
-        onImport={runtime.canManageLocalFiles ? handleImportChart : undefined}
-        importUrlValue={importUrl}
-        importUrlPending={importingUrl}
-        onImportUrlValueChange={setImportUrl}
-        onImportFromUrl={runtime.canWrite ? handleImportChartFromUrl : undefined}
-      />}
-      preview={
-        <Card className="charts-panel chart-preview-panel">
-          {chart && !isLoadingChartDetail ? (
-            <ChartImagePreview
-              chartTitle={chart.title}
-              asset={asset}
-              points={points}
-              aircraft={aircraft}
-            />
-          ) : <ChartPreviewPlaceholder
-            airportCount={airports.length}
-            chartCount={charts.length}
-            expandedAirportCode={expandedAirportCode}
-            hasSearch={Boolean(search.trim())}
-            isLoadingAirports={isLoadingAirports}
-            isLoadingCharts={isLoadingCharts}
-            isLoadingChartDetail={isLoadingChartDetail}
-          />}
-        </Card>
-      }
-    />
+    <>
+      <LibraryWorkspace
+        className="charts-workspace"
+        library={<ChartMountDrawer
+          mode="docked"
+          charts={charts}
+          airports={airports}
+          expandedAirportCode={expandedAirportCode}
+          isAirportLoading={isLoadingCharts}
+          isLoadingAirports={isLoadingAirports}
+          searchValue={search}
+          selectedChartId={selectedChartId}
+          closable={false}
+          showPinButton={false}
+          onSelect={onSelectChart}
+          onEdit={runtime.canWrite ? onEditChart : undefined}
+          onExpandedAirportChange={setExpandedAirportCode}
+          onSearchValueChange={setSearch}
+          onImport={runtime.canManageLocalFiles ? handleImportChart : undefined}
+          importUrlValue={importUrl}
+          importUrlPending={importingUrl}
+          onImportUrlValueChange={setImportUrl}
+          onImportFromUrl={runtime.canWrite ? handleImportChartFromUrl : undefined}
+          onImportBundle={runtime.host === 'electron' ? handlePickChartBundle : undefined}
+          onExportBundle={
+            runtime.host === 'electron' && airports.length > 0
+              ? () => void handleOpenChartBundleExport()
+              : undefined
+          }
+        />}
+        preview={
+          <Card className="charts-panel chart-preview-panel">
+            {chart && !isLoadingChartDetail ? (
+              <ChartImagePreview
+                chartTitle={chart.title}
+                asset={asset}
+                points={points}
+                aircraft={aircraft}
+              />
+            ) : <ChartPreviewPlaceholder
+              airportCount={airports.length}
+              chartCount={charts.length}
+              expandedAirportCode={expandedAirportCode}
+              hasSearch={Boolean(search.trim())}
+              isLoadingAirports={isLoadingAirports}
+              isLoadingCharts={isLoadingCharts}
+              isLoadingChartDetail={isLoadingChartDetail}
+            />}
+          </Card>
+        }
+      />
+      <ChartBundleImportDialog
+        preview={bundlePreview}
+        pending={importingBundle}
+        onCancel={() => setBundlePreview(null)}
+        onConfirm={handleImportChartBundle}
+      />
+      <ChartBundleExportDialog
+        open={showExportBundle}
+        charts={bundleExportCharts}
+        initialChartId={selectedChartId}
+        pending={exportingBundle}
+        onCancel={() => setShowExportBundle(false)}
+        onConfirm={handleExportChartBundle}
+      />
+    </>
   )
 }
 
@@ -202,4 +302,33 @@ function translateChartImportError(
     default:
       return message
   }
+}
+
+function translateChartBundleError(
+  t: (key: string) => string,
+  error: unknown
+): string {
+  const message = error instanceof Error ? error.message : String(error)
+  if (message.includes('CHART_BUNDLE_IMPORT_SESSION_EXPIRED')) {
+    return t('charts.bundleErrorExpired')
+  }
+  if (
+    message.includes('CHART_BUNDLE_VERSION_UNSUPPORTED') ||
+    message.includes('CHART_BUNDLE_FORMAT_UNSUPPORTED')
+  ) {
+    return t('charts.bundleErrorVersion')
+  }
+  if (
+    message.includes('CHART_BUNDLE_TOO_LARGE') ||
+    message.includes('CHART_BUNDLE_ENTRY_TOO_LARGE')
+  ) {
+    return t('charts.bundleErrorTooLarge')
+  }
+  if (message.includes('CHART_ASSET_MISSING')) {
+    return t('charts.bundleErrorAssetMissing')
+  }
+  if (message.includes('CHART_BUNDLE_')) {
+    return t('charts.bundleErrorInvalid')
+  }
+  return `${t('charts.bundleErrorGeneric')}\n${message}`
 }

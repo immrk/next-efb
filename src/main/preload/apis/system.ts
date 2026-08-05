@@ -14,9 +14,11 @@ export function exposeSystemAPI() {
     changeLanguage: (language: string) => ipcRenderer.invoke("system:changeLanguage", language),
     getLanguage: () => ipcRenderer.invoke("system:getLanguage"),
     onChangeLanguage: (callback: (language: string) => void) => {
-      ipcRenderer.on("system:changeLanguage", (event, language: string) => {
+      const listener = (_event: Electron.IpcRendererEvent, language: string) => {
         callback(language);
-      });
+      };
+      ipcRenderer.on("system:changeLanguage", listener);
+      return () => ipcRenderer.removeListener("system:changeLanguage", listener);
     },
   });
 

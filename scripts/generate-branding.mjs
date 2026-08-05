@@ -5,7 +5,7 @@ import { spawnSync } from 'node:child_process'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const brandingDir = resolve(__dirname, '../assets/branding')
-const sourceImagePath = resolve(brandingDir, 'source/NextEFBICon.jpg')
+const sourceImagePath = resolve(brandingDir, 'source/NextEFBIcon.png')
 const iconSizes = [16, 32, 48, 64, 128, 180, 192, 256, 512]
 
 if (!existsSync(sourceImagePath)) {
@@ -58,7 +58,7 @@ writeFileSync(
   [
     '# NextEFB Branding',
     '',
-    'This directory is generated from `assets/branding/source/NextEFBICon.jpg`.',
+    'This directory is generated from `assets/branding/source/NextEFBIcon.png`.',
     '',
     '- `brand-mark.png`: UI branding image used in the renderer',
     '- `icon-*.png`: generated raster sizes for web and desktop use',

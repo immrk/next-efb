@@ -34,6 +34,18 @@
     "services": "Services",
     "windowMenu": "Window"
   },
+  "app": {
+    "trayShow": "Show {{appName}}",
+    "trayExit": "Exit",
+    "dialogOk": "OK",
+    "alreadyRunning": "{{appName}} is already running.",
+    "alreadyRunningDetail": "The existing window has been brought to the front.",
+    "filterSqlite": "SQLite Database",
+    "filterChartBundle": "NextEFB Chart Bundle",
+    "filterZip": "ZIP Archive",
+    "filterCharts": "Charts",
+    "filterChecklists": "Checklists"
+  },
   "window": {
     "main": {
       "index": "Home",
@@ -42,4 +54,4 @@
       "windows": "Window Management"
     }
   }
-} 
+}

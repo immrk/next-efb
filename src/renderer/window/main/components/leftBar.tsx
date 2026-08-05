@@ -32,8 +32,8 @@ export function LeftBar() {
     <aside className="flex h-full w-16 shrink-0 flex-col items-center border-r bg-muted/30 px-2 pb-4 pt-10">
       <HoverCard openDelay={100} closeDelay={100}>
         <HoverCardTrigger asChild>
-          <button className="rounded-lg border bg-background p-1 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-            <img className="size-8 rounded-md object-contain" src={BRAND_ICON_URL} alt={APP_NAME} />
+          <button className="rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+            <img className="size-10 rounded-xl object-contain" src={BRAND_ICON_URL} alt={APP_NAME} />
           </button>
         </HoverCardTrigger>
         <HoverCardContent side="right" align="start" sideOffset={12} className="w-56">

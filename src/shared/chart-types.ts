@@ -65,6 +65,50 @@ export interface ChartImportResult {
   chart: ChartRecord
 }
 
+export type ChartBundleImportAction = 'create' | 'update'
+
+export interface ChartBundleImportChartPreview {
+  id: string
+  title: string
+  airportCode: string | null
+  chartType: ChartType
+  action: ChartBundleImportAction
+  localTitle: string | null
+  incomingUpdatedAt: number
+  localUpdatedAt: number | null
+  isOlderThanLocal: boolean
+  assetSizeBytes: number
+}
+
+export interface ChartBundleImportPreview {
+  sessionId: string
+  fileName: string
+  schemaVersion: number
+  exportedAt: number
+  charts: ChartBundleImportChartPreview[]
+  totalAssetSizeBytes: number
+}
+
+export interface ChartBundleImportInput {
+  sessionId: string
+  chartIds: string[]
+}
+
+export interface ChartBundleImportResult {
+  charts: ChartRecord[]
+  createdCount: number
+  updatedCount: number
+}
+
+export interface ChartBundleExportInput {
+  chartIds: string[]
+}
+
+export interface ChartBundleExportResult {
+  filePath: string
+  chartCount: number
+}
+
 export type PickedChartFile = PickedDocumentFile
 export type ChartImportFromUrlInput = DocumentImportFromUrlInput
 

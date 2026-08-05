@@ -51,6 +51,15 @@ describe('application clients', () => {
       bytesPerSecond: null,
       errorMessage: null
     }
+    const vatsimStatus = {
+      phase: 'ready' as const,
+      revision: 1,
+      fetchedAt: 1,
+      feedUpdatedAt: 1,
+      nextRefreshAt: 2,
+      lastError: null,
+      counts: { pilots: 10, controllers: 2, atis: 1, connectedClients: 13 }
+    }
     const preload = {
       getSnapshot: vi.fn().mockResolvedValue({ aircraft: null, connection: null }),
       getSettings: vi.fn().mockResolvedValue(createSettings()),
@@ -63,6 +72,11 @@ describe('application clients', () => {
       checkForAppUpdate: vi.fn().mockResolvedValue(updateState),
       downloadAndInstallAppUpdate: vi.fn().mockResolvedValue(updateState),
       onAppUpdateStateChange: vi.fn(() => off),
+      getVatsimStatus: vi.fn().mockResolvedValue(vatsimStatus),
+      getVatsimMapFeatures: vi.fn().mockResolvedValue({ pilots: [] }),
+      searchVatsimPilots: vi.fn().mockResolvedValue([]),
+      refreshVatsim: vi.fn().mockResolvedValue(vatsimStatus),
+      onVatsimChanged: vi.fn(() => off),
       performWindowAction: vi.fn().mockResolvedValue({ isMaximized: true }),
       onAircraftUpdate: vi.fn(() => off),
       onChartsChanged: vi.fn(() => off)
@@ -89,11 +103,16 @@ describe('application clients', () => {
     })
     await client.checkForAppUpdate()
     await client.downloadAndInstallAppUpdate()
+    await expect(client.getVatsimStatus()).resolves.toMatchObject({ revision: 1 })
+    await client.getVatsimMapFeatures({} as never)
+    await client.searchVatsimPilots({ query: 'DAL1' })
+    await client.refreshVatsim()
     await client.performWindowAction('toggle-maximize')
     const listener = vi.fn()
     expect(client.onAircraftUpdate(listener)).toBe(off)
     expect(client.onChartsChanged(listener)).toBe(off)
     expect(client.onAppUpdateStateChange(listener)).toBe(off)
+    expect(client.onVatsimChanged(listener)).toBe(off)
 
     expect(preload.getChart).toHaveBeenCalledWith('chart-1')
     expect(preload.listChartAirports).toHaveBeenCalledWith('ils')
@@ -103,6 +122,8 @@ describe('application clients', () => {
     expect(preload.checkForAppUpdate).toHaveBeenCalledOnce()
     expect(preload.downloadAndInstallAppUpdate).toHaveBeenCalledOnce()
     expect(preload.onAppUpdateStateChange).toHaveBeenCalledWith(listener)
+    expect(preload.onVatsimChanged).toHaveBeenCalledWith(listener)
+    expect(preload.searchVatsimPilots).toHaveBeenCalledWith({ query: 'DAL1' })
     expect(preload.onAircraftUpdate).toHaveBeenCalledWith(listener)
     expect(preload.onChartsChanged).toHaveBeenCalledWith(listener)
     expect(client.onSettingsChanged(vi.fn())).toEqual(expect.any(Function))
@@ -167,6 +188,10 @@ describe('application clients', () => {
     await client.getNavAirportProcedures('Z/BAA')
     await client.buildFlightPlan({} as never)
     await client.searchNavMapPoints({ query: 'PEK', types: ['vors'] })
+    await client.getVatsimStatus()
+    await client.getVatsimMapFeatures({} as never)
+    await client.searchVatsimPilots({ query: 'DAL1' })
+    await client.refreshVatsim()
     await client.importChartFromUrl({ url: 'https://example.com/chart.pdf' })
     await client.listChartAirports('Z BA')
     await client.listChartsByAirport('Z/BAA', 'ILS 36')
@@ -183,6 +208,10 @@ describe('application clients', () => {
       '/api/nav/airport/Z%2FBAA/procedures',
       '/api/nav/plan',
       '/api/nav/search-points',
+      '/api/vatsim/status',
+      '/api/vatsim/map-features',
+      '/api/vatsim/search-pilots',
+      '/api/vatsim/refresh',
       '/api/charts/import-from-url',
       '/api/chart-airports?query=Z+BA',
       '/api/chart-airports/Z%2FBAA/charts?query=ILS+36',
@@ -223,22 +252,26 @@ describe('application clients', () => {
     const charts = vi.fn()
     const checklists = vi.fn()
     const settings = vi.fn()
+    const vatsim = vi.fn()
     const offAircraft = client.onAircraftUpdate(aircraft)
     client.onConnectionUpdate(connection)
     client.onChartsChanged(charts)
     client.onChecklistsChanged(checklists)
     client.onSettingsChanged(settings)
+    client.onVatsimChanged(vatsim)
 
     socket.emit({ type: 'aircraft:update', payload: { connected: true } })
     socket.emit({ type: 'connection:update', payload: { connected: false } })
     socket.emit({ type: 'chart:changed' })
     socket.emit({ type: 'checklist:changed' })
     socket.emit({ type: 'settings:changed' })
+    socket.emit({ type: 'vatsim:changed', payload: { phase: 'ready', revision: 2 } })
     expect(aircraft).toHaveBeenCalledWith({ connected: true })
     expect(connection).toHaveBeenCalledWith({ connected: false })
     expect(charts).toHaveBeenCalledOnce()
     expect(checklists).toHaveBeenCalledOnce()
     expect(settings).toHaveBeenCalledOnce()
+    expect(vatsim).toHaveBeenCalledWith({ phase: 'ready', revision: 2 })
 
     offAircraft()
     socket.emit({ type: 'aircraft:update', payload: { connected: false } })

@@ -1,4 +1,6 @@
+import { APP_LANGUAGES } from '../shared/i18n.js'
+
 export const i18nConfig = {
-  locales: ['system', 'en-US', 'zh-CN'],
+  locales: ['system', ...APP_LANGUAGES] as const,
   defaultLocale: 'system',
 }

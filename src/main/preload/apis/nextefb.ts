@@ -12,6 +12,11 @@ import type {
 import type {
   ChartAssetPayload,
   ChartAirportSummary,
+  ChartBundleExportInput,
+  ChartBundleExportResult,
+  ChartBundleImportInput,
+  ChartBundleImportPreview,
+  ChartBundleImportResult,
   ChartImportFromUrlInput,
   ChartImportResult,
   ChartRecord,
@@ -46,6 +51,13 @@ import type {
   NavMapSearchResult
 } from '../../../shared/nav-map-types.js'
 import type { AppUpdateState } from '../../../shared/update-types.js'
+import type {
+  VatsimMapFeatureCollection,
+  VatsimMapQueryInput,
+  VatsimPilotFeature,
+  VatsimPilotSearchInput,
+  VatsimStatus
+} from '../../../shared/vatsim-types.js'
 
 const api = {
   getSnapshot: async (): Promise<{ aircraft: AircraftState; connection: ConnectionState }> =>
@@ -63,6 +75,16 @@ const api = {
     ipcRenderer.invoke(IPC_CHANNELS.navMapFeatures, input),
   searchNavMapPoints: async (input: NavMapSearchInput): Promise<NavMapSearchResult[]> =>
     ipcRenderer.invoke(IPC_CHANNELS.navMapSearch, input),
+  getVatsimStatus: async (): Promise<VatsimStatus> =>
+    ipcRenderer.invoke(IPC_CHANNELS.vatsimStatus),
+  getVatsimMapFeatures: async (
+    input: VatsimMapQueryInput
+  ): Promise<VatsimMapFeatureCollection> =>
+    ipcRenderer.invoke(IPC_CHANNELS.vatsimMapFeatures, input),
+  searchVatsimPilots: async (input: VatsimPilotSearchInput): Promise<VatsimPilotFeature[]> =>
+    ipcRenderer.invoke(IPC_CHANNELS.vatsimPilotSearch, input),
+  refreshVatsim: async (): Promise<VatsimStatus> =>
+    ipcRenderer.invoke(IPC_CHANNELS.vatsimRefresh),
   importSimBrief: async (input: SimBriefImportInput): Promise<SimBriefImportResult> =>
     ipcRenderer.invoke(IPC_CHANNELS.simbriefImport, input),
   getChart: async (chartId: string): Promise<ChartRecord | null> =>
@@ -71,6 +93,14 @@ const api = {
     ipcRenderer.invoke(IPC_CHANNELS.chartAsset, chartId),
   getChartReferencePoints: async (chartId: string): Promise<GeoReferencePoint[]> =>
     ipcRenderer.invoke(IPC_CHANNELS.chartReferenceGet, chartId),
+  pickChartBundleImport: async (): Promise<ChartBundleImportPreview | null> =>
+    ipcRenderer.invoke(IPC_CHANNELS.chartBundlePickImport),
+  importChartBundle: async (input: ChartBundleImportInput): Promise<ChartBundleImportResult> =>
+    ipcRenderer.invoke(IPC_CHANNELS.chartBundleImport, input),
+  exportChartBundle: async (
+    input: ChartBundleExportInput
+  ): Promise<ChartBundleExportResult | null> =>
+    ipcRenderer.invoke(IPC_CHANNELS.chartBundleExport, input),
   pickChartFile: async (): Promise<PickedChartFile | null> => ipcRenderer.invoke(IPC_CHANNELS.chartImport),
   pickChartsDirectory: async (): Promise<string | null> =>
     ipcRenderer.invoke(IPC_CHANNELS.storagePickChartsDirectory),
@@ -157,6 +187,11 @@ const api = {
     const wrapped = () => listener()
     ipcRenderer.on(IPC_CHANNELS.chartsChanged, wrapped)
     return () => ipcRenderer.removeListener(IPC_CHANNELS.chartsChanged, wrapped)
+  },
+  onVatsimChanged: (listener: (status: VatsimStatus) => void): (() => void) => {
+    const wrapped = (_event: Electron.IpcRendererEvent, payload: VatsimStatus) => listener(payload)
+    ipcRenderer.on(IPC_CHANNELS.vatsimChanged, wrapped)
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.vatsimChanged, wrapped)
   },
   onChecklistsChanged: (_listener: () => void): (() => void) => () => void 0
 }

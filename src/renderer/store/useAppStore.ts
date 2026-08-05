@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type { AircraftState, AppLanguage, AppSettings, ConnectionState } from '@shared/types'
+import { resolveAppLanguage } from '@shared/i18n'
 import type { AppUpdateState } from '@shared/update-types'
 
 interface AppStoreState {
@@ -37,5 +38,5 @@ function resolveSystemLanguage(): AppLanguage {
     return 'en-US'
   }
 
-  return navigator.language.trim().toLowerCase().startsWith('zh') ? 'zh-CN' : 'en-US'
+  return resolveAppLanguage(navigator.languages?.length ? navigator.languages : navigator.language)
 }

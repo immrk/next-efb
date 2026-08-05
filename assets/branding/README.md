@@ -1,6 +1,6 @@
 # NextEFB Branding
 
-This directory is generated from `assets/branding/source/NextEFBICon.jpg`.
+This directory is generated from `assets/branding/source/NextEFBIcon.png`.
 
 - `brand-mark.png`: UI branding image used in the renderer
 - `icon-*.png`: generated raster sizes for web and desktop use

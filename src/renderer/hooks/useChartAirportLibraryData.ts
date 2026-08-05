@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import type {
   ChartAirportSummary,
+  ChartBundleImportInput,
+  ChartBundleImportPreview,
   ChartImportResult,
   ChartRecord,
   PickedChartFile
@@ -108,6 +110,21 @@ export function useChartAirportLibraryData() {
   const importChartFromUrl = async (url: string): Promise<ChartImportResult | null> =>
     importPickedChart(await appClient.importChartFromUrl({ url }))
 
+  const pickChartBundleImport = async (): Promise<ChartBundleImportPreview | null> =>
+    appClient.pickChartBundleImport()
+
+  const importChartBundle = async (input: ChartBundleImportInput) => {
+    const result = await appClient.importChartBundle(input)
+    notifyChartChanged()
+    return result
+  }
+
+  const exportChartBundle = async (chartIds: string[]) =>
+    appClient.exportChartBundle({ chartIds })
+
+  const listChartsForBundleExport = async (): Promise<ChartRecord[]> =>
+    appClient.listCharts()
+
   return {
     airports,
     charts,
@@ -119,6 +136,10 @@ export function useChartAirportLibraryData() {
     setExpandedAirportCode,
     setSearch,
     importChart,
-    importChartFromUrl
+    importChartFromUrl,
+    pickChartBundleImport,
+    importChartBundle,
+    exportChartBundle,
+    listChartsForBundleExport
   }
 }

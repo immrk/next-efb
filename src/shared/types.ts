@@ -1,4 +1,5 @@
-export type AppLanguage = 'zh-CN' | 'en-US'
+export type { AppLanguage } from './i18n'
+import type { AppLanguage } from './i18n'
 export type AppRoute = 'map' | 'flight' | 'charts' | 'chartDetail' | 'checklists' | 'settings'
 
 export type AircraftSource = 'mock' | 'simconnect'

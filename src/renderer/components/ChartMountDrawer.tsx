@@ -62,6 +62,8 @@ interface ChartMountDrawerProps {
   importUrlPending?: boolean
   onImportUrlValueChange?: (value: string) => void
   onImportFromUrl?: () => void
+  onImportBundle?: () => void
+  onExportBundle?: () => void
 }
 
 function LegacyChartMountDrawer({
@@ -80,7 +82,9 @@ function LegacyChartMountDrawer({
   importUrlValue = '',
   importUrlPending = false,
   onImportUrlValueChange,
-  onImportFromUrl
+  onImportFromUrl,
+  onImportBundle,
+  onExportBundle
 }: ChartMountDrawerProps) {
   const { t } = useTranslation()
   const [search, setSearch] = useState('')
@@ -148,6 +152,8 @@ function LegacyChartMountDrawer({
         importUrlPending={importUrlPending}
         onImportUrlValueChange={onImportUrlValueChange}
         onImportFromUrl={onImportFromUrl}
+        onImportBundle={onImportBundle}
+        onExportBundle={onExportBundle}
       />
 
       <div

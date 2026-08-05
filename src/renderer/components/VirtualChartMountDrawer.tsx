@@ -54,6 +54,8 @@ interface ChartMountDrawerProps {
   importUrlPending?: boolean
   onImportUrlValueChange?: (value: string) => void
   onImportFromUrl?: () => void
+  onImportBundle?: () => void
+  onExportBundle?: () => void
 }
 
 export function ChartMountDrawer({
@@ -79,7 +81,9 @@ export function ChartMountDrawer({
   importUrlValue = '',
   importUrlPending = false,
   onImportUrlValueChange,
-  onImportFromUrl
+  onImportFromUrl,
+  onImportBundle,
+  onExportBundle
 }: ChartMountDrawerProps) {
   const { t } = useTranslation()
   const [internalSearch, setInternalSearch] = useState('')
@@ -215,6 +219,8 @@ export function ChartMountDrawer({
         importUrlPending={importUrlPending}
         onImportUrlValueChange={onImportUrlValueChange}
         onImportFromUrl={onImportFromUrl}
+        onImportBundle={onImportBundle}
+        onExportBundle={onExportBundle}
       />
       <div className="chart-picker-section-head">
         <strong>{t('charts.airportListTitle')}</strong>
