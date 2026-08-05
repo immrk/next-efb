@@ -17,6 +17,7 @@ import { FlightStateStore } from './services/state/FlightStateStore.js'
 import { ChartRepository } from './services/storage/ChartRepository.js'
 import { ChecklistRepository } from './services/storage/ChecklistRepository.js'
 import { StorageService } from './services/storage/StorageService.js'
+import { reconcileChartLibrary } from './services/storage/reconcileChartLibrary.js'
 import { AppUpdateService } from './services/updates/AppUpdateService.js'
 import { windowManager } from './windowManager.js'
 import '../utils/logger.js'
@@ -119,9 +120,7 @@ async function createMainWindow(): Promise<void> {
     }
   })
 
-  chartRepository.reconcileMissingCharts().forEach((chartId) => {
-    storageService.deleteChartFiles(chartId)
-  })
+  reconcileChartLibrary(chartRepository, storageService)
   let chartReconcileTimer: ReturnType<typeof setTimeout> | null = null
   const stopWatchingChartLibrary = storageService.onChartLibraryChanged(() => {
     if (chartReconcileTimer) {
@@ -129,10 +128,11 @@ async function createMainWindow(): Promise<void> {
     }
     chartReconcileTimer = setTimeout(() => {
       chartReconcileTimer = null
-      chartRepository.reconcileMissingCharts().forEach((chartId) => {
-        storageService.deleteChartFiles(chartId)
-      })
-      lanServer.broadcastChartChanged()
+      reconcileChartLibrary(
+        chartRepository,
+        storageService,
+        () => lanServer.broadcastChartChanged()
+      )
     }, 300)
   })
   mainWindow.once('closed', () => {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type {
   ChartAirportSummary,
   ChartImportResult,
@@ -20,6 +20,7 @@ export function useChartAirportLibraryData() {
   const [isLoadingAirports, setIsLoadingAirports] = useState(true)
   const [isLoadingCharts, setIsLoadingCharts] = useState(false)
   const [revision, setRevision] = useState(0)
+  const loadedChartQueryKeyRef = useRef<string | null>(null)
 
   useEffect(() => subscribeChartChanged(() => setRevision((current) => current + 1)), [])
 
@@ -55,6 +56,7 @@ export function useChartAirportLibraryData() {
   useEffect(() => {
     let active = true
     if (!expandedAirportCode) {
+      loadedChartQueryKeyRef.current = null
       setCharts([])
       setIsLoadingCharts(false)
       return () => {
@@ -62,8 +64,13 @@ export function useChartAirportLibraryData() {
       }
     }
 
-    setCharts([])
-    setIsLoadingCharts(true)
+    const queryKey = `${expandedAirportCode}\u0000${search.trim()}`
+    const isBlockingLoad = loadedChartQueryKeyRef.current !== queryKey
+    loadedChartQueryKeyRef.current = queryKey
+    if (isBlockingLoad) {
+      setCharts([])
+      setIsLoadingCharts(true)
+    }
     const timer = window.setTimeout(() => {
       void appClient.listChartsByAirport(expandedAirportCode, search).then(
         (nextCharts) => {
@@ -73,7 +80,7 @@ export function useChartAirportLibraryData() {
         },
         () => {
           if (!active) return
-          setCharts([])
+          if (isBlockingLoad) setCharts([])
           setIsLoadingCharts(false)
         }
       )
