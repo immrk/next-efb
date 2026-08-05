@@ -50,6 +50,30 @@ describe('ChartRepository', () => {
     })
   })
 
+  it('lists airport summaries and loads charts for one airport on demand', () => {
+    const repository = new ChartRepository(storage)
+    repository.createChart(createChart({ id: 'zbaa-ils', title: 'ILS 36' }))
+    repository.createChart(createChart({ id: 'zbaa-sid', title: 'RENOB 9D', chartType: 'sid' }))
+    repository.createChart(createChart({ id: 'zspd-ils', airportCode: 'zspd', title: 'ILS 35L' }))
+    repository.createChart(createChart({ id: 'general', airportCode: null, title: 'Enroute' }))
+
+    expect(repository.listChartAirports()).toEqual([
+      { airportCode: 'UNSPEC', chartCount: 1 },
+      { airportCode: 'ZBAA', chartCount: 2 },
+      { airportCode: 'ZSPD', chartCount: 1 }
+    ])
+    expect(repository.listChartAirports('renob')).toEqual([
+      { airportCode: 'ZBAA', chartCount: 1 }
+    ])
+    expect(repository.listChartsByAirport('zbaa').map((chart) => chart.id).sort()).toEqual([
+      'zbaa-ils',
+      'zbaa-sid'
+    ])
+    expect(repository.listChartsByAirport('ZBAA', 'sid').map((chart) => chart.id)).toEqual([
+      'zbaa-sid'
+    ])
+  })
+
   it('replaces reference points and maintains georeference state', () => {
     const repository = new ChartRepository(storage)
     repository.createChart(createChart())

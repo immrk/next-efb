@@ -55,6 +55,8 @@ describe('application clients', () => {
       getSnapshot: vi.fn().mockResolvedValue({ aircraft: null, connection: null }),
       getSettings: vi.fn().mockResolvedValue(createSettings()),
       getChart: vi.fn().mockResolvedValue(createChart()),
+      listChartAirports: vi.fn().mockResolvedValue([{ airportCode: 'ZBAA', chartCount: 1 }]),
+      listChartsByAirport: vi.fn().mockResolvedValue([createChart()]),
       listCharts: vi.fn().mockResolvedValue([createChart()]),
       updateSettings: vi.fn().mockResolvedValue(createSettings({ language: 'zh-CN' })),
       getAppUpdateState: vi.fn().mockResolvedValue(updateState),
@@ -78,6 +80,8 @@ describe('application clients', () => {
     })
     await expect(client.getSettings()).resolves.toMatchObject({ language: 'en-US' })
     await expect(client.getChart('chart-1')).resolves.toMatchObject({ id: 'chart-1' })
+    await expect(client.listChartAirports('ils')).resolves.toHaveLength(1)
+    await expect(client.listChartsByAirport('ZBAA', 'ils')).resolves.toHaveLength(1)
     await expect(client.listCharts()).resolves.toHaveLength(1)
     await client.updateSettings({ language: 'zh-CN' })
     await expect(client.getAppUpdateState()).resolves.toMatchObject({
@@ -92,6 +96,8 @@ describe('application clients', () => {
     expect(client.onAppUpdateStateChange(listener)).toBe(off)
 
     expect(preload.getChart).toHaveBeenCalledWith('chart-1')
+    expect(preload.listChartAirports).toHaveBeenCalledWith('ils')
+    expect(preload.listChartsByAirport).toHaveBeenCalledWith('ZBAA', 'ils')
     expect(preload.updateSettings).toHaveBeenCalledWith({ language: 'zh-CN' })
     expect(preload.performWindowAction).toHaveBeenCalledWith('toggle-maximize')
     expect(preload.checkForAppUpdate).toHaveBeenCalledOnce()
@@ -162,6 +168,8 @@ describe('application clients', () => {
     await client.buildFlightPlan({} as never)
     await client.searchNavMapPoints({ query: 'PEK', types: ['vors'] })
     await client.importChartFromUrl({ url: 'https://example.com/chart.pdf' })
+    await client.listChartAirports('Z BA')
+    await client.listChartsByAirport('Z/BAA', 'ILS 36')
     await client.deleteChart('chart id')
     await client.importChecklistFromUrl({ url: 'https://example.com/checklist.pdf' })
     await client.updateChecklist({
@@ -176,6 +184,8 @@ describe('application clients', () => {
       '/api/nav/plan',
       '/api/nav/search-points',
       '/api/charts/import-from-url',
+      '/api/chart-airports?query=Z+BA',
+      '/api/chart-airports/Z%2FBAA/charts?query=ILS+36',
       '/api/charts/chart id',
       '/api/checklists/import-from-url',
       '/api/checklists/checklist%20id'

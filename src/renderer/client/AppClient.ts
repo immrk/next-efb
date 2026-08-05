@@ -1,5 +1,6 @@
 import type {
   ChartAssetPayload,
+  ChartAirportSummary,
   ChartImportFromUrlInput,
   ChartImportResult,
   ChartRecord,
@@ -75,6 +76,8 @@ export interface AppClient {
   getChart(chartId: string): Promise<ChartRecord | null>
   getChartAsset(chartId: string): Promise<ChartAssetPayload | null>
   getChartReferencePoints(chartId: string): Promise<GeoReferencePoint[]>
+  listChartAirports(query?: string): Promise<ChartAirportSummary[]>
+  listChartsByAirport(airportCode: string, query?: string): Promise<ChartRecord[]>
   listCharts(): Promise<ChartRecord[]>
   getStorageSummary(): Promise<StorageSummary>
   pickChartFile(): Promise<PickedChartFile | null>

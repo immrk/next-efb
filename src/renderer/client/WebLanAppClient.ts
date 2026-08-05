@@ -1,5 +1,6 @@
 import type {
   ChartAssetPayload,
+  ChartAirportSummary,
   ChartImportFromUrlInput,
   ChartImportResult,
   ChartRecord,
@@ -178,6 +179,22 @@ export class WebLanAppClient implements AppClient {
 
   listCharts(): Promise<ChartRecord[]> {
     return this.fetchJson('/api/charts')
+  }
+
+  listChartAirports(query = ''): Promise<ChartAirportSummary[]> {
+    const search = new URLSearchParams()
+    if (query.trim()) search.set('query', query.trim())
+    const suffix = search.size > 0 ? `?${search.toString()}` : ''
+    return this.fetchJson(`/api/chart-airports${suffix}`)
+  }
+
+  listChartsByAirport(airportCode: string, query = ''): Promise<ChartRecord[]> {
+    const search = new URLSearchParams()
+    if (query.trim()) search.set('query', query.trim())
+    const suffix = search.size > 0 ? `?${search.toString()}` : ''
+    return this.fetchJson(
+      `/api/chart-airports/${encodeURIComponent(airportCode)}/charts${suffix}`
+    )
   }
 
   getStorageSummary(): Promise<StorageSummary> {

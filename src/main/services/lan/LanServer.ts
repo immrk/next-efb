@@ -310,6 +310,26 @@ export class LanServer {
         return
       }
 
+      if (url.pathname === '/api/chart-airports') {
+        this.sendJson(
+          response,
+          this.chartRepository.listChartAirports(url.searchParams.get('query') ?? '')
+        )
+        return
+      }
+
+      const airportChartsMatch = url.pathname.match(/^\/api\/chart-airports\/([^/]+)\/charts$/)
+      if (airportChartsMatch) {
+        this.sendJson(
+          response,
+          this.chartRepository.listChartsByAirport(
+            decodeURIComponent(airportChartsMatch[1]),
+            url.searchParams.get('query') ?? ''
+          )
+        )
+        return
+      }
+
       if (url.pathname === '/api/charts') {
         if (request.method === 'POST') {
           if (!this.ensureWriteEnabled(response)) {
@@ -321,11 +341,7 @@ export class LanServer {
           return
         }
 
-        const removedChartIds = this.chartRepository.reconcileMissingCharts()
-        removedChartIds.forEach((chartId) => this.storageService.deleteChartFiles(chartId))
-        if (removedChartIds.length > 0) {
-          this.broadcastChartChanged()
-        }
+        this.reconcileChartLibrary()
         this.sendJson(response, this.chartRepository.listCharts())
         return
       }
@@ -657,6 +673,14 @@ export class LanServer {
     const updated = this.chartRepository.updateChart(input)
     this.broadcastChartChanged()
     return updated
+  }
+
+  private reconcileChartLibrary(): void {
+    const removedChartIds = this.chartRepository.reconcileMissingCharts()
+    removedChartIds.forEach((chartId) => this.storageService.deleteChartFiles(chartId))
+    if (removedChartIds.length > 0) {
+      this.broadcastChartChanged()
+    }
   }
 
   private saveReferencePoints(chartId: string, points: GeoReferencePoint[]): GeoReferencePoint[] {

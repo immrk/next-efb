@@ -75,6 +75,13 @@ export function registerIpc(options: RegisterIpcOptions): void {
     appUpdateService
   } = options
   const remoteChartImportService = new RemoteChartImportService()
+  const reconcileChartLibrary = () => {
+    const removedChartIds = chartRepository.reconcileMissingCharts()
+    removedChartIds.forEach((chartId) => storageService.deleteChartFiles(chartId))
+    if (removedChartIds.length > 0) {
+      lanServer.broadcastChartChanged()
+    }
+  }
 
   simConnectService.onAircraftState((state) => {
     flightStateStore.setAircraftState(state)
@@ -168,13 +175,18 @@ export function registerIpc(options: RegisterIpcOptions): void {
     return true
   })
   ipcMain.handle(IPC_CHANNELS.chartsList, () => {
-    const removedChartIds = chartRepository.reconcileMissingCharts()
-    removedChartIds.forEach((chartId) => storageService.deleteChartFiles(chartId))
-    if (removedChartIds.length > 0) {
-      lanServer.broadcastChartChanged()
-    }
+    reconcileChartLibrary()
     return chartRepository.listCharts()
   })
+  ipcMain.handle(IPC_CHANNELS.chartAirportsList, (_event, query = '') => {
+    return chartRepository.listChartAirports(query)
+  })
+  ipcMain.handle(
+    IPC_CHANNELS.chartsListByAirport,
+    (_event, airportCode: string, query = '') => {
+      return chartRepository.listChartsByAirport(airportCode, query)
+    }
+  )
   ipcMain.handle(IPC_CHANNELS.storageSummary, () => storageService.getSummary())
   ipcMain.handle(IPC_CHANNELS.chartGet, (_event, chartId: string) => chartRepository.getChart(chartId))
   ipcMain.handle(IPC_CHANNELS.chartReferenceGet, (_event, chartId: string) =>

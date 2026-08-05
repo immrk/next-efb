@@ -82,6 +82,14 @@ export class ElectronAppClient implements AppClient {
     return window.msfsApi.listCharts()
   }
 
+  listChartAirports(query = '') {
+    return window.msfsApi.listChartAirports(query)
+  }
+
+  listChartsByAirport(airportCode: string, query = '') {
+    return window.msfsApi.listChartsByAirport(airportCode, query)
+  }
+
   getStorageSummary() {
     return window.msfsApi.getStorageSummary()
   }

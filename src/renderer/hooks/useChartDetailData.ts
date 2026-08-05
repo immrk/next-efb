@@ -8,24 +8,43 @@ export function useChartDetailData(chartId: string | null) {
   const [chart, setChart] = useState<ChartRecord | null>(null)
   const [asset, setAsset] = useState<ChartAssetPayload | null>(null)
   const [points, setPoints] = useState<GeoReferencePoint[]>([])
+  const [resolvedChartId, setResolvedChartId] = useState<string | null>(null)
 
   useEffect(() => {
+    let active = true
     const refresh = () => {
       if (!chartId) {
         setChart(null)
         setAsset(null)
         setPoints([])
+        setResolvedChartId(null)
         return
       }
 
-      void appClient.getChart(chartId).then(setChart)
-      void appClient.getChartAsset(chartId).then(setAsset)
-      void appClient.getChartReferencePoints(chartId).then(setPoints)
+      setResolvedChartId(null)
+      void Promise.all([
+        appClient.getChart(chartId),
+        appClient.getChartAsset(chartId),
+        appClient.getChartReferencePoints(chartId)
+      ]).then(([nextChart, nextAsset, nextPoints]) => {
+        if (!active) return
+        setChart(nextChart)
+        setAsset(nextAsset)
+        setPoints(nextPoints)
+        setResolvedChartId(chartId)
+      }).catch(() => {
+        if (!active) return
+        setChart(null)
+        setAsset(null)
+        setPoints([])
+        setResolvedChartId(chartId)
+      })
     }
 
     refresh()
     const unsubscribe = subscribeChartChanged(refresh)
     return () => {
+      active = false
       unsubscribe()
     }
   }, [appClient, chartId])
@@ -34,6 +53,7 @@ export function useChartDetailData(chartId: string | null) {
     chart,
     asset,
     points,
+    isLoading: Boolean(chartId) && chart?.id !== chartId && resolvedChartId !== chartId,
     setChart,
     setPoints
   }

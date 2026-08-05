@@ -11,6 +11,7 @@ import type {
 } from '../../../shared/types.js'
 import type {
   ChartAssetPayload,
+  ChartAirportSummary,
   ChartImportFromUrlInput,
   ChartImportResult,
   ChartRecord,
@@ -75,6 +76,10 @@ const api = {
     ipcRenderer.invoke(IPC_CHANNELS.storagePickChartsDirectory),
   importChartFromUrl: async (input: ChartImportFromUrlInput): Promise<PickedChartFile> =>
     ipcRenderer.invoke(IPC_CHANNELS.chartImportFromUrl, input),
+  listChartAirports: async (query = ''): Promise<ChartAirportSummary[]> =>
+    ipcRenderer.invoke(IPC_CHANNELS.chartAirportsList, query),
+  listChartsByAirport: async (airportCode: string, query = ''): Promise<ChartRecord[]> =>
+    ipcRenderer.invoke(IPC_CHANNELS.chartsListByAirport, airportCode, query),
   listCharts: async (): Promise<ChartRecord[]> => ipcRenderer.invoke(IPC_CHANNELS.chartsList),
   getStorageSummary: async (): Promise<StorageSummary> =>
     ipcRenderer.invoke(IPC_CHANNELS.storageSummary),

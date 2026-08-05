@@ -2,6 +2,7 @@ import Database from 'better-sqlite3'
 import { existsSync } from 'node:fs'
 import { isAbsolute, join, relative, resolve, sep } from 'node:path'
 import type {
+  ChartAirportSummary,
   ChartRecord,
   ChartUpdateInput,
   GeoReferencePoint,
@@ -53,6 +54,65 @@ export class ChartRepository {
     const rows = this.db
       .prepare('SELECT * FROM charts ORDER BY updated_at DESC')
       .all() as ChartRow[]
+
+    return rows.map((row) => this.toChartRecord(row))
+  }
+
+  listChartAirports(query = ''): ChartAirportSummary[] {
+    const normalizedQuery = query.trim().toLowerCase()
+    const searchPattern = `%${normalizedQuery}%`
+    const rows = this.db
+      .prepare(
+        `
+        SELECT
+          COALESCE(NULLIF(UPPER(TRIM(airport_code)), ''), 'UNSPEC') AS airport_code,
+          COUNT(*) AS chart_count
+        FROM charts
+        WHERE ? = ''
+          OR LOWER(title) LIKE ?
+          OR LOWER(COALESCE(NULLIF(TRIM(airport_code), ''), 'UNSPEC')) LIKE ?
+          OR LOWER(chart_type) LIKE ?
+        GROUP BY COALESCE(NULLIF(UPPER(TRIM(airport_code)), ''), 'UNSPEC')
+        ORDER BY airport_code ASC
+      `
+      )
+      .all(normalizedQuery, searchPattern, searchPattern, searchPattern) as Array<{
+        airport_code: string
+        chart_count: number
+      }>
+
+    return rows.map((row) => ({
+      airportCode: row.airport_code,
+      chartCount: row.chart_count
+    }))
+  }
+
+  listChartsByAirport(airportCode: string, query = ''): ChartRecord[] {
+    const normalizedAirportCode = normalizeAirportCode(airportCode)
+    const normalizedQuery = query.trim().toLowerCase()
+    const searchPattern = `%${normalizedQuery}%`
+    const rows = this.db
+      .prepare(
+        `
+        SELECT *
+        FROM charts
+        WHERE COALESCE(NULLIF(UPPER(TRIM(airport_code)), ''), 'UNSPEC') = ?
+          AND (
+            ? = ''
+            OR LOWER(title) LIKE ?
+            OR LOWER(COALESCE(NULLIF(TRIM(airport_code), ''), 'UNSPEC')) LIKE ?
+            OR LOWER(chart_type) LIKE ?
+          )
+        ORDER BY updated_at DESC
+      `
+      )
+      .all(
+        normalizedAirportCode,
+        normalizedQuery,
+        searchPattern,
+        searchPattern,
+        searchPattern
+      ) as ChartRow[]
 
     return rows.map((row) => this.toChartRecord(row))
   }
@@ -129,8 +189,11 @@ export class ChartRepository {
   }
 
   reconcileMissingCharts(): string[] {
-    const missingChartIds = this.listCharts()
-      .filter((chart) => !existsSync(chart.sourceFilePath))
+    const sourceRows = this.db
+      .prepare('SELECT id, source_file_path FROM charts')
+      .all() as Array<{ id: string; source_file_path: string }>
+    const missingChartIds = sourceRows
+      .filter((chart) => !existsSync(chart.source_file_path))
       .map((chart) => chart.id)
 
     if (missingChartIds.length === 0) {
@@ -275,6 +338,9 @@ export class ChartRepository {
         chart_y REAL NOT NULL,
         created_at INTEGER NOT NULL
       );
+
+      CREATE INDEX IF NOT EXISTS idx_charts_airport_normalized
+      ON charts (COALESCE(NULLIF(UPPER(TRIM(airport_code)), ''), 'UNSPEC'));
     `)
 
     this.migrateChartsTable()
@@ -387,4 +453,8 @@ function isPathInsideRoot(targetPath: string, rootPath: string): boolean {
 
 function normalizePath(value: string): string {
   return process.platform === 'win32' ? value.toLowerCase() : value
+}
+
+function normalizeAirportCode(value: string): string {
+  return value.trim().toUpperCase() || 'UNSPEC'
 }
